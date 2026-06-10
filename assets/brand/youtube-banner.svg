@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="720" x2="2560" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#030014"/>
+      <stop offset="0.5" stop-color="#06121a"/>
+      <stop offset="1" stop-color="#030014"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#064e3b"/>
+      <stop offset="0.5" stop-color="#047857"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="2560" height="1440" fill="url(#bg)"/>
+  <circle cx="1280" cy="720" r="520" fill="url(#glow)"/>
+  <rect x="980" y="470" width="180" height="180" rx="40" fill="url(#brand)"/>
+  <g transform="translate(1070 560)" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none">
+    <circle cx="-26" cy="-14" r="16"/><circle cx="26" cy="14" r="16"/>
+    <path d="M-8 -4 L8 4"/><path d="M-44 -14 H-18"/><path d="M18 14 H44"/>
+  </g>
+  <text x="1200" y="760" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-size="120" font-weight="700">AutoClipr</text>
+  <text x="1200" y="860" fill="#6ee7b7" font-family="Segoe UI, Arial, sans-serif" font-size="52" font-weight="600">Turn long videos into viral shorts automatically</text>
+</svg>

@@ -1,0 +1,215 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 160 30% 4%;
+    --foreground: 0 0% 98%;
+    --card: 160 20% 7%;
+    --card-foreground: 0 0% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 15% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 160 12% 14%;
+    --muted-foreground: 160 8% 62%;
+    --accent: 160 76% 32%;
+    --accent-foreground: 0 0% 100%;
+    --border: 160 15% 18%;
+    --input: 160 15% 16%;
+    --ring: 160 84% 39%;
+    --radius: 0.875rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::selection {
+    @apply bg-emerald-500/30 text-white;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl;
+  }
+
+  .surface {
+    @apply rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl;
+  }
+
+  .surface-hover {
+    @apply surface transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_12px_40px_rgba(16,185,129,0.12)];
+  }
+
+  .gradient-border {
+    @apply relative rounded-2xl p-px;
+    background: linear-gradient(135deg, rgba(6, 95, 70, 0.6), rgba(5, 150, 105, 0.45), rgba(16, 185, 129, 0.35));
+  }
+
+  .gradient-border > * {
+    @apply rounded-[calc(1rem-1px)] bg-[#0a0618];
+  }
+
+  .stat-card {
+    @apply surface relative overflow-hidden;
+  }
+
+  .stat-card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 60%);
+  }
+
+  .stat-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .section-label {
+    @apply inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-300;
+  }
+
+  /* Frosted glass panel with an animated sheen on hover */
+  .glass-panel {
+    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl;
+  }
+
+  .glass-panel::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 -translate-x-full;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.07) 50%, transparent 70%);
+    transition: transform 0.9s ease;
+  }
+
+  .glass-panel:hover::after {
+    @apply translate-x-full;
+  }
+
+  /* Animated multi-stop gradient text */
+  .text-aurora {
+    background: linear-gradient(90deg, #6ee7b7, #34d399, #10b981, #6ee7b7);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    @apply animate-gradient-shift;
+  }
+
+  .orb {
+    @apply absolute rounded-full blur-[120px] animate-float;
+  }
+
+  .orb-violet {
+    background: radial-gradient(circle, rgba(6, 95, 70, 0.45) 0%, transparent 70%);
+  }
+
+  .orb-pink {
+    background: radial-gradient(circle, rgba(5, 150, 105, 0.35) 0%, transparent 70%);
+  }
+
+  .orb-orange {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, transparent 70%);
+  }
+
+  .orb-cyan {
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.25) 0%, transparent 70%);
+  }
+
+  /* Create / Viral Shorts — selected & active states */
+  .create-selected {
+    @apply bg-emerald-700 font-semibold text-white shadow-[0_0_24px_rgba(6,95,70,0.45)] ring-1 ring-emerald-500/50;
+  }
+
+  .create-sidebar-card {
+    @apply border border-emerald-700/40 bg-emerald-950/40 transition-all hover:border-emerald-600/50 hover:bg-emerald-900/30 hover:shadow-[0_0_24px_rgba(6,95,70,0.25)];
+  }
+
+  .create-sidebar-card-active {
+    @apply border-emerald-600/50 bg-emerald-900/50 ring-2 ring-emerald-600/40 shadow-[0_0_24px_rgba(6,95,70,0.3)];
+  }
+
+  .create-nav-active {
+    @apply bg-emerald-700 font-semibold text-white shadow-[0_0_20px_rgba(6,95,70,0.4)] ring-1 ring-emerald-500/50;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    @apply bg-gradient-text bg-clip-text text-transparent;
+  }
+
+  .glow-line {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      #065f46,
+      #059669,
+      #10b981,
+      transparent
+    );
+    height: 1px;
+  }
+
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 40% 20%, rgba(6, 95, 70, 0.12) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(5, 150, 105, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(52, 211, 153, 0.06) 0px, transparent 50%);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}

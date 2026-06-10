@@ -1,0 +1,12 @@
+# Redis 7 only — for local dev when legacy Windows Redis 5.x occupies :6379
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: autoclipr-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
