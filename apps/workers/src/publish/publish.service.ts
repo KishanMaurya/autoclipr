@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '../lib/supabase-client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DatabaseService } from '../database/database.service';
@@ -22,7 +23,7 @@ export class PublishService {
   ) {
     const url = this.config.get<string>('supabaseUrl');
     const key = this.config.get<string>('supabaseServiceKey');
-    this.supabase = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+    this.supabase = url && key ? createServerSupabaseClient(url, key) : null;
   }
 
   async run(data: Record<string, unknown>, jobId?: string): Promise<void> {

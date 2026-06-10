@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '../lib/supabase-client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -17,7 +18,7 @@ export class WorkersStorageService {
     const url = this.config.get<string>('supabaseUrl');
     const key = this.config.get<string>('supabaseServiceKey');
     this.client =
-      url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+      url && key ? createServerSupabaseClient(url, key) : null;
     this.maxUploadBytes = this.config.get<number>('storageMaxUploadBytes') ?? 50 * 1024 * 1024;
   }
 

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '../common/supabase-client';
 
 @Injectable()
 export class SupabaseAdminService implements OnModuleInit {
@@ -23,9 +24,7 @@ export class SupabaseAdminService implements OnModuleInit {
       );
     }
 
-    this.client = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    this.client = createServerSupabaseClient(url, key);
   }
 
   get isConfigured(): boolean {

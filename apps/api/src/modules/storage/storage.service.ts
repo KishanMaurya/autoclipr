@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '../../common/supabase-client';
 
 @Injectable()
 export class StorageService {
@@ -10,7 +11,7 @@ export class StorageService {
     const url = this.config.get<string>('supabaseUrl');
     const key = this.config.get<string>('supabaseServiceKey');
     if (url && key) {
-      this.client = createClient(url, key);
+      this.client = createServerSupabaseClient(url, key);
     }
   }
 
