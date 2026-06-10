@@ -23,7 +23,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.4.9",
+    "@nestjs/cli": "^11.0.23",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.5.13",
     "@types/pg": "^8.11.10",
