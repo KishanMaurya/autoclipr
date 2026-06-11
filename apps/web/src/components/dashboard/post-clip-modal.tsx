@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Loader2, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -127,7 +128,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
               No posting platforms connected yet. Connect YouTube, Instagram, or Facebook in Settings → Platforms.
             </p>
             <Button variant="gradient" size="sm" asChild>
-              <a href="/setup/platforms?from=clips">Connect platforms</a>
+              <Link href="/setup/platforms?from=clips">Connect platforms</Link>
             </Button>
           </div>
         ) : (
