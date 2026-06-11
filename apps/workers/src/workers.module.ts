@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import workersConfig from './config/workers.config';
+import { bullMqConnectionOptions } from './config/redis-connection';
 import { RedisHealthService } from './redis/redis-health.service';
 import { DatabaseService } from './database/database.service';
 import { ClipProcessor } from './processors/clip.processor';
@@ -26,7 +27,7 @@ import { YtdlpService } from './pipeline/ytdlp.service';
     }),
     BullModule.forRootAsync({
       useFactory: () => ({
-        connection: { url: process.env.REDIS_URL ?? 'redis://localhost:6379' },
+        connection: bullMqConnectionOptions(),
       }),
     }),
     BullModule.registerQueue({ name: CLIP_QUEUE }),

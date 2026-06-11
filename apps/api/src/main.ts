@@ -31,7 +31,8 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
-  const port = process.env.API_PORT ?? process.env.PORT ?? '8080';
+  // Railway injects PORT — prefer it over API_PORT (local dev uses API_PORT=8080).
+  const port = process.env.PORT ?? process.env.API_PORT ?? '8080';
   await app.listen(port, process.env.API_HOST ?? '0.0.0.0');
   console.log(`AutoClipr API (NestJS) listening on :${port}`);
 }

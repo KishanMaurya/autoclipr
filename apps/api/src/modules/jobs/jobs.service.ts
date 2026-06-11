@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JobsRepository } from './jobs.repository';
@@ -26,10 +26,31 @@ export class JobsService {
       payload: job.payload,
     });
 
-    await this.clipQueue.add(job.job_type, {
-      jobId: row.id,
-      ...job.payload,
-    });
+    try {
+      await Promise.race([
+        this.clipQueue.add(job.job_type, {
+          jobId: row.id,
+          ...job.payload,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new ServiceUnavailableException(
+                  'Job queue unavailable — set REDIS_URL=${{Redis.REDIS_URL}} on the Railway API service.',
+                ),
+              ),
+            15_000,
+          ),
+        ),
+      ]);
+    } catch (err) {
+      if (err instanceof ServiceUnavailableException) throw err;
+      const message = err instanceof Error ? err.message : String(err);
+      throw new ServiceUnavailableException(
+        `Job queue error: ${message}. Check REDIS_URL on Railway API.`,
+      );
+    }
 
     return row;
   }

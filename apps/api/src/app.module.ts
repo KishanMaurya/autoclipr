@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import configuration from './config/configuration';
+import { bullMqConnectionOptions } from './config/redis-connection';
+import { RedisHealthService } from './redis/redis-health.service';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -23,9 +25,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     }),
     BullModule.forRootAsync({
       useFactory: () => ({
-        connection: {
-          url: process.env.REDIS_URL ?? 'redis://localhost:6379',
-        },
+        connection: bullMqConnectionOptions(),
       }),
     }),
     DatabaseModule,
@@ -40,5 +40,6 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     PlatformsModule,
     AnalyticsModule,
   ],
+  providers: [RedisHealthService],
 })
 export class AppModule {}
