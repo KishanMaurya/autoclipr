@@ -15,6 +15,37 @@ export class YtdlpService {
     this.logger.log(`yt-dlp binary: ${this.ytdlp}`);
   }
 
+  private buildBaseArgs(outTemplate: string, format: string): string[] {
+    const args = [
+      '--no-playlist',
+      '--no-warnings',
+      '--retries',
+      '10',
+      '--fragment-retries',
+      '10',
+      '--socket-timeout',
+      '30',
+      '-f',
+      format,
+      '--merge-output-format',
+      'mp4',
+      '-o',
+      outTemplate,
+    ];
+
+    const extractorArgs = this.config.get<string>('ytdlpExtractorArgs');
+    if (extractorArgs?.trim()) {
+      args.push('--extractor-args', extractorArgs.trim());
+    }
+
+    const cookiesFile = this.config.get<string>('ytdlpCookiesFile')?.trim();
+    if (cookiesFile) {
+      args.push('--cookies', cookiesFile);
+    }
+
+    return args;
+  }
+
   async download(url: string, outputPath: string): Promise<{ title?: string; durationSeconds?: number }> {
     const outDir = path.dirname(outputPath);
     const outTemplate = path.join(outDir, 'source.%(ext)s');
@@ -37,22 +68,7 @@ export class YtdlpService {
           ].join('/')
         : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best';
 
-    const args = [
-      '--no-playlist',
-      '--no-warnings',
-      '--retries',
-      '10',
-      '--fragment-retries',
-      '10',
-      '--socket-timeout',
-      '30',
-      '-f',
-      format,
-      '--merge-output-format',
-      'mp4',
-      '-o',
-      outTemplate,
-    ];
+    const args = this.buildBaseArgs(outTemplate, format);
 
     if (maxDuration > 0) {
       args.push('--match-filter', `duration<=${maxDuration}`);
@@ -60,7 +76,11 @@ export class YtdlpService {
 
     args.push(url);
 
-    await runCommand(this.ytdlp, args, { timeoutMs: 1_800_000 });
+    try {
+      await runCommand(this.ytdlp, args, { timeoutMs: 1_800_000 });
+    } catch (err) {
+      throw new Error(this.formatYtdlpError(err));
+    }
 
     const exists = await fs.stat(outputPath).then(() => true).catch(() => false);
     if (!exists) {
@@ -85,5 +105,19 @@ export class YtdlpService {
     }
 
     return { title };
+  }
+
+  private formatYtdlpError(err: unknown): string {
+    const raw = err instanceof Error ? err.message : String(err);
+    if (/sign in to confirm you're not a bot/i.test(raw)) {
+      return (
+        'YouTube blocked the download from our cloud server (bot check). ' +
+        'Try again later, upload the MP4 file directly, or ask support to enable YouTube cookies on the worker.'
+      );
+    }
+    if (/private video|members.only|login required/i.test(raw)) {
+      return 'This YouTube video is private or requires sign-in. Use a public video or upload the file directly.';
+    }
+    return `yt-dlp failed: ${raw}`;
   }
 }

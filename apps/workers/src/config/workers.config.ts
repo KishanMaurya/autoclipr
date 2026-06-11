@@ -26,6 +26,12 @@ export default () => ({
   ytdlpMaxHeight: Number(process.env.YTDLP_MAX_HEIGHT ?? 0),
   /** Optional cap on source length in seconds (0 = no limit). */
   ytdlpMaxDurationSeconds: Number(process.env.YTDLP_MAX_DURATION_SECONDS ?? 0),
+  /** Helps bypass YouTube bot checks on cloud IPs (Railway). Override via YTDLP_EXTRACTOR_ARGS. */
+  ytdlpExtractorArgs:
+    process.env.YTDLP_EXTRACTOR_ARGS ??
+    'youtube:player_client=android,web;player_skip=webpage',
+  /** Optional Netscape cookies file — most reliable fix for YouTube on datacenter IPs. */
+  ytdlpCookiesFile: process.env.YTDLP_COOKIES_FILE ?? '',
   /** When true, continue pipeline with timed placeholder transcript if OpenAI quota/billing fails */
   openaiFallbackOnQuota: process.env.OPENAI_FALLBACK_ON_QUOTA !== 'false',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
