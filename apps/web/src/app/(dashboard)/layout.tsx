@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { PRIVATE_ROBOTS } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  robots: PRIVATE_ROBOTS,
+};
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";

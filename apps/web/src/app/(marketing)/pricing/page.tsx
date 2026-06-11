@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { FAQ } from "@/components/landing/faq";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = { title: "Pricing" };
+export const metadata: Metadata = pageMetadata({
+  title: "Pricing",
+  description:
+    "AutoClipr plans for solo creators, agencies, and teams. Flexible credits for AI clip generation, captions, and multi-platform export.",
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   return (

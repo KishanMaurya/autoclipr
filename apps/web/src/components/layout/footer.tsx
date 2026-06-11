@@ -14,6 +14,16 @@ const columns = [
       { href: "/#features", label: "Features" },
       { href: "/#how-it-works", label: "How It Works" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/blog", label: "Blog" },
+    ],
+  },
+  {
+    title: "Solutions",
+    links: [
+      { href: "/youtube-to-tiktok", label: "YouTube to TikTok" },
+      { href: "/youtube-to-shorts", label: "YouTube to Shorts" },
+      { href: "/youtube-to-instagram-reels", label: "YouTube to Reels" },
+      { href: "/podcast-to-clips", label: "Podcast to Clips" },
     ],
   },
   {
@@ -33,7 +43,7 @@ export function Footer() {
   return (
     <footer className="relative border-t border-white/[0.06]">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:grid-cols-2 lg:grid-cols-4 sm:px-6">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 sm:px-6">
         {columns.map((col) => (
           <div key={col.title}>
             {col.title === "AutoClipr" ? (

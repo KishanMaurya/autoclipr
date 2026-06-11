@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import { Hero } from "@/components/landing/hero";
+import { HomePageJsonLd } from "@/components/seo/json-ld";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "AI Video Clipping for Viral Shorts",
+  description:
+    "Paste a YouTube link or upload a video. AutoClipr finds viral moments, adds captions, and exports TikTok, Reels, and Shorts — in minutes.",
+  path: "/",
+});
 import { Features } from "@/components/landing/features";
 import { UrlToShorts } from "@/components/landing/url-to-shorts";
 import { HowItWorks } from "@/components/landing/how-it-works";
@@ -11,6 +21,7 @@ import { Comparison } from "@/components/landing/comparison";
 export default function HomePage() {
   return (
     <>
+      <HomePageJsonLd />
       <Hero />
       <UrlToShorts />
       <Features />
