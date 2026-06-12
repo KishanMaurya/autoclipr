@@ -10,7 +10,7 @@ export default async function AnalyticsPage() {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const res = await apiFetch<AnalyticsOverview>("/api/v1/analytics?refresh=true", {
+  const res = await apiFetch<AnalyticsOverview>("/api/v1/analytics", {
     token: session!.access_token,
   });
 

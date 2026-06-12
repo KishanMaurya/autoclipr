@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PlatformsModule } from '../platforms/platforms.module';
 import { PublicationsRepository } from '../clips/publications.repository';
 import { StorageService } from '../storage/storage.service';
@@ -9,6 +10,7 @@ import { YoutubeStatsService } from './youtube-stats.service';
 @Module({
   imports: [PlatformsModule],
   providers: [
+    JwtAuthGuard,
     AnalyticsService,
     YoutubeStatsService,
     PublicationsRepository,

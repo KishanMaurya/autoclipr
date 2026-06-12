@@ -7,6 +7,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
@@ -26,6 +28,12 @@ export class VideosController {
     return ApiResponse.ok(data);
   }
 
+  @Throttle({
+    [THROTTLE.expensive.name]: {
+      limit: THROTTLE.expensive.limit,
+      ttl: THROTTLE.expensive.ttl,
+    },
+  })
   @Post('import-url')
   async importUrl(@CurrentUser() user: AuthUser, @Body() dto: ImportUrlDto) {
     const data = await this.videosService.importFromUrl(user.sub, dto);

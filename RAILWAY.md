@@ -67,6 +67,7 @@ Plan: **Hobby ($5/mo)** to start.
 
 ```env
 NODE_ENV=production
+LOG_HTTP_BODIES=false
 API_HOST=0.0.0.0
 
 # ⬇ After generating Railway domain:

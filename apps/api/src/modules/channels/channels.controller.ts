@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -28,6 +30,12 @@ export class ChannelsController {
   }
 
   @Public()
+  @Throttle({
+    [THROTTLE.public.name]: {
+      limit: THROTTLE.public.limit,
+      ttl: THROTTLE.public.ttl,
+    },
+  })
   @Get('resolve')
   async resolve(@Query('q') q: string) {
     if (!q?.trim()) {

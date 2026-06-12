@@ -1,7 +1,16 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedPaths = ["/dashboard", "/upload", "/create", "/clips", "/billing", "/settings", "/setup"];
+const protectedPaths = [
+  "/dashboard",
+  "/analytics",
+  "/upload",
+  "/create",
+  "/clips",
+  "/billing",
+  "/settings",
+  "/setup",
+];
 
 const ONBOARDING_COOKIE = "autoclipr_onboarding_complete";
 
@@ -57,9 +66,15 @@ export async function middleware(request: NextRequest) {
 
   const onboardingDone =
     request.cookies.get(ONBOARDING_COOKIE)?.value === "1";
-  const isDashboardArea = ["/dashboard", "/upload", "/create", "/clips", "/billing", "/settings"].some(
-    (p) => request.nextUrl.pathname.startsWith(p)
-  );
+  const isDashboardArea = [
+    "/dashboard",
+    "/analytics",
+    "/upload",
+    "/create",
+    "/clips",
+    "/billing",
+    "/settings",
+  ].some((p) => request.nextUrl.pathname.startsWith(p));
   if (user && isDashboardArea && !onboardingDone) {
     return NextResponse.redirect(new URL("/setup/platforms", request.url));
   }

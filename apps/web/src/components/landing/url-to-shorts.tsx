@@ -57,9 +57,9 @@ const pipeline = [
 
 export function UrlToShorts() {
   return (
-    <section className="relative py-24 sm:py-32">
+    <section className="relative px-4 py-24 sm:px-6 sm:py-32">
       <div className="absolute inset-0 bg-mesh-violet opacity-40" aria-hidden />
-      <div className="container relative">
+      <div className="relative mx-auto max-w-7xl">
         <Reveal className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-medium uppercase tracking-widest text-violet-400">
             Any video → viral shorts

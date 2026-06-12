@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { bullMqConnectionOptions } from './config/redis-connection';
+import { throttlerModuleOptions } from './config/throttle.config';
 import { RedisHealthService } from './redis/redis-health.service';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
@@ -23,6 +26,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
       load: [configuration],
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
+    ThrottlerModule.forRoot(throttlerModuleOptions),
     BullModule.forRootAsync({
       useFactory: () => ({
         connection: bullMqConnectionOptions(),
@@ -40,6 +44,9 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     PlatformsModule,
     AnalyticsModule,
   ],
-  providers: [RedisHealthService],
+  providers: [
+    RedisHealthService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

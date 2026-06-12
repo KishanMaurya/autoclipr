@@ -2,6 +2,7 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
+import { shouldLogHttpBodies } from '../utils/http-log.util';
 import { formatJsonForLog } from '../utils/log-sanitize.util';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
     const { method, originalUrl, query, params, body, headers } = req;
     const requestId = (headers['x-request-id'] as string) ?? randomUUID().slice(0, 8);
     const started = Date.now();
-    const logBodies = process.env.LOG_HTTP_BODIES !== 'false';
+    const logBodies = shouldLogHttpBodies();
     const userId = req.user?.sub ?? req.user?.id;
 
     const reqPayload = {

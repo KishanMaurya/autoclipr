@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ApiResponse } from '../../common/api-response';
 import { Public } from '../../common/decorators/public.decorator';
@@ -50,6 +51,7 @@ export class PlatformsController {
   }
 
   @Public()
+  @SkipThrottle()
   @Get('youtube/callback')
   async youtubeCallback(
     @Query('code') code: string,

@@ -7,6 +7,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
@@ -21,6 +23,12 @@ import { PublishClipDto } from '../platforms/dto/platform.dto';
 export class ClipsController {
   constructor(private readonly clipsService: ClipsService) {}
 
+  @Throttle({
+    [THROTTLE.expensive.name]: {
+      limit: THROTTLE.expensive.limit,
+      ttl: THROTTLE.expensive.ttl,
+    },
+  })
   @Post('generate')
   async generate(@CurrentUser() user: AuthUser, @Body() dto: GenerateClipsDto) {
     const job = await this.clipsService.generate(user.sub, dto);
