@@ -13,7 +13,10 @@ export default () => ({
   },
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   clipCreditCost: parseInt(process.env.CLIP_CREDIT_COST ?? '1', 10),
-  webAppUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+  webAppUrl:
+    process.env.WEB_APP_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    'http://localhost:3000',
   apiPublicUrl:
     process.env.API_PUBLIC_URL ??
     `http://localhost:${process.env.API_PORT ?? process.env.PORT ?? '8080'}`,

@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ApiResponse } from '../../common/api-response';
@@ -21,7 +22,14 @@ import { PlatformsService } from './platforms.service';
 @Controller('platforms')
 @UseGuards(JwtAuthGuard)
 export class PlatformsController {
-  constructor(private readonly platformsService: PlatformsService) {}
+  constructor(
+    private readonly platformsService: PlatformsService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private webAppUrl(): string {
+    return this.config.get<string>('webAppUrl') ?? 'http://localhost:3000';
+  }
 
   @Get()
   async list(@CurrentUser() user: AuthUser) {
@@ -59,7 +67,7 @@ export class PlatformsController {
     @Query('error') error: string | undefined,
     @Res() res: Response,
   ) {
-    const webUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const webUrl = this.webAppUrl();
 
     if (error || !code || !state) {
       return res.redirect(

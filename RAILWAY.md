@@ -72,6 +72,8 @@ API_HOST=0.0.0.0
 
 # ⬇ After generating Railway domain:
 API_PUBLIC_URL=https://autoclipr-api-production.up.railway.app
+# ⬇ Where users land after YouTube OAuth (must match Vercel domain):
+WEB_APP_URL=https://autoclipr.com
 ALLOWED_ORIGINS=https://autoclipr.com,https://www.autoclipr.com,https://autoclipr.ai,https://autoclipr.io,https://YOUR-APP.vercel.app,http://localhost:3000
 
 SUPABASE_URL=https://mkwbdscwxpisrazqegtw.supabase.co
