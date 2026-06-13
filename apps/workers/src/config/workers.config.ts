@@ -32,6 +32,8 @@ export default () => ({
     'youtube:player_client=android,web;player_skip=webpage',
   /** Optional Netscape cookies file — most reliable fix for YouTube on datacenter IPs. */
   ytdlpCookiesFile: process.env.YTDLP_COOKIES_FILE ?? '',
+  /** Base64-encoded Netscape cookies file (Railway-friendly alternative to a file path). */
+  ytdlpCookiesB64: process.env.YTDLP_COOKIES_B64 ?? '',
   /** When true, continue pipeline with timed placeholder transcript if OpenAI quota/billing fails */
   openaiFallbackOnQuota: process.env.OPENAI_FALLBACK_ON_QUOTA !== 'false',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',

@@ -1,28 +1,78 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { runCommand } from './exec.util';
 import { resolveBinary } from './resolve-binary.util';
+import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
+
+const DEFAULT_EXTRACTOR_VARIANTS = [
+  'youtube:player_client=android,web;player_skip=webpage',
+  'youtube:player_client=tv_embedded,web;player_skip=webpage',
+  'youtube:player_client=mweb,web;player_skip=webpage',
+];
 
 @Injectable()
-export class YtdlpService {
+export class YtdlpService implements OnModuleInit {
   private readonly logger = new Logger(YtdlpService.name);
   private readonly ytdlp: string;
+  private cookiesFile?: string;
 
   constructor(private readonly config: ConfigService) {
     this.ytdlp = resolveBinary(this.config.get<string>('ytdlpPath'), 'yt-dlp');
     this.logger.log(`yt-dlp binary: ${this.ytdlp}`);
   }
 
-  private buildBaseArgs(outTemplate: string, format: string): string[] {
+  async onModuleInit(): Promise<void> {
+    try {
+      this.cookiesFile = await resolveYtdlpCookiesFile({
+        cookiesFile: this.config.get<string>('ytdlpCookiesFile'),
+        cookiesB64: this.config.get<string>('ytdlpCookiesB64'),
+      });
+      if (this.cookiesFile) {
+        this.logger.log(`YouTube cookies enabled (${this.cookiesFile})`);
+      } else {
+        this.logger.warn(
+          'No YTDLP cookies configured — YouTube may block downloads from cloud IPs',
+        );
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to load YouTube cookies: ${message}`);
+    }
+  }
+
+  private getExtractorVariants(): string[] {
+    const custom = this.config.get<string>('ytdlpExtractorArgs')?.trim();
+    if (custom) return [custom];
+
+    if (this.cookiesFile) {
+      return [
+        'youtube:player_client=web,android;player_skip=webpage',
+        ...DEFAULT_EXTRACTOR_VARIANTS,
+      ];
+    }
+
+    return DEFAULT_EXTRACTOR_VARIANTS;
+  }
+
+  private buildBaseArgs(
+    outTemplate: string,
+    format: string,
+    extractorArgs: string,
+  ): string[] {
     const args = [
       '--no-playlist',
-      '--no-warnings',
       '--retries',
-      '10',
+      '5',
       '--fragment-retries',
-      '10',
+      '5',
+      '--extractor-retries',
+      '3',
+      '--sleep-interval',
+      '1',
+      '--sleep-requests',
+      '1',
       '--socket-timeout',
       '30',
       '-f',
@@ -31,22 +81,21 @@ export class YtdlpService {
       'mp4',
       '-o',
       outTemplate,
+      '--extractor-args',
+      extractorArgs,
     ];
 
-    const extractorArgs = this.config.get<string>('ytdlpExtractorArgs');
-    if (extractorArgs?.trim()) {
-      args.push('--extractor-args', extractorArgs.trim());
-    }
-
-    const cookiesFile = this.config.get<string>('ytdlpCookiesFile')?.trim();
-    if (cookiesFile) {
-      args.push('--cookies', cookiesFile);
+    if (this.cookiesFile) {
+      args.push('--cookies', this.cookiesFile);
     }
 
     return args;
   }
 
-  async download(url: string, outputPath: string): Promise<{ title?: string; durationSeconds?: number }> {
+  async download(
+    url: string,
+    outputPath: string,
+  ): Promise<{ title?: string; durationSeconds?: number }> {
     const outDir = path.dirname(outputPath);
     const outTemplate = path.join(outDir, 'source.%(ext)s');
     const maxHeight = this.config.get<number>('ytdlpMaxHeight') ?? 0;
@@ -68,38 +117,33 @@ export class YtdlpService {
           ].join('/')
         : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best';
 
-    const args = this.buildBaseArgs(outTemplate, format);
+    const variants = this.getExtractorVariants();
+    let lastError: Error | null = null;
 
-    if (maxDuration > 0) {
-      args.push('--match-filter', `duration<=${maxDuration}`);
-    }
-
-    args.push(url);
-
-    try {
-      await runCommand(this.ytdlp, args, { timeoutMs: 1_800_000 });
-    } catch (err) {
-      throw new Error(this.formatYtdlpError(err));
-    }
-
-    const exists = await fs.stat(outputPath).then(() => true).catch(() => false);
-    if (!exists) {
-      const dirFiles = await fs.readdir(outDir);
-      const mp4 = dirFiles.find((f) => f.endsWith('.mp4'));
-      if (mp4) {
-        const found = path.join(outDir, mp4);
-        await fs.rename(found, outputPath);
-      } else {
-        throw new Error('yt-dlp finished but output MP4 was not found');
+    for (let i = 0; i < variants.length; i++) {
+      const extractorArgs = variants[i];
+      try {
+        await this.runDownload(url, outDir, outTemplate, format, maxDuration, extractorArgs);
+        break;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        const retryable = this.isRetryableYoutubeError(lastError.message);
+        const hasMore = i < variants.length - 1;
+        if (!retryable || !hasMore) {
+          throw new Error(this.formatYtdlpError(lastError));
+        }
+        this.logger.warn(
+          `yt-dlp retry (${i + 2}/${variants.length}) after: ${lastError.message.slice(0, 160)}`,
+        );
+        await this.cleanPartialDownload(outDir);
       }
     }
 
+    await this.ensureOutputFile(outDir, outputPath);
+
     let title: string | undefined;
     try {
-      const { stdout } = await runCommand(this.ytdlp, ['--print', '%(title)s', '--no-download', url], {
-        timeoutMs: 60_000,
-      });
-      title = stdout.trim() || undefined;
+      title = await this.fetchTitle(url, variants[0]);
     } catch {
       // optional metadata
     }
@@ -107,17 +151,79 @@ export class YtdlpService {
     return { title };
   }
 
+  private async runDownload(
+    url: string,
+    outDir: string,
+    outTemplate: string,
+    format: string,
+    maxDuration: number,
+    extractorArgs: string,
+  ): Promise<void> {
+    const args = this.buildBaseArgs(outTemplate, format, extractorArgs);
+    if (maxDuration > 0) {
+      args.push('--match-filter', `duration<=${maxDuration}`);
+    }
+    args.push(url);
+
+    await runCommand(this.ytdlp, args, { timeoutMs: 1_800_000 });
+  }
+
+  private async ensureOutputFile(outDir: string, outputPath: string): Promise<void> {
+    const exists = await fs.stat(outputPath).then(() => true).catch(() => false);
+    if (exists) return;
+
+    const dirFiles = await fs.readdir(outDir);
+    const mp4 = dirFiles.find((f) => f.endsWith('.mp4'));
+    if (mp4) {
+      await fs.rename(path.join(outDir, mp4), outputPath);
+      return;
+    }
+
+    throw new Error('yt-dlp finished but output MP4 was not found');
+  }
+
+  private async cleanPartialDownload(outDir: string): Promise<void> {
+    const files = await fs.readdir(outDir).catch(() => [] as string[]);
+    await Promise.all(
+      files
+        .filter((f) => f.startsWith('source.') || f.endsWith('.part'))
+        .map((f) => fs.rm(path.join(outDir, f), { force: true })),
+    );
+  }
+
+  private async fetchTitle(url: string, extractorArgs: string): Promise<string | undefined> {
+    const args = ['--print', '%(title)s', '--no-download', '--extractor-args', extractorArgs];
+    if (this.cookiesFile) {
+      args.push('--cookies', this.cookiesFile);
+    }
+    args.push(url);
+
+    const { stdout } = await runCommand(this.ytdlp, args, { timeoutMs: 60_000 });
+    return stdout.trim() || undefined;
+  }
+
+  private isRetryableYoutubeError(message: string): boolean {
+    return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check/i.test(
+      message,
+    );
+  }
+
   private formatYtdlpError(err: unknown): string {
     const raw = err instanceof Error ? err.message : String(err);
-    if (/sign in to confirm you're not a bot/i.test(raw)) {
+    const normalized = raw.replace(/^(yt-dlp failed:\s*)+/i, '').trim();
+
+    if (/sign in to confirm|not a bot|bot check/i.test(normalized)) {
       return (
         'YouTube blocked the download from our cloud server (bot check). ' +
-        'Try again later, upload the MP4 file directly, or ask support to enable YouTube cookies on the worker.'
+        'Upload the MP4 file directly on the Upload page, try again later, ' +
+        'or enable YouTube cookies on the worker (YTDLP_COOKIES_B64 in Railway).'
       );
     }
-    if (/private video|members.only|login required/i.test(raw)) {
-      return 'This YouTube video is private or requires sign-in. Use a public video or upload the file directly.';
+    if (/private video|members.only|login required|confirm your age/i.test(normalized)) {
+      return 'This YouTube video is private, age-restricted, or requires sign-in. Use a public video or upload the file directly.';
     }
-    return `yt-dlp failed: ${raw}`;
+
+    const short = normalized.length <= 280 ? normalized : `${normalized.slice(0, 277).trim()}…`;
+    return short.startsWith('yt-dlp') ? short : `yt-dlp failed: ${short}`;
   }
 }

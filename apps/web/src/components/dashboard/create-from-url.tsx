@@ -69,6 +69,13 @@ function formatPipelineError(raw?: string | null): string {
     return "Too many status checks. Please wait a few seconds and click Try again.";
   }
 
+  if (/sign in to confirm|not a bot|bot check|YTDLP_COOKIES/i.test(raw)) {
+    return (
+      "YouTube blocked the download from our server. Upload the MP4 directly on the Upload page, " +
+      "or try again in a few hours."
+    );
+  }
+
   const withoutBanner = raw
     .replace(/ffmpeg version [\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")
     .replace(/configuration:[\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")

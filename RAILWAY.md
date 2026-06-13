@@ -146,6 +146,8 @@ STORAGE_BUCKET_CLIPS=clips
 FFMPEG_PATH=ffmpeg
 FFPROBE_PATH=ffprobe
 YTDLP_PATH=yt-dlp
+# Optional — fixes "Sign in to confirm you're not a bot" on Railway (see Troubleshooting)
+# YTDLP_COOKIES_B64=<base64 of Netscape cookies.txt>
 ```
 
 ### Verify
@@ -247,6 +249,23 @@ API and workers **do not need** their own `.env` files in the repo — Railway v
 | Clips stuck queued | Workers down or `REDIS_URL` mismatch |
 | OAuth redirect error | `GOOGLE_REDIRECT_URI` must match Google Console exactly |
 | ffmpeg crash | Workers need Dockerfile builder, 2 GB+ RAM |
+| YouTube `Sign in to confirm you're not a bot` | Export browser cookies → set `YTDLP_COOKIES_B64` on **workers** (see below) |
+
+### YouTube bot check (`yt-dlp` blocked on Railway)
+
+YouTube often blocks downloads from cloud/datacenter IPs. The reliable fix is **authenticated cookies**:
+
+1. In Chrome, install **Get cookies.txt LOCALLY** (or similar).
+2. Open [youtube.com](https://youtube.com) while signed in → export cookies as `cookies.txt` (Netscape format).
+3. Base64-encode the file:
+   - **PowerShell:** `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cookies.txt"))`
+   - **macOS/Linux:** `base64 -w0 cookies.txt` (or `base64 cookies.txt | tr -d '\n'`)
+4. Railway → **workers** → Variables → add `YTDLP_COOKIES_B64` = paste the base64 string (mark as secret).
+5. Redeploy workers. Logs should show `YouTube cookies enabled`.
+
+**Workaround for users:** upload the MP4 on `/upload` instead of pasting a YouTube URL.
+
+Cookies expire periodically — re-export and update the variable if downloads start failing again.
 
 ---
 
