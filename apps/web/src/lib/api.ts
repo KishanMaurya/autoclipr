@@ -1,3 +1,9 @@
+import {
+  beginApiLoading,
+  endApiLoading,
+} from "./api-loading-store";
+import { shouldSkipGlobalApiLoader } from "./api-loading";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export type APIResponse<T> = {
@@ -7,11 +13,17 @@ export type APIResponse<T> = {
   meta?: { page: number; limit: number; total: number; has_more: boolean };
 };
 
+export type ApiFetchOptions = RequestInit & {
+  token?: string;
+  /** Skip the global overlay loader for this request. */
+  skipGlobalLoader?: boolean;
+};
+
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit & { token?: string } = {}
+  options: ApiFetchOptions = {},
 ): Promise<APIResponse<T>> {
-  const { token, ...init } = options;
+  const { token, skipGlobalLoader, ...init } = options;
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(init.headers as Record<string, string>),
@@ -20,8 +32,18 @@ export async function apiFetch<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-  return res.json();
+  const trackLoader =
+    typeof window !== "undefined" &&
+    !shouldSkipGlobalApiLoader(path, skipGlobalLoader);
+
+  if (trackLoader) beginApiLoading();
+
+  try {
+    const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+    return res.json();
+  } finally {
+    if (trackLoader) endApiLoading();
+  }
 }
 
 export interface Profile {
