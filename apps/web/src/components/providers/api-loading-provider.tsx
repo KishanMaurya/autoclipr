@@ -1,18 +1,19 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { Suspense, useSyncExternalStore } from "react";
 import { Loader2 } from "lucide-react";
 import {
-  getApiLoadingPending,
+  getLoadingPending,
   subscribeApiLoading,
 } from "@/lib/api-loading-store";
+import { NavigationLoadingWatcher } from "./navigation-loading-watcher";
 
 function subscribe(callback: () => void) {
   return subscribeApiLoading(callback);
 }
 
 function getSnapshot() {
-  return getApiLoadingPending() > 0;
+  return getLoadingPending() > 0;
 }
 
 function getServerSnapshot() {
@@ -24,6 +25,9 @@ export function ApiLoadingProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <>
+      <Suspense fallback={null}>
+        <NavigationLoadingWatcher />
+      </Suspense>
       {children}
       {isLoading && (
         <div

@@ -1,8 +1,14 @@
-let pending = 0;
+let apiPending = 0;
+let navPending = 0;
 const listeners = new Set<() => void>();
 
+export function getLoadingPending(): number {
+  return apiPending + navPending;
+}
+
+/** @deprecated Use getLoadingPending — kept for existing imports */
 export function getApiLoadingPending(): number {
-  return pending;
+  return getLoadingPending();
 }
 
 export function subscribeApiLoading(listener: () => void): () => void {
@@ -15,11 +21,22 @@ function notify() {
 }
 
 export function beginApiLoading(): void {
-  pending += 1;
+  apiPending += 1;
   notify();
 }
 
 export function endApiLoading(): void {
-  pending = Math.max(0, pending - 1);
+  apiPending = Math.max(0, apiPending - 1);
+  notify();
+}
+
+export function beginNavigationLoading(): void {
+  navPending += 1;
+  notify();
+}
+
+export function resetNavigationLoading(): void {
+  if (navPending === 0) return;
+  navPending = 0;
   notify();
 }

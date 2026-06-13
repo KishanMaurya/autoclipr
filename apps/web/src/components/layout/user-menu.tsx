@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
+import { beginNavigationLoading } from "@/lib/api-loading-store";
 import {
   markOnboardingComplete,
   DASHBOARD_CHANNEL_PATH,
@@ -53,6 +54,7 @@ export function UserMenu({
   const displayLabel = getUserDisplayLabel({ email, phone, fullName });
 
   async function signOut() {
+    beginNavigationLoading();
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
@@ -60,6 +62,7 @@ export function UserMenu({
   }
 
   function goDashboard() {
+    beginNavigationLoading();
     markOnboardingComplete();
     router.push("/dashboard");
   }
@@ -96,7 +99,7 @@ export function UserMenu({
 
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/" className="cursor-pointer">
+            <Link href="/" onClick={() => beginNavigationLoading()} className="cursor-pointer">
               <Home className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Home
             </Link>
@@ -118,13 +121,21 @@ export function UserMenu({
         <DropdownMenuLabel>Setup</DropdownMenuLabel>
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href={DASHBOARD_CHANNEL_PATH} className="cursor-pointer">
+            <Link
+              href={DASHBOARD_CHANNEL_PATH}
+              onClick={() => beginNavigationLoading()}
+              className="cursor-pointer"
+            >
               <Link2 className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Channel Setup
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={DASHBOARD_PLATFORM_PATH} className="cursor-pointer">
+            <Link
+              href={DASHBOARD_PLATFORM_PATH}
+              onClick={() => beginNavigationLoading()}
+              className="cursor-pointer"
+            >
               <Share2 className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Platform Connection
             </Link>
@@ -136,7 +147,7 @@ export function UserMenu({
         <DropdownMenuLabel>Account</DropdownMenuLabel>
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/billing" className="cursor-pointer">
+            <Link href="/billing" onClick={() => beginNavigationLoading()} className="cursor-pointer">
               <CreditCard className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Manage Membership
             </Link>
