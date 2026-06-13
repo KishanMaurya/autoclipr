@@ -31,7 +31,7 @@ export class ChannelsController {
 
   @Public()
   @Throttle({
-    [THROTTLE.public.name]: {
+    default: {
       limit: THROTTLE.public.limit,
       ttl: THROTTLE.public.ttl,
     },

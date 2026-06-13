@@ -3,6 +3,19 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
+const FFMPEG_NOISE =
+  /^(ffmpeg|ffprobe) version |^Copyright |^  (lib|configuration:|built with )/i;
+
+function formatCommandError(bin: string, detail: string): string {
+  const lines = detail
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !FFMPEG_NOISE.test(line));
+
+  const meaningful = lines.length > 0 ? lines.join(' ') : detail.replace(/\s+/g, ' ').trim();
+  return `${bin} failed: ${meaningful.slice(0, 500)}`;
+}
+
 export async function runCommand(
   bin: string,
   args: string[],
@@ -32,7 +45,7 @@ export async function runCommand(
       );
     }
 
-    throw new Error(`${bin} failed: ${detail.slice(0, 500)}`);
+    throw new Error(formatCommandError(bin, detail));
   }
 }
 

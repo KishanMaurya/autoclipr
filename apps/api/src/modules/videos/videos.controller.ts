@@ -29,7 +29,7 @@ export class VideosController {
   }
 
   @Throttle({
-    [THROTTLE.expensive.name]: {
+    default: {
       limit: THROTTLE.expensive.limit,
       ttl: THROTTLE.expensive.ttl,
     },
@@ -65,6 +65,12 @@ export class VideosController {
     });
   }
 
+  @Throttle({
+    default: {
+      limit: THROTTLE.polling.limit,
+      ttl: THROTTLE.polling.ttl,
+    },
+  })
   @Get(':id/pipeline')
   async pipeline(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const data = await this.videosService.getPipeline(user.sub, id);

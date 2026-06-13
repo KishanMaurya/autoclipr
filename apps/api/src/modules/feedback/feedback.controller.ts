@@ -16,7 +16,7 @@ export class FeedbackController {
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({
-    [THROTTLE.public.name]: {
+    default: {
       limit: THROTTLE.public.limit,
       ttl: THROTTLE.public.ttl,
     },

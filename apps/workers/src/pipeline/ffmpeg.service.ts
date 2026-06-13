@@ -147,7 +147,7 @@ export class FfmpegService {
 
   private subtitleForceStyle(captionStyle: string): string {
     const base =
-      'FontName=Arial,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Outline=2,Shadow=1,Alignment=2,MarginV=80';
+      'FontName=DejaVu Sans,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Outline=2,Shadow=1,Alignment=2,MarginV=80';
 
     switch (captionStyle) {
       case 'karaoke':

@@ -58,6 +58,28 @@ const STEP_ICONS: Record<string, typeof Sparkles> = {
   export: Share2,
 };
 
+const PIPELINE_POLL_MS = 3000;
+
+function formatPipelineError(raw?: string | null): string {
+  if (!raw?.trim()) {
+    return "Processing failed. Please try again in a moment.";
+  }
+
+  if (/ThrottlerException|Too Many Requests|TOO_MANY_REQUESTS/i.test(raw)) {
+    return "Too many status checks. Please wait a few seconds and click Try again.";
+  }
+
+  const withoutBanner = raw
+    .replace(/ffmpeg version [\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")
+    .replace(/configuration:[\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")
+    .trim();
+
+  const message = withoutBanner || raw;
+  if (message.length <= 240) return message;
+
+  return `${message.slice(0, 237).trim()}…`;
+}
+
 export function CreateFromUrl() {
   const router = useRouter();
   const [url, setUrl] = useState("");
@@ -115,10 +137,7 @@ export function CreateFromUrl() {
       pipeline.status === "ready";
 
     if (failed) {
-      setError(
-        pipeline.job?.error ??
-          "Processing failed. Ensure workers, Redis, yt-dlp, and FFmpeg are running."
-      );
+      setError(formatPipelineError(pipeline.job?.error));
       setProcessing(false);
       return;
     }
@@ -135,10 +154,7 @@ export function CreateFromUrl() {
       setPipeline(data);
 
       if (data.job?.status === "failed" || data.status === "failed") {
-        setError(
-          data.job?.error ??
-            "Processing failed. Ensure workers, Redis, yt-dlp, and FFmpeg are running."
-        );
+        setError(formatPipelineError(data.job?.error));
         setProcessing(false);
         clearInterval(interval);
         return;
@@ -148,7 +164,7 @@ export function CreateFromUrl() {
         setProcessing(false);
         clearInterval(interval);
       }
-    }, 2000);
+    }, PIPELINE_POLL_MS);
 
     return () => clearInterval(interval);
   }, [pipeline?.video_id, pollPipeline]);

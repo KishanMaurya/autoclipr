@@ -3,15 +3,22 @@ export const THROTTLE = {
   /** General API traffic */
   default: { name: 'default', ttl: 60_000, limit: 120 },
   /** Public unauthenticated endpoints (channel lookup) */
-  public: { name: 'public', ttl: 60_000, limit: 30 },
+  public: { ttl: 60_000, limit: 30 },
   /** Expensive jobs: URL import, clip generation */
-  expensive: { name: 'expensive', ttl: 60_000, limit: 10 },
+  expensive: { ttl: 60_000, limit: 10 },
   /** Auth profile sync */
-  auth: { name: 'auth', ttl: 60_000, limit: 30 },
+  auth: { ttl: 60_000, limit: 30 },
   /** YouTube metrics refresh (external API quota) */
-  analyticsRefresh: { name: 'analyticsRefresh', ttl: 60_000, limit: 5 },
+  analyticsRefresh: { ttl: 60_000, limit: 5 },
+  /** Pipeline status polling during long-running jobs */
+  polling: { ttl: 60_000, limit: 60 },
 } as const;
 
-export const throttlerModuleOptions = Object.values(THROTTLE).map(
-  ({ name, ttl, limit }) => ({ name, ttl, limit }),
-);
+/** Only register the default bucket globally; route-specific limits use @Throttle({ default: … }). */
+export const throttlerModuleOptions = [
+  {
+    name: THROTTLE.default.name,
+    ttl: THROTTLE.default.ttl,
+    limit: THROTTLE.default.limit,
+  },
+];

@@ -8,8 +8,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache ffmpeg python3 py3-pip \
-  && pip3 install --break-system-packages -U yt-dlp
+RUN apk add --no-cache ffmpeg python3 py3-pip fontconfig ttf-dejavu \
+  && pip3 install --break-system-packages -U yt-dlp \
+  && fc-cache -f
 
 ENV NODE_ENV=production
 COPY package.json package-lock.json* ./

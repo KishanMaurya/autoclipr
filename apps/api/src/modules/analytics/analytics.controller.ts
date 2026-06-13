@@ -18,7 +18,7 @@ export class AnalyticsController {
   }
 
   @Throttle({
-    [THROTTLE.analyticsRefresh.name]: {
+    default: {
       limit: THROTTLE.analyticsRefresh.limit,
       ttl: THROTTLE.analyticsRefresh.ttl,
     },

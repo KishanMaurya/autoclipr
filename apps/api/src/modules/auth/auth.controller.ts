@@ -12,7 +12,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Throttle({
-    [THROTTLE.auth.name]: { limit: THROTTLE.auth.limit, ttl: THROTTLE.auth.ttl },
+    default: { limit: THROTTLE.auth.limit, ttl: THROTTLE.auth.ttl },
   })
   @Post('sync')
   @UseGuards(JwtAuthGuard)

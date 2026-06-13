@@ -24,7 +24,7 @@ export class ClipsController {
   constructor(private readonly clipsService: ClipsService) {}
 
   @Throttle({
-    [THROTTLE.expensive.name]: {
+    default: {
       limit: THROTTLE.expensive.limit,
       ttl: THROTTLE.expensive.ttl,
     },
