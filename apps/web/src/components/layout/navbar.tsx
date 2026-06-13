@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { resolveUserFullName } from "@/lib/user-avatar";
 import { UserMenu } from "./user-menu";
 
 const links = [
@@ -47,11 +48,7 @@ export async function Navbar() {
             <UserMenu
               email={user.email}
               phone={user.phone}
-              fullName={
-                typeof user.user_metadata?.full_name === "string"
-                  ? user.user_metadata.full_name
-                  : undefined
-              }
+              fullName={resolveUserFullName(user.user_metadata)}
               avatarUrl={
                 typeof user.user_metadata?.avatar_url === "string"
                   ? user.user_metadata.avatar_url

@@ -63,7 +63,7 @@ export class UsersRepository {
 
   async updateProfile(
     userId: string,
-    patch: { full_name?: string; email?: string; phone?: string },
+    patch: { full_name?: string; email?: string; phone?: string; avatar_url?: string | null },
   ): Promise<Profile> {
     const updates: Record<string, string | null> = {
       updated_at: new Date().toISOString(),
@@ -71,6 +71,7 @@ export class UsersRepository {
     if (patch.full_name !== undefined) updates.full_name = patch.full_name || null;
     if (patch.email !== undefined) updates.email = patch.email;
     if (patch.phone !== undefined) updates.phone = patch.phone || null;
+    if (patch.avatar_url !== undefined) updates.avatar_url = patch.avatar_url || null;
 
     const { data, error } = await this.supabase
       .getClient()

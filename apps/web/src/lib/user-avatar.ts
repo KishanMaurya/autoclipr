@@ -25,11 +25,35 @@ export function isPhoneOnlyUser(
   return !!phone?.trim() && !email?.trim();
 }
 
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
 function normalizeStoredAvatar(avatar?: string | null, phone?: string | null): string | null {
   const value = avatar?.trim();
   if (!value || value === "📱") {
     return phone?.trim() ? resolvePhoneAvatar(phone) : null;
   }
+  // OAuth providers store image URLs in avatar_url — not display text.
+  if (isHttpUrl(value)) return null;
+  return value;
+}
+
+export function resolveUserFullName(
+  metadata?: Record<string, unknown> | null,
+): string | null {
+  const fullName = metadata?.full_name;
+  if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
+
+  const name = metadata?.name;
+  if (typeof name === "string" && name.trim()) return name.trim();
+
+  return null;
+}
+
+export function getUserAvatarImageUrl(avatarUrl?: string | null): string | null {
+  const value = avatarUrl?.trim();
+  if (!value || !isHttpUrl(value)) return null;
   return value;
 }
 

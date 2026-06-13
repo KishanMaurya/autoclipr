@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { apiFetch, type Profile } from "@/lib/api";
+import { resolveUserFullName } from "@/lib/user-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteAccountSection } from "@/components/dashboard/delete-account-section";
 import { SettingsForm } from "@/components/dashboard/settings-form";
@@ -42,7 +43,12 @@ export default async function SettingsPage() {
         <CardContent>
           <SettingsForm
             email={authEmail}
-            fullName={profile?.full_name ?? authUser.user_metadata?.full_name ?? ""}
+            fullName={
+              profile?.full_name ??
+              resolveUserFullName(authUser.user_metadata) ??
+              ""
+            }
+            avatarUrl={profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? ""}
             phone={authPhone}
             emailEditable={needsEmail}
           />

@@ -9,4 +9,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  /** Public URL after avatar upload, or empty string to remove. */
+  @IsOptional()
+  @IsString()
+  avatar_url?: string;
 }

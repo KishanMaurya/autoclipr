@@ -9,6 +9,7 @@ export default () => ({
     videos: process.env.STORAGE_BUCKET_VIDEOS ?? 'videos',
     clips: process.env.STORAGE_BUCKET_CLIPS ?? 'clips',
     exports: process.env.STORAGE_BUCKET_EXPORTS ?? 'exports',
+    avatars: process.env.STORAGE_BUCKET_AVATARS ?? 'avatars',
   },
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   clipCreditCost: parseInt(process.env.CLIP_CREDIT_COST ?? '1', 10),

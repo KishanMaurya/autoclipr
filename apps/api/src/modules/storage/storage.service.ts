@@ -46,6 +46,15 @@ export class StorageService {
     return this.config.get<string>('buckets.clips') ?? 'clips';
   }
 
+  avatarsBucket(): string {
+    return this.config.get<string>('buckets.avatars') ?? 'avatars';
+  }
+
+  getPublicObjectUrl(bucket: string, objectPath: string): string {
+    const base = (this.config.get<string>('supabaseUrl') ?? '').replace(/\/$/, '');
+    return `${base}/storage/v1/object/public/${bucket}/${objectPath}`;
+  }
+
   clipThumbPath(clipStoragePath: string): string {
     if (!clipStoragePath) return '';
     if (/_thumb\.jpe?g$/i.test(clipStoragePath)) return clipStoragePath;

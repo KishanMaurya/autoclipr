@@ -10,7 +10,7 @@ import {
   CreditCard,
   LogOut,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/onboarding";
 import {
   getUserAvatarFallback,
+  getUserAvatarImageUrl,
   getUserDisplayLabel,
   isEmojiAvatar,
 } from "@/lib/user-avatar";
@@ -48,6 +49,7 @@ export function UserMenu({
 }: UserMenuProps) {
   const router = useRouter();
   const avatarFallback = getUserAvatarFallback({ email, phone, fullName, avatarUrl });
+  const avatarImageUrl = getUserAvatarImageUrl(avatarUrl);
   const displayLabel = getUserDisplayLabel({ email, phone, fullName });
 
   async function signOut() {
@@ -71,6 +73,9 @@ export function UserMenu({
           aria-label="Open account menu"
         >
           <Avatar className="h-9 w-9 ring-2 ring-white/10">
+            {avatarImageUrl && (
+              <AvatarImage src={avatarImageUrl} alt="" referrerPolicy="no-referrer" />
+            )}
             <AvatarFallback
               className={cn(
                 isEmojiAvatar(avatarFallback) ? "text-lg" : "text-sm font-bold",
