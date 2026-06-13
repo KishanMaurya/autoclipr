@@ -15,12 +15,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { apiFetch, type Clip, type Video as VideoType, type YoutubeChannel } from "@/lib/api";
-import { getConnectedPlatforms } from "@/lib/platforms-storage";
+import { apiFetch, type Clip, type PlatformConnection, type Video as VideoType, type YoutubeChannel } from "@/lib/api";
+import { setConnectedPlatforms } from "@/lib/platforms-storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipsList } from "@/components/dashboard/clips-list";
+import { DashboardPlatformsPanel } from "@/components/dashboard/dashboard-platforms-panel";
 import {
   ConnectedChannelRow,
   ConnectedChannelsHeading,
@@ -30,7 +31,7 @@ type DashboardViewProps = {
   initialChannels: YoutubeChannel[];
   initialClips: Clip[];
   initialVideos: VideoType[];
-  initialPlatformCount: number;
+  initialPlatforms: PlatformConnection[];
 };
 
 function TikTokStatIcon() {
@@ -45,15 +46,16 @@ export function DashboardView({
   initialChannels,
   initialClips,
   initialVideos,
-  initialPlatformCount,
+  initialPlatforms,
 }: DashboardViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [channels, setChannels] = useState(initialChannels);
   const [clips, setClips] = useState(initialClips);
   const [videos, setVideos] = useState(initialVideos);
-  const [platformCount, setPlatformCount] = useState(initialPlatformCount);
+  const [platformCount, setPlatformCount] = useState(initialPlatforms.length);
   const [activeTab, setActiveTab] = useState("channels");
   const [removingChannelId, setRemovingChannelId] = useState<string | null>(null);
 
@@ -82,14 +84,15 @@ export function DashboardView({
     if (chRes.success && chRes.data) setChannels(chRes.data);
     if (clipsRes.success && clipsRes.data) setClips(clipsRes.data);
     if (videosRes.success && videosRes.data) setVideos(videosRes.data);
-    setPlatformCount(getConnectedPlatforms().length);
+    setRefreshKey((k) => k + 1);
     setRefreshing(false);
     startTransition(() => router.refresh());
   }, [router]);
 
   useEffect(() => {
-    setPlatformCount(getConnectedPlatforms().length);
-  }, []);
+    setPlatformCount(initialPlatforms.length);
+    setConnectedPlatforms(initialPlatforms.map((p) => p.platform));
+  }, [initialPlatforms]);
 
   useEffect(() => {
     const onChannelsUpdated = () => {
@@ -270,31 +273,11 @@ export function DashboardView({
         {/* Platforms tab */}
         <TabsContent value="platforms">
           <TabPanel title="Connected Platforms" onRefresh={refreshData} refreshing={isLoading}>
-            {platformCount === 0 ? (
-              <EmptyState
-                icon={<Share2 className="h-12 w-12" />}
-                title="No Platforms Connected"
-                description="Link TikTok, Instagram, or YouTube to auto-post your clips."
-                action={
-                  <Button variant="gradient" size="sm" asChild>
-                    <Link href="/setup/platforms?from=dashboard">Connect Platforms</Link>
-                  </Button>
-                }
-              />
-            ) : (
-              <ul className="space-y-3">
-                {getConnectedPlatforms().map((id) => (
-                  <li
-                    key={id}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 capitalize"
-                  >
-                    <Share2 className="h-5 w-5 text-violet-400" />
-                    <span className="font-medium">{id}</span>
-                    <span className="ml-auto text-xs text-emerald-400">Connected</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <DashboardPlatformsPanel
+              initialPlatforms={initialPlatforms}
+              refreshKey={refreshKey}
+              onCountChange={setPlatformCount}
+            />
           </TabPanel>
         </TabsContent>
 
