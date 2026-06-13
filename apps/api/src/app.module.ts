@@ -18,6 +18,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { ChannelsModule } from './modules/channels/channels.module';
 import { PlatformsModule } from './modules/platforms/platforms.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ChannelsModule,
     PlatformsModule,
     AnalyticsModule,
+    FeedbackModule,
   ],
   providers: [
     RedisHealthService,

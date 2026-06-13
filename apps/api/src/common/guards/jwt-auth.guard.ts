@@ -57,7 +57,7 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
-  private async verifyToken(token: string): Promise<JWTPayload> {
+  protected async verifyToken(token: string): Promise<JWTPayload> {
     const secret =
       this.config.get<string>('supabaseJwtSecret') ||
       this.config.get<string>('JWT_SECRET');

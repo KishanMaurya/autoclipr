@@ -28,7 +28,10 @@ const columns = [
   },
   {
     title: "Company",
-    links: [{ href: "mailto:hello@autoclipr.ai", label: "Contact" }],
+    links: [
+      { href: "mailto:hello@autoclipr.ai", label: "Contact" },
+      { href: "/feedback", label: "Feedback" },
+    ],
   },
   {
     title: "Legal",
