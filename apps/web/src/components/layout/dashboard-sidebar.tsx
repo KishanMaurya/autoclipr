@@ -139,9 +139,9 @@ export function DashboardSidebar({ credits }: { credits: number }) {
         <div className="border-t border-white/[0.06] p-4">
           <p className="text-xs text-muted-foreground">
             Need help?{" "}
-            <a href="mailto:hello@autoclipr.ai" className="text-emerald-400 hover:underline">
+            <Link href="/contact" className="text-emerald-400 hover:underline">
               Contact support
-            </a>
+            </Link>
           </p>
         </div>
       </aside>

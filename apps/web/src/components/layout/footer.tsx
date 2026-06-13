@@ -29,7 +29,7 @@ const columns = [
   {
     title: "Company",
     links: [
-      { href: "mailto:hello@autoclipr.ai", label: "Contact" },
+      { href: "/contact", label: "Contact" },
       { href: "/feedback", label: "Feedback" },
     ],
   },
