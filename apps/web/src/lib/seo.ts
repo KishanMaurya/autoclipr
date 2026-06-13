@@ -114,6 +114,8 @@ export const SITEMAP_ROUTES = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
   { path: "/pricing", changeFrequency: "monthly" as const, priority: 0.8 },
   { path: "/feedback", changeFrequency: "monthly" as const, priority: 0.5 },
+  { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/terms", changeFrequency: "yearly" as const, priority: 0.4 },
   { path: "/blog", changeFrequency: "weekly" as const, priority: 0.85 },
   ...LANDING_PAGES.map((p) => ({
     path: `/${p.slug}`,
