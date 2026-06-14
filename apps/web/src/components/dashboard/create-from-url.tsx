@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { formatPipelineError } from "@/lib/pipeline-errors";
 
 type PipelineStep = {
   id: string;
@@ -59,33 +60,6 @@ const STEP_ICONS: Record<string, typeof Sparkles> = {
 };
 
 const PIPELINE_POLL_MS = 3000;
-
-function formatPipelineError(raw?: string | null): string {
-  if (!raw?.trim()) {
-    return "Processing failed. Please try again in a moment.";
-  }
-
-  if (/ThrottlerException|Too Many Requests|TOO_MANY_REQUESTS/i.test(raw)) {
-    return "Too many status checks. Please wait a few seconds and click Try again.";
-  }
-
-  if (/sign in to confirm|not a bot|bot check|YTDLP_COOKIES/i.test(raw)) {
-    return (
-      "YouTube blocked the download from our server. Upload the MP4 directly on the Upload page, " +
-      "or try again in a few hours."
-    );
-  }
-
-  const withoutBanner = raw
-    .replace(/ffmpeg version [\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")
-    .replace(/configuration:[\s\S]*?(?=Input #|Error|Invalid|No such|Unable|Could not)/i, "")
-    .trim();
-
-  const message = withoutBanner || raw;
-  if (message.length <= 240) return message;
-
-  return `${message.slice(0, 237).trim()}…`;
-}
 
 export function CreateFromUrl() {
   const router = useRouter();

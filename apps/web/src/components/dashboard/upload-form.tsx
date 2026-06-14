@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload, FileVideo, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api";
+import { formatPipelineError } from "@/lib/pipeline-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,10 +54,7 @@ export function UploadForm() {
       pipeline.clips_created > 0;
 
     if (failed) {
-      setError(
-        pipeline.job?.error ??
-          "Processing failed. Check workers are running and try again."
-      );
+      setError(formatPipelineError(pipeline.job?.error));
       setPhase("idle");
       return;
     }
