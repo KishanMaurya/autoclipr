@@ -1,6 +1,7 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "apps/workers/Dockerfile"
+watchPatterns = ["apps/workers/**", "packages/monitoring/**"]
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

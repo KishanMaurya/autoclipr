@@ -59,12 +59,15 @@ Plan: **Hobby ($5/mo)** to start.
 
 | Setting | Value |
 |---------|--------|
-| Root Directory | `.` (repo root) |
-| Builder | Dockerfile (`railway.toml` + `Dockerfile`) |
+| Root Directory | `.` (repo root — **not** `apps/api`) |
+| Config file | `apps/api/railway.toml` (or use root `railway.toml`) |
+| Builder | **Dockerfile** (from `railway.toml` — not Railpack) |
 | Dockerfile path | `apps/api/Dockerfile` |
 | Public domain | **Generate Domain** (e.g. `autoclipr-api-production.up.railway.app`) |
 
-> **Docker build:** Set Railway **Root Directory** to the **repo root** (`.`) and **Dockerfile path** to `apps/api/Dockerfile` so `packages/monitoring` is included. See [observability/new-relic/README.md](../observability/new-relic/README.md).
+> **Important:** If Root Directory is `.` without `railway.toml`, Railway uses **Railpack** and fails with “No start command detected”. Root `railway.toml` forces **Dockerfile** builds.
+
+In Railway → **Service → Settings → Build** confirm **Builder** shows **Dockerfile**, not Railpack/Nixpacks.
 
 ### Variables — paste from root `.env` (update URLs marked ⬇)
 
@@ -122,7 +125,8 @@ curl https://autoclipr-api-production.up.railway.app/health
 | Setting | Value |
 |---------|--------|
 | Root Directory | `.` (repo root) |
-| Builder | Dockerfile (ffmpeg + yt-dlp) |
+| Config file | `apps/workers/railway.toml` (**required** — do not use root `railway.toml`) |
+| Builder | **Dockerfile** |
 | Dockerfile path | `apps/workers/Dockerfile` |
 | Public domain | **None** (background worker) |
 | Memory | **2 GB+** recommended |

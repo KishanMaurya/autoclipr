@@ -1,7 +1,7 @@
 FROM node:22-alpine AS monitoring-builder
 WORKDIR /repo/packages/monitoring
-COPY packages/monitoring/package.json ./
-RUN npm install
+COPY packages/monitoring/package.json packages/monitoring/package-lock.json* ./
+RUN npm ci 2>/dev/null || npm install
 COPY packages/monitoring/ ./
 RUN npm run build
 
@@ -14,7 +14,7 @@ COPY apps/api/ ./
 RUN npm run build
 
 FROM node:22-alpine AS runner
-WORKDIR /app
+WORKDIR /repo/apps/api
 ENV NODE_ENV=production
 COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
 COPY apps/api/package.json apps/api/package-lock.json* ./

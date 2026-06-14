@@ -1,3 +1,5 @@
+# Default Railway config when Root Directory = repo root (`.`).
+# Workers service: set Config file path to `apps/workers/railway.toml` in Railway UI.
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/api/Dockerfile"
