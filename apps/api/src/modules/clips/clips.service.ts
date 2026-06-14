@@ -91,7 +91,11 @@ export class ClipsService {
     const video = await this.videosRepo.getById(dto.video_id, userId);
     if (!video) throw new NotFoundException('Video not found');
     if (video.status !== 'ready') {
-      throw new BadRequestException('Video is not ready for processing');
+      throw new BadRequestException(
+        video.status === 'processing' || video.status === 'analyzing' || video.status === 'importing'
+          ? 'Video is still processing. Wait for analysis to finish, then try again.'
+          : 'Video is not ready for processing',
+      );
     }
 
     const clipCount = dto.clip_count ?? 3;

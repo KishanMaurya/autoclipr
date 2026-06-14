@@ -21,8 +21,8 @@ export default async function ClipsPage() {
   ]);
 
   const clips = clipsRes.data ?? [];
-  const videos = (videosRes.data ?? []).filter(
-    (v) => v.status === "ready" || v.status === "importing" || v.status === "processing"
+  const videos = (videosRes.data ?? []).filter((v) =>
+    ["ready", "importing", "processing", "analyzing", "uploading"].includes(v.status)
   );
 
   return (
@@ -42,7 +42,7 @@ export default async function ClipsPage() {
               <Card key={v.id} className="glass p-4">
                 <VideoCard video={v} />
                 <div className="mt-4 flex justify-center">
-                  <GenerateClipsButton videoId={v.id} />
+                  <GenerateClipsButton videoId={v.id} videoStatus={v.status} />
                 </div>
               </Card>
             ))}
