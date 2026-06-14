@@ -1,15 +1,25 @@
+FROM node:22-alpine AS monitoring-builder
+WORKDIR /repo/packages/monitoring
+COPY packages/monitoring/package.json ./
+RUN npm install
+COPY packages/monitoring/ ./
+RUN npm run build
+
 FROM node:22-alpine AS builder
-WORKDIR /app
-COPY package.json package-lock.json* ./
+WORKDIR /repo/apps/api
+COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
+COPY apps/api/package.json apps/api/package-lock.json* ./
 RUN npm ci
-COPY . .
+COPY apps/api/ ./
 RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY package.json package-lock.json* ./
+COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
+COPY apps/api/package.json apps/api/package-lock.json* ./
 RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /repo/apps/api/dist ./dist
+COPY apps/api/newrelic.js ./newrelic.js
 EXPOSE 8080
 CMD ["node", "dist/main.js"]

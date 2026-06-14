@@ -17,6 +17,8 @@ import { YoutubePublisherService } from './publish/youtube-publisher.service';
 import { WhisperService } from './pipeline/whisper.service';
 import { WorkersStorageService } from './pipeline/storage.service';
 import { YtdlpService } from './pipeline/ytdlp.service';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { QueueMetricsService } from './monitoring/queue-metrics.service';
 
 @Module({
   imports: [
@@ -31,10 +33,12 @@ import { YtdlpService } from './pipeline/ytdlp.service';
       }),
     }),
     BullModule.registerQueue({ name: CLIP_QUEUE }),
+    MonitoringModule,
   ],
   providers: [
     DatabaseService,
     RedisHealthService,
+    QueueMetricsService,
     ClipProcessor,
     TempFilesService,
     YtdlpService,

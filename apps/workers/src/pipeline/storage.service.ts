@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MonitoringService } from '@autoclipr/monitoring';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '../lib/supabase-client';
 import * as fs from 'fs/promises';
@@ -14,7 +15,10 @@ export class WorkersStorageService {
   private readonly client: SupabaseClient | null;
   private readonly maxUploadBytes: number;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly monitoring: MonitoringService,
+  ) {
     const url = this.config.get<string>('supabaseUrl');
     const key = this.config.get<string>('supabaseServiceKey');
     this.client =
@@ -55,7 +59,13 @@ export class WorkersStorageService {
 
     const { data, error } = await this.client.storage.from(bucket).download(objectPath);
     if (error || !data) {
-      throw new Error(`Storage download failed (${bucket}/${objectPath}): ${error?.message}`);
+      const err = new Error(`Storage download failed (${bucket}/${objectPath}): ${error?.message}`);
+      this.monitoring.noticeError(err, {
+        bucket,
+        objectPath,
+        source: 'supabase.storage.download',
+      });
+      throw err;
     }
 
     const buffer = Buffer.from(await data.arrayBuffer());
@@ -91,7 +101,13 @@ export class WorkersStorageService {
     });
 
     if (error) {
-      throw new Error(`Storage upload failed (${bucket}/${objectPath}): ${error.message}`);
+      const err = new Error(`Storage upload failed (${bucket}/${objectPath}): ${error.message}`);
+      this.monitoring.noticeError(err, {
+        bucket,
+        objectPath,
+        source: 'supabase.storage.upload',
+      });
+      throw err;
     }
 
     return objectPath;

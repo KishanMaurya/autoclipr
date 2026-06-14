@@ -1,20 +1,24 @@
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-COPY . .
+FROM node:22-alpine AS monitoring-builder
+WORKDIR /repo/packages/monitoring
+COPY packages/monitoring/package.json ./
+RUN npm install
+COPY packages/monitoring/ ./
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS builder
+WORKDIR /repo/apps/workers
+COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
+COPY apps/workers/package.json apps/workers/package-lock.json* ./
+RUN npm ci
+COPY apps/workers/ ./
+RUN npm run build
+
+FROM node:22-alpine AS runner
 WORKDIR /app
-
-RUN apk add --no-cache ffmpeg python3 py3-pip fontconfig ttf-dejavu \
-  && pip3 install --break-system-packages -U yt-dlp \
-  && fc-cache -f
-
 ENV NODE_ENV=production
-COPY package.json package-lock.json* ./
+COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
+COPY apps/workers/package.json apps/workers/package-lock.json* ./
 RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
-
+COPY --from=builder /repo/apps/workers/dist ./dist
+COPY apps/workers/newrelic.js ./newrelic.js
 CMD ["node", "dist/main.js"]

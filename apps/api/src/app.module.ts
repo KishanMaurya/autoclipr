@@ -19,6 +19,7 @@ import { ChannelsModule } from './modules/channels/channels.module';
 import { PlatformsModule } from './modules/platforms/platforms.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
     ThrottlerModule.forRoot(throttlerModuleOptions),
+    MonitoringModule,
     BullModule.forRootAsync({
       useFactory: () => ({
         connection: bullMqConnectionOptions(),

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MonitoringService, NR_EVENTS } from '@autoclipr/monitoring';
 import { PipelineLogger } from '../common/pipeline-logger.util';
 import { DatabaseService } from '../database/database.service';
 import { CaptionService } from './caption.service';
@@ -31,6 +32,7 @@ export class UrlPipelineService {
     private readonly hooks: HookAnalysisService,
     private readonly captions: CaptionService,
     private readonly storage: WorkersStorageService,
+    private readonly monitoring: MonitoringService,
   ) {}
 
   async run(data: UrlPipelinePayload, jobId?: string): Promise<void> {
@@ -176,12 +178,21 @@ export class UrlPipelineService {
         durationSeconds,
       });
 
+      const hookStarted = Date.now();
       const moments = await this.hooks.identifyMoments(
         transcript,
         durationSeconds,
         clipCount,
         durations,
       );
+
+      this.monitoring.recordEvent(NR_EVENTS.HOOK_GENERATED, {
+        userId,
+        videoId,
+        provider: this.hooks.getProviderLabel(),
+        latency: Date.now() - hookStarted,
+        tokens: moments.length,
+      });
 
       const analysis = {
         source_url: sourceUrl,
@@ -252,6 +263,15 @@ export class UrlPipelineService {
       plog.stepDone('pipeline', Date.now() - pipelineStarted, {
         clips_created: moments.length,
         status: 'ready',
+      });
+
+      this.monitoring.recordEvent(NR_EVENTS.VIDEO_PROCESSING_COMPLETED, {
+        userId,
+        videoId,
+        jobId,
+        processingTime: Date.now() - pipelineStarted,
+        duration: durationSeconds,
+        clipsCreated: moments.length,
       });
 
       const platformLabels = platforms.map((p) => PLATFORM_LABELS[p] ?? p);

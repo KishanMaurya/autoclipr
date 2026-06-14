@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MonitoringService, NR_EVENTS } from '@autoclipr/monitoring';
 import { JobsService } from '../jobs/jobs.service';
 import { JobsRepository } from '../jobs/jobs.repository';
 import { JobType } from '../jobs/jobs.constants';
@@ -18,6 +19,7 @@ export class VideosService {
     private readonly jobsService: JobsService,
     private readonly jobsRepo: JobsRepository,
     private readonly usersRepo: UsersRepository,
+    private readonly monitoring: MonitoringService,
     private readonly config: ConfigService,
   ) {}
 
@@ -37,6 +39,14 @@ export class VideosService {
       mime_type: dto.mime_type,
       file_size_bytes: dto.size,
       source_type: 'upload',
+    });
+
+    const profile = await this.usersRepo.getById(userId);
+    this.monitoring.recordEvent(NR_EVENTS.VIDEO_UPLOAD_STARTED, {
+      userId,
+      videoId: video.id,
+      fileSize: dto.size,
+      plan: profile?.subscription_tier ?? 'free',
     });
 
     return {

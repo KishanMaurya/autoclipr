@@ -1,12 +1,16 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import {
+  MonitoringService,
+  NR_EVENTS,
+  type DistributedTraceHeaders,
+} from '@autoclipr/monitoring';
 import { formatForLog } from '../common/log-sanitize.util';
 import { DatabaseService } from '../database/database.service';
 import { CLIP_QUEUE } from '../jobs.constants';
 import { UrlPipelineService } from '../pipeline/url-pipeline.service';
 import { PublishService } from '../publish/publish.service';
-import { YoutubePublisherService } from '../publish/youtube-publisher.service';
 import type { UrlPipelinePayload } from '../pipeline/types';
 
 @Processor(CLIP_QUEUE)
@@ -17,6 +21,7 @@ export class ClipProcessor extends WorkerHost {
     private readonly db: DatabaseService,
     private readonly urlPipeline: UrlPipelineService,
     private readonly publishService: PublishService,
+    private readonly monitoring: MonitoringService,
   ) {
     super();
   }
@@ -32,6 +37,7 @@ export class ClipProcessor extends WorkerHost {
   onCompleted(job: Job) {
     const ms = job.finishedOn && job.processedOn ? job.finishedOn - job.processedOn : 0;
     this.logger.log(`QUEUE completed bullId=${job.id} name=${job.name} ${ms}ms`);
+    this.monitoring.recordMetric('Custom/AutoClipr/Job/DurationMs', ms);
   }
 
   @OnWorkerEvent('failed')
@@ -39,12 +45,30 @@ export class ClipProcessor extends WorkerHost {
     const id = job?.id ?? 'unknown';
     const name = job?.name ?? 'unknown';
     this.logger.error(`QUEUE failed bullId=${id} name=${name} — ${err.message}`);
+    this.monitoring.noticeError(err, {
+      jobId: job?.data?.jobId as string | undefined,
+      videoId: job?.data?.video_id as string | undefined,
+      jobType: name,
+      source: 'bullmq.failed',
+    });
   }
 
   async process(job: Job): Promise<void> {
+    const traceHeaders = job.data._nrTrace as DistributedTraceHeaders | undefined;
+    return this.monitoring.withBackgroundTransaction(
+      `BullMQ/${job.name}`,
+      'BullMQ',
+      () => this.processJob(job),
+      traceHeaders,
+    );
+  }
+
+  private async processJob(job: Job): Promise<void> {
     const jobId = job.data.jobId as string | undefined;
     const name = job.name;
     const started = Date.now();
+    const userId = job.data.userId as string | undefined;
+    const videoId = job.data.video_id as string | undefined;
 
     this.logger.log(
       `JOB start name=${name} jobId=${jobId ?? '-'} bullId=${job.id}\n${formatForLog(job.data)}`,
@@ -95,13 +119,29 @@ export class ClipProcessor extends WorkerHost {
         `JOB failed name=${name} jobId=${jobId ?? '-'} bullId=${job.id} ${Date.now() - started}ms — ${message}`,
       );
 
+      this.monitoring.recordEvent(NR_EVENTS.VIDEO_PROCESSING_FAILED, {
+        userId,
+        videoId,
+        jobId,
+        error: message.slice(0, 500),
+        jobType: name,
+      });
+
+      if (err instanceof Error) {
+        this.monitoring.noticeError(err, {
+          userId,
+          videoId,
+          jobId,
+          jobType: name,
+        });
+      }
+
       if (jobId) {
         await this.db.client.query(
           `UPDATE processing_jobs SET status = 'failed', error_message = $1, completed_at = NOW() WHERE id = $2`,
           [message, jobId],
         );
       }
-      const videoId = job.data.video_id as string | undefined;
       if (videoId) {
         await this.db.client.query(`UPDATE videos SET status = 'failed' WHERE id = $1`, [videoId]);
       }

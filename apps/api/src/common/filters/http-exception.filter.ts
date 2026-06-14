@@ -5,11 +5,14 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { MonitoringService } from '@autoclipr/monitoring';
 import { Response } from 'express';
 import { ApiResponse } from '../api-response';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  constructor(private readonly monitoring: MonitoringService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -40,6 +43,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message =
           'Cannot reach Supabase Postgres (DATABASE_URL). In Supabase → Settings → Database, copy the connection URI again. Use the pooler host if direct db.* fails, URL-encode special characters in the password, and ensure the project is not paused.';
       }
+    }
+
+    if (status >= 500) {
+      const error =
+        exception instanceof Error ? exception : new Error(message);
+      this.monitoring.noticeError(error, {
+        httpStatus: status,
+        code,
+      });
     }
 
     response.status(status).json(ApiResponse.fail(code, message));

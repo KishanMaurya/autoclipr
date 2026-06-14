@@ -1,6 +1,11 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import {
+  MonitoringService,
+  NR_EVENTS,
+  type DistributedTraceHeaders,
+} from '@autoclipr/monitoring';
 import { JobsRepository } from './jobs.repository';
 import { CLIP_QUEUE, JobType } from './jobs.constants';
 
@@ -8,6 +13,7 @@ import { CLIP_QUEUE, JobType } from './jobs.constants';
 export class JobsService {
   constructor(
     private readonly jobsRepo: JobsRepository,
+    private readonly monitoring: MonitoringService,
     @InjectQueue(CLIP_QUEUE) private readonly clipQueue: Queue,
   ) {}
 
@@ -26,10 +32,17 @@ export class JobsService {
       payload: job.payload,
     });
 
+    const traceHeaders: DistributedTraceHeaders = {};
+    this.monitoring.insertDistributedTraceHeaders(traceHeaders);
+
     try {
       await Promise.race([
         this.clipQueue.add(job.job_type, {
           jobId: row.id,
+          userId: job.user_id,
+          videoId: job.video_id,
+          clipId: job.clip_id,
+          _nrTrace: traceHeaders,
           ...job.payload,
         }),
         new Promise<never>((_, reject) =>
@@ -51,6 +64,13 @@ export class JobsService {
         `Job queue error: ${message}. Check REDIS_URL on Railway API.`,
       );
     }
+
+    this.monitoring.recordEvent(NR_EVENTS.VIDEO_PROCESSING_STARTED, {
+      userId: job.user_id,
+      videoId: job.video_id,
+      jobId: row.id,
+      jobType: job.job_type,
+    });
 
     return row;
   }

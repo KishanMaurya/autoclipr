@@ -59,9 +59,12 @@ Plan: **Hobby ($5/mo)** to start.
 
 | Setting | Value |
 |---------|--------|
-| Root Directory | `apps/api` |
+| Root Directory | `.` (repo root) |
 | Builder | Dockerfile (`railway.toml` + `Dockerfile`) |
+| Dockerfile path | `apps/api/Dockerfile` |
 | Public domain | **Generate Domain** (e.g. `autoclipr-api-production.up.railway.app`) |
+
+> **Docker build:** Set Railway **Root Directory** to the **repo root** (`.`) and **Dockerfile path** to `apps/api/Dockerfile` so `packages/monitoring` is included. See [observability/new-relic/README.md](../observability/new-relic/README.md).
 
 ### Variables — paste from root `.env` (update URLs marked ⬇)
 
@@ -95,6 +98,11 @@ GOOGLE_CLIENT_ID=<paste from local .env>
 GOOGLE_CLIENT_SECRET=<paste from local .env — secret>
 # ⬇ Must match Google Console + Railway domain:
 GOOGLE_REDIRECT_URI=https://autoclipr-api-production.up.railway.app/api/v1/platforms/youtube/callback
+
+# New Relic (optional)
+NEW_RELIC_LICENSE_KEY=
+NEW_RELIC_APP_NAME=AutoClipr API
+NEW_RELIC_LOG_LEVEL=info
 ```
 
 Railway injects `PORT` automatically — no need to set `API_PORT`.
@@ -113,10 +121,13 @@ curl https://autoclipr-api-production.up.railway.app/health
 
 | Setting | Value |
 |---------|--------|
-| Root Directory | `apps/workers` |
+| Root Directory | `.` (repo root) |
 | Builder | Dockerfile (ffmpeg + yt-dlp) |
+| Dockerfile path | `apps/workers/Dockerfile` |
 | Public domain | **None** (background worker) |
 | Memory | **2 GB+** recommended |
+
+> **Docker build:** Root must be repo root so `packages/monitoring` is available. See [observability/new-relic/README.md](../observability/new-relic/README.md).
 
 ### Variables — paste from root `.env`
 
@@ -146,8 +157,13 @@ STORAGE_BUCKET_CLIPS=clips
 FFMPEG_PATH=ffmpeg
 FFPROBE_PATH=ffprobe
 YTDLP_PATH=yt-dlp
-# Optional — fixes "Sign in to confirm you're not a bot" on Railway (see Troubleshooting)
+# Optional — fixes YouTube bot check (see Troubleshooting)
 # YTDLP_COOKIES_B64=<base64 of Netscape cookies.txt>
+
+# New Relic (optional)
+NEW_RELIC_LICENSE_KEY=
+NEW_RELIC_APP_NAME=AutoClipr Workers
+NEW_RELIC_LOG_LEVEL=info
 ```
 
 ### Verify

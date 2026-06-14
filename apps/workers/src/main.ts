@@ -1,3 +1,5 @@
+import './instrumentation';
+
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { WorkersModule } from './workers.module';
