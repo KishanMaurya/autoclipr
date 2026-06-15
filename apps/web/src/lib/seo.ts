@@ -128,6 +128,4 @@ export const SITEMAP_ROUTES = [
     changeFrequency: "monthly" as const,
     priority: 0.7,
   })),
-  { path: "/login", changeFrequency: "yearly" as const, priority: 0.3 },
-  { path: "/register", changeFrequency: "yearly" as const, priority: 0.5 },
 ];
