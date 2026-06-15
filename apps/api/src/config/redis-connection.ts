@@ -6,5 +6,6 @@ export function bullMqConnectionOptions() {
     connectTimeout: 10_000,
     maxRetriesPerRequest: null as null,
     enableReadyCheck: false,
+    lazyConnect: true,
   };
 }

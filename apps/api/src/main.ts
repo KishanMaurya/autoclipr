@@ -34,9 +34,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
-  // Railway injects PORT — prefer it over API_PORT (local dev uses API_PORT=8080).
+  // Railway healthchecks probe from outside the container — must bind 0.0.0.0.
   const port = process.env.PORT ?? process.env.API_PORT ?? '8080';
-  await app.listen(port, process.env.API_HOST ?? '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
   monitoring.logInfo('AutoClipr API started', {
     port,
     nrEnabled: !!process.env.NEW_RELIC_LICENSE_KEY,

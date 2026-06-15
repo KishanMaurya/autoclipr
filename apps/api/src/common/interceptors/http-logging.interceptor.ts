@@ -7,6 +7,8 @@ import { shouldLogHttpBodies } from '../utils/http-log.util';
 import { formatJsonForLog } from '../utils/log-sanitize.util';
 
 import { AutocliprRequest } from '../types/request.types';
+
+@Injectable()
 export class HttpLoggingInterceptor implements NestInterceptor {
   constructor(private readonly monitoring: MonitoringService) {}
 

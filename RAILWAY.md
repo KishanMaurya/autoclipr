@@ -264,6 +264,8 @@ API and workers **do not need** their own `.env` files in the repo — Railway v
 
 | Problem | Fix |
 |---------|-----|
+| **Healthcheck failed** on deploy | API must bind `0.0.0.0` (not `127.0.0.1`). Workers need `apps/workers/railway.toml` as config file (not root `railway.toml`). Redeploy **without cache**. Check `curl https://api.autoclipr.com/health` for `commit` hash. |
+| Delete video 404 after deploy | New API deploy failed — old replica still serves traffic. Fix healthcheck first, then redeploy API + Vercel. |
 | API DB connection fails | Use **pooler** `DATABASE_URL` from `.env`, not direct `db.` host |
 | CORS error from Vercel | Add `https://your-app.vercel.app` to `ALLOWED_ORIGINS` |
 | Clips stuck queued | Workers down or `REDIS_URL` mismatch |

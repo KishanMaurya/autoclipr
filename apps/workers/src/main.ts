@@ -4,8 +4,12 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { MonitoringService } from '@autoclipr/monitoring';
 import { WorkersModule } from './workers.module';
+import { startHealthServer } from './health-server';
 
 async function bootstrap() {
+  // Respond to Railway healthchecks before BullMQ / DB init finishes.
+  startHealthServer();
+
   const app = await NestFactory.createApplicationContext(WorkersModule);
   const config = app.get(ConfigService);
   const monitoring = app.get(MonitoringService);
