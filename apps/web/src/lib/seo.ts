@@ -6,6 +6,9 @@ export const SITE_TAGLINE = "AI Video Clipping Platform";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://autoclipr.com";
 
+export const OG_IMAGE_PATH = "/opengraph-image";
+export const OG_IMAGE_ALT = `${SITE_NAME} — Turn long videos into viral shorts with AI`;
+
 export const DEFAULT_DESCRIPTION =
   "Turn long YouTube videos and podcasts into viral TikTok, Reels, and Shorts with AI. Auto captions, smart hooks, and one-click export for creators.";
 
@@ -54,11 +57,20 @@ export function pageMetadata({
       siteName: SITE_NAME,
       title: `${title} | ${SITE_NAME}`,
       description,
+      images: [
+        {
+          url: OG_IMAGE_PATH,
+          width: 1200,
+          height: 630,
+          alt: OG_IMAGE_ALT,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} | ${SITE_NAME}`,
       description,
+      images: [OG_IMAGE_PATH],
     },
   };
 }
@@ -83,11 +95,20 @@ export const rootMetadata: Metadata = {
     siteName: SITE_NAME,
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: OG_IMAGE_ALT,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE_PATH],
   },
   robots: {
     index: true,
