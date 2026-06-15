@@ -22,4 +22,4 @@ RUN npm ci --omit=dev
 COPY --from=builder /repo/apps/api/dist ./dist
 COPY apps/api/newrelic.js ./newrelic.js
 EXPOSE 8080
-CMD ["node", "dist/main.js"]
+CMD ["node", "-r", "newrelic", "dist/main.js"]

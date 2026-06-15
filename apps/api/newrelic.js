@@ -20,6 +20,9 @@ exports.config = {
       enabled: true,
       max_samples_stored: 3000,
     },
+    local_decorating: {
+      enabled: true,
+    },
     metrics: {
       enabled: true,
     },

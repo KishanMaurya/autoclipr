@@ -38,7 +38,11 @@ async function bootstrap() {
   // Railway injects PORT — prefer it over API_PORT (local dev uses API_PORT=8080).
   const port = process.env.PORT ?? process.env.API_PORT ?? '8080';
   await app.listen(port, process.env.API_HOST ?? '0.0.0.0');
-  console.log(`AutoClipr API (NestJS) listening on :${port}`);
+  monitoring.logInfo('AutoClipr API started', {
+    port,
+    nrEnabled: !!process.env.NEW_RELIC_LICENSE_KEY,
+    appName: process.env.NEW_RELIC_APP_NAME ?? 'AutoClipr API',
+  });
 }
 
 bootstrap();

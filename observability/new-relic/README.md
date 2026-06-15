@@ -50,8 +50,27 @@ Redeploy both services after saving variables.
 
 ### 4. Verify
 
-- New Relic → **APM & Services** → see `AutoClipr API` and `AutoClipr Workers`
-- Upload a video → **Query your data** → custom events `VideoUploadStarted`, `VideoProcessingStarted`, etc.
+- New Relic → **APM & Services** → see **`AutoClipr API`** and **`AutoClipr Workers`** (not the onboarding placeholder `AutoClipr`)
+- Open **Logs** under each service (not the generic onboarding entity)
+- Upload a video → custom events + structured logs appear within ~2 minutes
+
+### No logs in New Relic?
+
+1. Confirm Railway has `NEW_RELIC_LICENSE_KEY` on **both** API and workers
+2. Confirm app names match exactly:
+   - API: `NEW_RELIC_APP_NAME=AutoClipr API`
+   - Workers: `NEW_RELIC_APP_NAME=AutoClipr Workers`
+3. In NR, open **AutoClipr API** → Logs (not the wizard-created **AutoClipr** entity)
+4. Redeploy after code changes — agent must start with `node -r newrelic`
+5. Generate traffic: hit `/health`, upload a video, or trigger an error
+6. Query: `SELECT * FROM Log WHERE entity.name = 'AutoClipr API' SINCE 30 minutes ago`
+
+Logs sent intentionally:
+- Errors and warnings
+- Business events (`VideoUploadStarted`, etc.)
+- Startup message on each deploy
+
+Logs **not** sent: ffmpeg/yt-dlp step logs, HTTP debug bodies, pipeline debug
 
 ## Custom events
 

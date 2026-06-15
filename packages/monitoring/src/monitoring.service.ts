@@ -1,4 +1,4 @@
-import { structuredLog } from './structured-logger';
+import { structuredLog, setStructuredLogAgent } from './structured-logger';
 import type {
   CustomEventAttributes,
   DistributedTraceHeaders,
@@ -17,6 +17,7 @@ export function loadNewRelic(): boolean {
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   agent = require('newrelic') as NewRelicAgent;
+  setStructuredLogAgent(agent);
   return true;
 }
 

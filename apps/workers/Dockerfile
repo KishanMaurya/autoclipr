@@ -21,4 +21,4 @@ COPY apps/workers/package.json apps/workers/package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=builder /repo/apps/workers/dist ./dist
 COPY apps/workers/newrelic.js ./newrelic.js
-CMD ["node", "dist/main.js"]
+CMD ["node", "-r", "newrelic", "dist/main.js"]

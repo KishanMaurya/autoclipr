@@ -1,21 +1,37 @@
 import type { LogLevel, StructuredLogContext } from './types';
 
+type LinkingMetadata = Record<string, string | undefined> | import('newrelic').LinkingMetadata;
+
+type LogAgent = {
+  getLinkingMetadata?: () => LinkingMetadata;
+};
+
+let logAgent: LogAgent | null = null;
+
+export function setStructuredLogAgent(agent: LogAgent | null): void {
+  logAgent = agent;
+}
+
 export function structuredLog(
   level: LogLevel,
   message: string,
   context: StructuredLogContext = {},
 ): void {
+  const linking = logAgent?.getLinkingMetadata?.() ?? {};
   const { service, traceId, userId, videoId, jobId, ...rest } = context;
 
-  const entry = {
+  const entry: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     service: service ?? process.env.NEW_RELIC_APP_NAME ?? 'autoclipr',
-    traceId: traceId ?? '',
+    level,
+    message,
+    traceId: traceId ?? linking['trace.id'] ?? '',
+    'trace.id': linking['trace.id'] ?? traceId ?? '',
+    'span.id': linking['span.id'] ?? '',
+    'entity.name': linking['entity.name'] ?? process.env.NEW_RELIC_APP_NAME ?? '',
     userId,
     videoId,
     jobId,
-    level,
-    message,
     ...rest,
   };
 

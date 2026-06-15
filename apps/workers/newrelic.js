@@ -16,6 +16,9 @@ exports.config = {
       enabled: true,
       max_samples_stored: 2000,
     },
+    local_decorating: {
+      enabled: true,
+    },
   },
   attributes: {
     exclude: ['request.headers.authorization'],
