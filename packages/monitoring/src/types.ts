@@ -1,5 +1,7 @@
 export type LogLevel = 'error' | 'warn' | 'info';
 
+export type ActionPhase = 'start' | 'success' | 'failure';
+
 export type StructuredLogContext = {
   service?: string;
   traceId?: string;

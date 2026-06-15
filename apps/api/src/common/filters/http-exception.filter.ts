@@ -8,6 +8,7 @@ import {
 import { MonitoringService } from '@autoclipr/monitoring';
 import { Response } from 'express';
 import { ApiResponse } from '../api-response';
+import { AutocliprRequest } from '../types/request.types';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -16,6 +17,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<AutocliprRequest>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let code = 'INTERNAL_ERROR';
@@ -45,10 +47,32 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
+    const error =
+      exception instanceof Error ? exception : new Error(message);
+
+    this.monitoring.logAction('failure', 'HttpException', {
+      correlationId: request.correlationId,
+      userId: request.user?.sub ?? request.user?.id,
+      httpStatus: status,
+      httpMethod: request.method,
+      httpPath: request.originalUrl,
+      errorMessage: message,
+      code,
+    });
+
     if (status >= 500) {
-      const error =
-        exception instanceof Error ? exception : new Error(message);
       this.monitoring.noticeError(error, {
+        correlationId: request.correlationId,
+        userId: request.user?.sub ?? request.user?.id,
+        httpStatus: status,
+        httpMethod: request.method,
+        httpPath: request.originalUrl,
+        code,
+      });
+    } else if (status >= 400) {
+      this.monitoring.logWarn(`Client error: ${request.method} ${request.originalUrl} — ${message}`, {
+        correlationId: request.correlationId,
+        userId: request.user?.sub ?? request.user?.id,
         httpStatus: status,
         code,
       });

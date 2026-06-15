@@ -58,8 +58,22 @@ export class JobsService {
         ),
       ]);
     } catch (err) {
-      if (err instanceof ServiceUnavailableException) throw err;
+      if (err instanceof ServiceUnavailableException) {
+        this.monitoring.logAction('failure', 'JobsService.enqueueAndDispatch', {
+          userId: job.user_id,
+          videoId: job.video_id,
+          jobType: job.job_type,
+          errorMessage: err.message,
+        });
+        throw err;
+      }
       const message = err instanceof Error ? err.message : String(err);
+      this.monitoring.logAction('failure', 'JobsService.enqueueAndDispatch', {
+        userId: job.user_id,
+        videoId: job.video_id,
+        jobType: job.job_type,
+        errorMessage: message,
+      });
       throw new ServiceUnavailableException(
         `Job queue error: ${message}. Check REDIS_URL on Railway API.`,
       );

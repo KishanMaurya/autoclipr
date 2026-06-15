@@ -2,6 +2,7 @@ export { loadNewRelic, isMonitoringEnabled, MonitoringService } from './monitori
 export { structuredLog } from './structured-logger';
 export { NR_EVENTS } from './types';
 export type {
+  ActionPhase,
   CustomEventAttributes,
   DistributedTraceHeaders,
   LogLevel,

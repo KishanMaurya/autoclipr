@@ -2,7 +2,9 @@ import { structuredLog, setStructuredLogAgent } from './structured-logger';
 import type {
   CustomEventAttributes,
   DistributedTraceHeaders,
+  ActionPhase,
   HttpLogDetails,
+  LogLevel,
   StructuredLogContext,
 } from './types';
 
@@ -192,6 +194,52 @@ export class MonitoringService {
       userId: details.userId,
       responseBody: details.responseBody,
       errorMessage: details.errorMessage,
+    });
+  }
+
+  logAction(
+    phase: ActionPhase,
+    action: string,
+    context: StructuredLogContext & {
+      durationMs?: number;
+      errorMessage?: string;
+      httpStatus?: number;
+    } = {},
+  ): void {
+    const linking = this.getLinkingContext();
+    const eventType =
+      phase === 'start'
+        ? 'ActionStart'
+        : phase === 'success'
+          ? 'ActionSuccess'
+          : 'ActionFailure';
+
+    let message: string;
+    let level: LogLevel;
+    switch (phase) {
+      case 'start':
+        message = `Action started: ${action}`;
+        level = 'info';
+        break;
+      case 'success':
+        message = `Action succeeded: ${action}${context.durationMs != null ? ` (${context.durationMs}ms)` : ''}`;
+        level = 'info';
+        break;
+      case 'failure':
+        message = `Action failed: ${action}${context.errorMessage ? ` — ${context.errorMessage}` : ''}`;
+        level =
+          (context.httpStatus ?? 500) >= 500 || context.httpStatus == null
+            ? 'error'
+            : 'warn';
+        break;
+    }
+
+    structuredLog(level, message, {
+      ...linking,
+      eventType,
+      action,
+      phase,
+      ...context,
     });
   }
 

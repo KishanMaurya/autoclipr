@@ -54,7 +54,7 @@ export class UrlPipelineService {
     const existingStoragePath = videoRow?.storage_path as string | undefined;
     if (!userId) throw new Error('Video not found');
 
-    const plog = new PipelineLogger(this.logger, videoId, jobId);
+    const plog = new PipelineLogger(this.logger, videoId, jobId, this.monitoring, userId);
     const pipelineStarted = Date.now();
     plog.stepStart('pipeline', {
       source_url: sourceUrl,

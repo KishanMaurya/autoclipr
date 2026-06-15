@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MonitoringService } from '@autoclipr/monitoring';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '../lib/supabase-client';
 import * as fs from 'fs/promises';
@@ -20,6 +21,7 @@ export class PublishService {
     private readonly temp: TempFilesService,
     private readonly youtube: YoutubePublisherService,
     private readonly config: ConfigService,
+    private readonly monitoring: MonitoringService,
   ) {
     const url = this.config.get<string>('supabaseUrl');
     const key = this.config.get<string>('supabaseServiceKey');
@@ -29,6 +31,12 @@ export class PublishService {
   async run(data: Record<string, unknown>, jobId?: string): Promise<void> {
     const clipId = data.clip_id as string;
     const platforms = (data.platforms as PlatformId[]) ?? [];
+
+    this.monitoring.logAction('start', 'PublishService.run', {
+      clipId,
+      jobId,
+      platforms: platforms.join(','),
+    });
 
     const clipRes = await this.db.client.query(
       `SELECT id, user_id, title, storage_path, status FROM clips WHERE id = $1`,
@@ -53,6 +61,12 @@ export class PublishService {
         );
 
         try {
+          this.monitoring.logAction('start', `PublishService.publishToPlatform.${platform}`, {
+            clipId,
+            userId: clip.user_id as string,
+            platform,
+          });
+
           const result = await this.publishToPlatform({
             platform,
             userId: clip.user_id as string,
@@ -68,9 +82,23 @@ export class PublishService {
              WHERE clip_id = $3 AND platform = $4`,
             [result.postId, result.postUrl, clipId, platform],
           );
+
+          this.monitoring.logAction('success', `PublishService.publishToPlatform.${platform}`, {
+            clipId,
+            userId: clip.user_id as string,
+            platform,
+            postId: result.postId ?? undefined,
+            postUrl: result.postUrl ?? undefined,
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Publish failed';
           this.logger.error(`Publish failed clip=${clipId} platform=${platform}: ${message}`);
+          this.monitoring.logAction('failure', `PublishService.publishToPlatform.${platform}`, {
+            clipId,
+            userId: clip.user_id as string,
+            platform,
+            errorMessage: message,
+          });
           await this.db.client.query(
             `UPDATE clip_publications
              SET status = 'failed', error_message = $1, updated_at = NOW()
@@ -89,6 +117,13 @@ export class PublishService {
           ],
         );
       }
+
+      this.monitoring.logAction('success', 'PublishService.run', {
+        clipId,
+        jobId,
+        userId: clip.user_id as string,
+        platforms: platforms.join(','),
+      });
     } finally {
       await this.temp.cleanup(workDir);
     }

@@ -21,6 +21,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
+import { ActionLoggingInterceptor } from './common/interceptors/action-logging.interceptor';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { HttpLoggingInterceptor } from './common/interceptors/http-logging.inter
     RedisHealthService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: HttpLoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: ActionLoggingInterceptor },
   ],
 })
 export class AppModule {}

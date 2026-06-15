@@ -31,6 +31,13 @@ export class ClipProcessor extends WorkerHost {
     this.logger.log(
       `QUEUE active bullId=${job.id} name=${job.name} attempts=${job.attemptsMade + 1}\n${formatForLog(job.data)}`,
     );
+    this.monitoring.logAction('start', `BullMQ.${job.name}`, {
+      jobId: job.data.jobId as string | undefined,
+      videoId: job.data.video_id as string | undefined,
+      userId: job.data.userId as string | undefined,
+      bullId: String(job.id),
+      attempt: job.attemptsMade + 1,
+    });
   }
 
   @OnWorkerEvent('completed')
@@ -38,6 +45,13 @@ export class ClipProcessor extends WorkerHost {
     const ms = job.finishedOn && job.processedOn ? job.finishedOn - job.processedOn : 0;
     this.logger.log(`QUEUE completed bullId=${job.id} name=${job.name} ${ms}ms`);
     this.monitoring.recordMetric('Custom/AutoClipr/Job/DurationMs', ms);
+    this.monitoring.logAction('success', `BullMQ.${job.name}`, {
+      jobId: job.data.jobId as string | undefined,
+      videoId: job.data.video_id as string | undefined,
+      userId: job.data.userId as string | undefined,
+      bullId: String(job.id),
+      durationMs: ms,
+    });
   }
 
   @OnWorkerEvent('failed')
@@ -45,6 +59,15 @@ export class ClipProcessor extends WorkerHost {
     const id = job?.id ?? 'unknown';
     const name = job?.name ?? 'unknown';
     this.logger.error(`QUEUE failed bullId=${id} name=${name} — ${err.message}`);
+    this.monitoring.logAction('failure', `BullMQ.${name}`, {
+      jobId: job?.data?.jobId as string | undefined,
+      videoId: job?.data?.video_id as string | undefined,
+      userId: job?.data?.userId as string | undefined,
+      bullId: String(id),
+      errorMessage: err.message,
+      jobType: name,
+      source: 'bullmq.failed',
+    });
     this.monitoring.noticeError(err, {
       jobId: job?.data?.jobId as string | undefined,
       videoId: job?.data?.video_id as string | undefined,
@@ -69,6 +92,13 @@ export class ClipProcessor extends WorkerHost {
     const started = Date.now();
     const userId = job.data.userId as string | undefined;
     const videoId = job.data.video_id as string | undefined;
+
+    this.monitoring.logAction('start', `Job.${name}`, {
+      jobId,
+      videoId,
+      userId,
+      bullId: String(job.id),
+    });
 
     this.logger.log(
       `JOB start name=${name} jobId=${jobId ?? '-'} bullId=${job.id}\n${formatForLog(job.data)}`,
@@ -110,11 +140,31 @@ export class ClipProcessor extends WorkerHost {
           result = { status: 'ignored', name };
       }
 
+      this.monitoring.logAction('success', `Job.${name}`, {
+        jobId,
+        videoId,
+        userId,
+        bullId: String(job.id),
+        durationMs: Date.now() - started,
+        resultSummary: formatForLog(result),
+      });
+
       this.logger.log(
         `JOB done name=${name} jobId=${jobId ?? '-'} bullId=${job.id} ${Date.now() - started}ms\n${formatForLog(result)}`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
+
+      this.monitoring.logAction('failure', `Job.${name}`, {
+        jobId,
+        videoId,
+        userId,
+        bullId: String(job.id),
+        durationMs: Date.now() - started,
+        errorMessage: message,
+        jobType: name,
+      });
+
       this.logger.error(
         `JOB failed name=${name} jobId=${jobId ?? '-'} bullId=${job.id} ${Date.now() - started}ms — ${message}`,
       );

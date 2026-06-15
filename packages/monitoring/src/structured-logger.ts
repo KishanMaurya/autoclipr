@@ -110,6 +110,12 @@ export function structuredLog(
       requestBody: entry.requestBody as string | undefined,
       responseBody: entry.responseBody as string | undefined,
       errorMessage: entry.errorMessage as string | undefined,
+      action: entry.action as string | undefined,
+      phase: entry.phase as string | undefined,
+      handler: entry.handler as string | undefined,
+      controller: entry.controller as string | undefined,
+      params: entry.params as string | undefined,
+      resultSummary: entry.resultSummary as string | undefined,
       ...rest,
     }),
   });

@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { MonitoringService } from '@autoclipr/monitoring';
 import { formatForLog } from './log-sanitize.util';
 
 export class PipelineLogger {
@@ -6,12 +7,26 @@ export class PipelineLogger {
     private readonly logger: Logger,
     private readonly videoId: string,
     private readonly jobId?: string,
+    private readonly monitoring?: MonitoringService,
+    private readonly userId?: string,
   ) {}
 
   private prefix(): string {
     return this.jobId
       ? `[job:${this.jobId.slice(0, 8)}][video:${this.videoId.slice(0, 8)}]`
       : `[video:${this.videoId.slice(0, 8)}]`;
+  }
+
+  private actionName(step: string): string {
+    return `pipeline.${step}`;
+  }
+
+  private baseContext(): Record<string, string | undefined> {
+    return {
+      videoId: this.videoId,
+      jobId: this.jobId,
+      userId: this.userId,
+    };
   }
 
   private emit(level: 'log' | 'warn' | 'error', header: string, meta?: Record<string, unknown>) {
@@ -24,22 +39,47 @@ export class PipelineLogger {
 
   stepStart(step: string, meta?: Record<string, unknown>) {
     this.emit('log', `${this.prefix()} ▶ ${step}`, meta);
+    this.monitoring?.logAction('start', this.actionName(step), {
+      ...this.baseContext(),
+      step,
+      details: meta ? formatForLog(meta) : undefined,
+    });
   }
 
   stepDone(step: string, ms: number, meta?: Record<string, unknown>) {
     this.emit('log', `${this.prefix()} ✓ ${step} ${ms}ms`, meta);
+    this.monitoring?.logAction('success', this.actionName(step), {
+      ...this.baseContext(),
+      step,
+      durationMs: ms,
+      details: meta ? formatForLog(meta) : undefined,
+    });
   }
 
   stepFail(step: string, ms: number, err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     this.logger.error(`${this.prefix()} ✗ ${step} ${ms}ms — ${message}`);
+    this.monitoring?.logAction('failure', this.actionName(step), {
+      ...this.baseContext(),
+      step,
+      durationMs: ms,
+      errorMessage: message,
+    });
   }
 
   info(message: string, meta?: Record<string, unknown>) {
     this.emit('log', `${this.prefix()} ${message}`, meta);
+    this.monitoring?.logInfo(message, {
+      ...this.baseContext(),
+      details: meta ? formatForLog(meta) : undefined,
+    });
   }
 
   warn(message: string, meta?: Record<string, unknown>) {
     this.emit('warn', `${this.prefix()} ${message}`, meta);
+    this.monitoring?.logWarn(message, {
+      ...this.baseContext(),
+      details: meta ? formatForLog(meta) : undefined,
+    });
   }
 }

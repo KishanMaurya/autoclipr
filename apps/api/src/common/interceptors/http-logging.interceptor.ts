@@ -6,12 +6,7 @@ import { Observable, tap } from 'rxjs';
 import { shouldLogHttpBodies } from '../utils/http-log.util';
 import { formatJsonForLog } from '../utils/log-sanitize.util';
 
-type AutocliprRequest = Request & {
-  correlationId?: string;
-  user?: { sub?: string; id?: string };
-};
-
-@Injectable()
+import { AutocliprRequest } from '../types/request.types';
 export class HttpLoggingInterceptor implements NestInterceptor {
   constructor(private readonly monitoring: MonitoringService) {}
 
