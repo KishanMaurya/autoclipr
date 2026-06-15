@@ -6,8 +6,12 @@ export async function deleteVideoRequest(videoId: string): Promise<string | null
   if (!token) return "Session expired. Please sign in again.";
 
   const res = await apiFetch<{ deleted: boolean; id: string }>(
-    `/api/v1/videos/${videoId}/delete`,
-    { method: "POST", token },
+    "/api/v1/videos/delete",
+    {
+      method: "POST",
+      token,
+      body: JSON.stringify({ video_id: videoId }),
+    },
   );
 
   if (!res.success) {

@@ -6,6 +6,11 @@ import { SkipThrottle } from '@nestjs/throttler';
 export class HealthController {
   @Get()
   check() {
-    return { status: 'ok', service: 'autoclipr-api', framework: 'nestjs' };
+    return {
+      status: 'ok',
+      service: 'autoclipr-api',
+      framework: 'nestjs',
+      commit: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    };
   }
 }

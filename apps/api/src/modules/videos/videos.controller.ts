@@ -17,6 +17,7 @@ import { parsePagination } from '../../common/utils/pagination';
 import { VideosService } from './videos.service';
 import { InitUploadDto } from './dto/init-upload.dto';
 import { ImportUrlDto } from './dto/import-url.dto';
+import { DeleteVideoDto } from './dto/delete-video.dto';
 
 @Controller('videos')
 @UseGuards(JwtAuthGuard)
@@ -39,6 +40,12 @@ export class VideosController {
   async importUrl(@CurrentUser() user: AuthUser, @Body() dto: ImportUrlDto) {
     const data = await this.videosService.importFromUrl(user.sub, dto);
     return ApiResponse.ok(data);
+  }
+
+  @Post('delete')
+  async deleteByBody(@CurrentUser() user: AuthUser, @Body() dto: DeleteVideoDto) {
+    const result = await this.videosService.delete(user.sub, dto.video_id);
+    return ApiResponse.ok(result);
   }
 
   @Post(':id/complete')
