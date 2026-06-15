@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BrandMark } from "@/lib/brand-mark";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
 export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`;
@@ -28,20 +29,7 @@ export default function OpenGraphImage() {
             marginBottom: 32,
           }}
         >
-          <svg width="80" height="80" viewBox="0 0 32 32" fill="none">
-            <g
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="2.75" />
-              <circle cx="21" cy="21" r="2.75" />
-              <path d="M13.4 13.4l5.2 5.2" />
-              <path d="M8.25 11h5.5" />
-              <path d="M18.25 21h5.5" />
-            </g>
-          </svg>
+          <BrandMark size={80} radius={18} />
           <span style={{ fontSize: 72, fontWeight: 700, color: "#ffffff" }}>
             {SITE_NAME}
           </span>

@@ -116,8 +116,13 @@ export const rootMetadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   icons: {
-    icon: [{ url: "/icon", type: "image/png", sizes: "48x48" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon", type: "image/png", sizes: "48x48" },
+      { url: "/icon-192", type: "image/png", sizes: "192x192" },
+    ],
     apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
   },
 };
 

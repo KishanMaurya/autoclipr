@@ -22,7 +22,7 @@ export function HomePageJsonLd() {
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/icon`,
+    logo: `${SITE_URL}/icon-192`,
     description: DEFAULT_DESCRIPTION,
   };
 
@@ -108,7 +108,7 @@ export function BlogPostJsonLd({ post, url }: { post: BlogPost; url: string }) {
       "@type": "Organization",
       name: SITE_NAME,
       url: SITE_URL,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon` },
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-192` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     keywords: post.keywords.join(", "),

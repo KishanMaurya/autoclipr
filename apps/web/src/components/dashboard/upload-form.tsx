@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileVideo, Loader2 } from "lucide-react";
+import { FileVideo, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api";
 import { formatPipelineError } from "@/lib/pipeline-errors";
@@ -23,8 +23,31 @@ type PipelineResponse = {
 
 const PIPELINE_POLL_MS = 3000;
 
+function UploadDropIcon() {
+  return (
+    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-blue-500/25">
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M12 16V4" />
+        <path d="m7 9 5-5 5 5" />
+        <path d="M4 20h16" />
+      </svg>
+    </div>
+  );
+}
+
 export function UploadForm() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -42,6 +65,17 @@ export function UploadForm() {
       if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
     }
   }, [title]);
+
+  function onFileSelected(f: File | undefined) {
+    if (!f?.type.startsWith("video/")) return;
+    setFile(f);
+    if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
+  }
+
+  function openFilePicker() {
+    if (busy) return;
+    fileInputRef.current?.click();
+  }
 
   useEffect(() => {
     if (phase !== "processing" || !pipeline?.video_id) return;
@@ -204,29 +238,34 @@ export function UploadForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={(e) => onFileSelected(e.target.files?.[0])}
+        />
+
         <div
+          role="button"
+          tabIndex={busy ? -1 : 0}
+          aria-label="Upload video file"
+          onClick={openFilePicker}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openFilePicker();
+            }
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
-          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-colors hover:border-violet-500/50"
+          className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-colors hover:border-sky-500/50 hover:bg-sky-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
+          <UploadDropIcon />
           <p className="text-sm text-muted-foreground">
             Drag & drop your video, or{" "}
-            <label className="cursor-pointer text-violet-400 hover:underline">
-              browse
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    setFile(f);
-                    if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
-                  }
-                }}
-              />
-            </label>
+            <span className="font-medium text-sky-400">browse</span>
           </p>
           {file && (
             <p className="mt-2 text-sm font-medium">
