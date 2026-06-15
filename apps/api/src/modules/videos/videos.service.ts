@@ -154,12 +154,21 @@ export class VideosService {
       queueState = await this.jobsService.getBullJobState(job.id);
       if (queueState === 'waiting' || queueState === 'delayed') {
         queueHint =
-          'Your video is waiting in the queue. If this lasts more than a minute, the workers service may be down — check Railway workers logs and REDIS_URL on both API and workers.';
+          'Your video is waiting in the queue. If this lasts more than a minute, check that the Railway workers service is running.';
       } else if (queueState === 'active') {
         queueHint = 'Processing is starting…';
       } else if (queueState === 'missing') {
-        queueHint =
-          'Job was lost from the queue. Please try uploading again or contact support.';
+        try {
+          await this.jobsService.redispatchQueuedJob(job.id);
+          queueState = await this.jobsService.getBullJobState(job.id);
+          queueHint =
+            queueState === 'waiting' || queueState === 'delayed'
+              ? 'Job re-queued — processing will start shortly.'
+              : 'Re-queued your job. If nothing happens in a minute, check Railway workers logs.';
+        } catch {
+          queueHint =
+            'Job was not found in the queue. Please upload again or delete this video and retry.';
+        }
       }
     }
 
@@ -191,7 +200,7 @@ export class VideosService {
       progress_percent,
       queue_state: queueState,
       queue_hint: queueHint,
-      error_message: job?.error_message ?? queueHint ?? null,
+      error_message: job?.error_message ?? null,
     };
   }
 

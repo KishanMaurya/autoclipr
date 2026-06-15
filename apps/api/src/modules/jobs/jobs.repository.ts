@@ -31,6 +31,33 @@ export class JobsRepository {
     return data as { id: string; scheduled_at: string; created_at: string };
   }
 
+  async findById(id: string) {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('processing_jobs')
+      .select(
+        'id, user_id, video_id, clip_id, job_type, status, payload, result, error_message, created_at, completed_at',
+      )
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return data as {
+      id: string;
+      user_id: string;
+      video_id: string | null;
+      clip_id: string | null;
+      job_type: string;
+      status: string;
+      payload: Record<string, unknown>;
+      result: Record<string, unknown> | null;
+      error_message: string | null;
+      created_at: string;
+      completed_at: string | null;
+    };
+  }
+
   async findLatestByVideo(videoId: string) {
     const { data, error } = await this.supabase
       .getClient()

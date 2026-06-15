@@ -37,14 +37,22 @@ export class JobsService {
 
     try {
       await Promise.race([
-        this.clipQueue.add(job.job_type, {
-          jobId: row.id,
-          userId: job.user_id,
-          videoId: job.video_id,
-          clipId: job.clip_id,
-          _nrTrace: traceHeaders,
-          ...job.payload,
-        }),
+        this.clipQueue.add(
+          job.job_type,
+          {
+            jobId: row.id,
+            userId: job.user_id,
+            videoId: job.video_id,
+            clipId: job.clip_id,
+            _nrTrace: traceHeaders,
+            ...job.payload,
+          },
+          {
+            jobId: row.id,
+            removeOnComplete: 200,
+            removeOnFail: 100,
+          },
+        ),
         new Promise<never>((_, reject) =>
           setTimeout(
             () =>
@@ -92,11 +100,43 @@ export class JobsService {
   /** BullMQ state for a DB job id — helps diagnose stuck `queued` jobs. */
   async getBullJobState(dbJobId: string): Promise<string | null> {
     try {
-      const job = await this.clipQueue.getJob(dbJobId);
+      let job: Awaited<ReturnType<Queue['getJob']>> = await this.clipQueue.getJob(dbJobId);
+      if (!job) {
+        const active = await this.clipQueue.getJobs(['waiting', 'delayed', 'active']);
+        job = active.find((j) => j.data?.jobId === dbJobId);
+      }
       if (!job) return 'missing';
       return await job.getState();
     } catch {
       return null;
     }
+  }
+
+  /** Re-enqueue a DB job that is still queued but missing from Redis. */
+  async redispatchQueuedJob(dbJobId: string): Promise<void> {
+    const row = await this.jobsRepo.findById(dbJobId);
+    if (!row || row.status !== 'queued') {
+      throw new ServiceUnavailableException('Job is not eligible for redispatch');
+    }
+
+    const traceHeaders: DistributedTraceHeaders = {};
+    this.monitoring.insertDistributedTraceHeaders(traceHeaders);
+
+    await this.clipQueue.add(
+      row.job_type,
+      {
+        jobId: row.id,
+        userId: row.user_id,
+        videoId: row.video_id,
+        clipId: row.clip_id,
+        _nrTrace: traceHeaders,
+        ...(row.payload ?? {}),
+      },
+      {
+        jobId: row.id,
+        removeOnComplete: 200,
+        removeOnFail: 100,
+      },
+    );
   }
 }
