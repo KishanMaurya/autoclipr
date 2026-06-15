@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import type { Video } from "@/lib/api";
-import { deleteVideo } from "@/lib/delete-video";
+import { deleteVideoRequest } from "@/lib/delete-video";
 import { VideoCard } from "@/components/dashboard/video-card";
 import { GenerateClipsButton } from "@/components/dashboard/generate-clips-button";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/hooks/use-confirm";
 
 type ReadyVideosGridProps = {
   videos: Video[];
@@ -15,15 +16,23 @@ type ReadyVideosGridProps = {
 
 export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps) {
   const router = useRouter();
+  const { confirm, dialog } = useConfirm();
   const [videos, setVideos] = useState(initialVideos);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(video: Video) {
+    const ok = await confirm({
+      title: "Delete video?",
+      description: `Delete "${video.title}" and all its clips? This cannot be undone.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+
     setError(null);
     setDeletingId(video.id);
     try {
-      const message = await deleteVideo(video.id, video.title);
+      const message = await deleteVideoRequest(video.id);
       if (message) {
         setError(message);
         return;
@@ -38,7 +47,9 @@ export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps)
   if (!videos.length) return null;
 
   return (
-    <section>
+    <>
+      {dialog}
+      <section>
       <h2 className="mb-4 text-lg font-semibold">Generate more clips</h2>
       <p className="mb-4 text-sm text-muted-foreground">
         These videos are ready — generate additional shorts anytime.
@@ -74,5 +85,6 @@ export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps)
         ))}
       </div>
     </section>
+    </>
   );
 }

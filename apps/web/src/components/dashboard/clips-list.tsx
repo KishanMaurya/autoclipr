@@ -9,6 +9,7 @@ import { getAccessToken } from "@/lib/auth-token";
 import { downloadFile, sanitizeFilename, sleep } from "@/lib/download";
 import { ClipCard } from "@/components/dashboard/clip-card";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/hooks/use-confirm";
 
 type ClipsListProps = {
   clips: Clip[];
@@ -16,6 +17,7 @@ type ClipsListProps = {
 
 export function ClipsList({ clips: initialClips }: ClipsListProps) {
   const router = useRouter();
+  const { confirm, dialog } = useConfirm();
   const [clips, setClips] = useState(initialClips);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -95,10 +97,12 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
     const ids = [...selected];
     if (!ids.length) return;
 
-    const confirmed = window.confirm(
-      `Delete ${ids.length} clip${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: `Delete ${ids.length} clip${ids.length === 1 ? "" : "s"}?`,
+      description: "This cannot be undone.",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
 
     setDeleteLoading(true);
     setError(null);
@@ -126,10 +130,12 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
 
   async function deleteOne(clipId: string) {
     const clip = clips.find((c) => c.id === clipId);
-    const confirmed = window.confirm(
-      `Delete "${clip?.title ?? "this clip"}"? This cannot be undone.`,
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: "Delete clip?",
+      description: `Delete "${clip?.title ?? "this clip"}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
 
     setError(null);
     const token = await getAccessToken();
@@ -154,7 +160,9 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
   ).length;
 
   return (
-    <div className="space-y-4">
+    <>
+      {dialog}
+      <div className="space-y-4">
       {clips.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
           <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
@@ -210,5 +218,6 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
         ))}
       </div>
     </div>
+    </>
   );
 }

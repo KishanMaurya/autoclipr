@@ -1,12 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth-token";
 
-export async function deleteVideo(videoId: string, title?: string): Promise<string | null> {
-  const confirmed = window.confirm(
-    `Delete "${title ?? "this video"}" and all its clips? This cannot be undone.`,
-  );
-  if (!confirmed) return null;
-
+export async function deleteVideoRequest(videoId: string): Promise<string | null> {
   const token = await getAccessToken();
   if (!token) return "Session expired. Please sign in again.";
 

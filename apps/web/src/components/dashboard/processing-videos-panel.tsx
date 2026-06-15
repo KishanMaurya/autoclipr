@@ -11,7 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { deleteVideo } from "@/lib/delete-video";
+import { useConfirm } from "@/hooks/use-confirm";
+import { deleteVideoRequest } from "@/lib/delete-video";
 
 const PIPELINE_POLL_MS = 3000;
 
@@ -38,6 +39,7 @@ type ProcessingVideosPanelProps = {
 
 export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideosPanelProps) {
   const router = useRouter();
+  const { confirm, dialog } = useConfirm();
   const [videos, setVideos] = useState(initialVideos);
   const [pipelines, setPipelines] = useState<Record<string, VideoPipeline>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -89,10 +91,17 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
   }, [videos, router]);
 
   async function handleDelete(video: Video) {
+    const ok = await confirm({
+      title: "Delete video?",
+      description: `Delete "${video.title}" and all its clips? This cannot be undone.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+
     setActionError(null);
     setDeletingId(video.id);
     try {
-      const error = await deleteVideo(video.id, video.title);
+      const error = await deleteVideoRequest(video.id);
       if (error) {
         setActionError(error);
         return;
@@ -115,7 +124,9 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
   if (!videos.length) return null;
 
   return (
-    <section>
+    <>
+      {dialog}
+      <section>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Videos in progress</h2>
@@ -210,5 +221,6 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
         </CardContent>
       </Card>
     </section>
+    </>
   );
 }
