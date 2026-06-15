@@ -89,4 +89,10 @@ export class VideosController {
     const result = await this.videosService.delete(user.sub, id);
     return ApiResponse.ok(result);
   }
+
+  @Post(':id/delete')
+  async deleteViaPost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const result = await this.videosService.delete(user.sub, id);
+    return ApiResponse.ok(result);
+  }
 }

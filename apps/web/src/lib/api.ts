@@ -40,7 +40,17 @@ export async function apiFetch<T>(
 
   try {
     const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-    return res.json();
+    const body = await res.json().catch(() => null);
+    if (body && typeof body === "object" && "success" in body) {
+      return body as APIResponse<T>;
+    }
+    const fallbackMessage =
+      (body as { message?: string } | null)?.message ??
+      (res.ok ? "Unexpected API response." : `Request failed (${res.status}).`);
+    return {
+      success: false,
+      error: { code: `HTTP_${res.status}`, message: fallbackMessage },
+    };
   } finally {
     if (trackLoader) endApiLoading();
   }
