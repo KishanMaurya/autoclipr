@@ -88,4 +88,15 @@ export class JobsService {
 
     return row;
   }
+
+  /** BullMQ state for a DB job id — helps diagnose stuck `queued` jobs. */
+  async getBullJobState(dbJobId: string): Promise<string | null> {
+    try {
+      const job = await this.clipQueue.getJob(dbJobId);
+      if (!job) return 'missing';
+      return await job.getState();
+    } catch {
+      return null;
+    }
+  }
 }

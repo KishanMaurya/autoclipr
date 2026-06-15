@@ -207,20 +207,26 @@ export function UploadForm() {
   }
 
   if (phase === "processing") {
+    const isQueued = pipeline?.job?.status === "queued";
+    const statusLabel = isQueued ? "Queued" : "Processing";
+    const progress = pipeline?.progress_percent ?? (isQueued ? 2 : 5);
+    const detail = isQueued
+      ? (pipeline?.queue_hint ??
+        "Waiting for a worker to start — this usually takes a few seconds.")
+      : `${progress}% — analyzing, clipping, and adding captions`;
+
     return (
       <Card className="glass border-white/10">
         <CardContent className="space-y-4 p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-emerald-400">Processing</p>
+              <p className="text-sm text-emerald-400">{statusLabel}</p>
               <h2 className="text-xl font-bold">{pipeline?.title ?? title}</h2>
             </div>
             <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
           </div>
-          <Progress value={pipeline?.progress_percent ?? 5} className="h-2" />
-          <p className="text-right text-xs text-muted-foreground">
-            {pipeline?.progress_percent ?? 5}% — analyzing, clipping, and adding captions
-          </p>
+          <Progress value={progress} className="h-2" />
+          <p className="text-right text-xs text-muted-foreground">{detail}</p>
         </CardContent>
       </Card>
     );

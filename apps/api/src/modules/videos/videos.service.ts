@@ -148,6 +148,28 @@ export class VideosService {
     const result = (job?.result ?? {}) as Record<string, unknown>;
     const steps = (result.steps as Array<Record<string, unknown>>) ?? [];
 
+    let queueState: string | null = null;
+    let queueHint: string | null = null;
+    if (job?.status === 'queued') {
+      queueState = await this.jobsService.getBullJobState(job.id);
+      if (queueState === 'waiting' || queueState === 'delayed') {
+        queueHint =
+          'Your video is waiting in the queue. If this lasts more than a minute, the workers service may be down — check Railway workers logs and REDIS_URL on both API and workers.';
+      } else if (queueState === 'active') {
+        queueHint = 'Processing is starting…';
+      } else if (queueState === 'missing') {
+        queueHint =
+          'Job was lost from the queue. Please try uploading again or contact support.';
+      }
+    }
+
+    const progressFromResult =
+      typeof result.progress_percent === 'number' ? result.progress_percent : 0;
+    const progress_percent =
+      job?.status === 'queued' && progressFromResult === 0
+        ? 2
+        : progressFromResult;
+
     return {
       video_id: video.id,
       title: video.title,
@@ -166,8 +188,10 @@ export class VideosService {
       current_step: result.current_step ?? null,
       steps,
       clips_created: result.clips_created ?? 0,
-      progress_percent: result.progress_percent ?? 0,
-      error_message: job?.error_message ?? null,
+      progress_percent,
+      queue_state: queueState,
+      queue_hint: queueHint,
+      error_message: job?.error_message ?? queueHint ?? null,
     };
   }
 

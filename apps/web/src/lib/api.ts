@@ -147,6 +147,9 @@ export interface VideoPipeline {
   }>;
   clips_created: number;
   analysis?: Record<string, unknown>;
+  queue_state?: string | null;
+  queue_hint?: string | null;
+  error_message?: string | null;
   job?: { id?: string; type?: string; status: string; error?: string };
 }
 

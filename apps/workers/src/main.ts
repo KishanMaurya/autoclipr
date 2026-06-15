@@ -23,6 +23,8 @@ async function bootstrap() {
   monitoring.logInfo('AutoClipr workers started', {
     llmProvider,
     whisper,
+    queue: process.env.QUEUE_CLIP_PROCESSING ?? 'clip_processing',
+    redisUrlSet: !!process.env.REDIS_URL,
     nrEnabled: !!process.env.NEW_RELIC_LICENSE_KEY,
     appName: process.env.NEW_RELIC_APP_NAME ?? 'AutoClipr Workers',
   });
