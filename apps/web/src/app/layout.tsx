@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { ApiLoadingProvider } from "@/components/providers/api-loading-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
 
@@ -17,6 +18,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans`}>
         <ApiLoadingProvider>{children}</ApiLoadingProvider>
+        <Toaster />
         <Analytics />
       </body>
     </html>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import type { Video } from "@/lib/api";
-import { deleteVideoRequest } from "@/lib/delete-video";
+import { deleteVideoWithToast } from "@/lib/delete-video";
 import { VideoCard } from "@/components/dashboard/video-card";
 import { GenerateClipsButton } from "@/components/dashboard/generate-clips-button";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps)
   const { confirm, dialog } = useConfirm();
   const [videos, setVideos] = useState(initialVideos);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(video: Video) {
     const ok = await confirm({
@@ -29,14 +28,10 @@ export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps)
     });
     if (!ok) return;
 
-    setError(null);
     setDeletingId(video.id);
     try {
-      const message = await deleteVideoRequest(video.id);
-      if (message) {
-        setError(message);
-        return;
-      }
+      const deleted = await deleteVideoWithToast(video.id);
+      if (!deleted) return;
       setVideos((prev) => prev.filter((v) => v.id !== video.id));
       router.refresh();
     } finally {
@@ -54,12 +49,6 @@ export function ReadyVideosGrid({ videos: initialVideos }: ReadyVideosGridProps)
       <p className="mb-4 text-sm text-muted-foreground">
         These videos are ready — generate additional shorts anytime.
       </p>
-
-      {error && (
-        <p className="mb-4 rounded-lg border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-400">
-          {error}
-        </p>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {videos.map((video) => (

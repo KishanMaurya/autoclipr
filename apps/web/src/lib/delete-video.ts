@@ -1,5 +1,8 @@
+"use client";
+
 import { apiFetch } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth-token";
+import { toast } from "sonner";
 
 export async function deleteVideoRequest(videoId: string): Promise<string | null> {
   const token = await getAccessToken();
@@ -19,4 +22,18 @@ export async function deleteVideoRequest(videoId: string): Promise<string | null
   }
 
   return null;
+}
+
+/** Delete with loading + success/error toasts. Returns true when deleted. */
+export async function deleteVideoWithToast(videoId: string): Promise<boolean> {
+  const toastId = toast.loading("Deleting video…");
+
+  const error = await deleteVideoRequest(videoId);
+  if (error) {
+    toast.error(error, { id: toastId });
+    return false;
+  }
+
+  toast.success("Successfully deleted", { id: toastId });
+  return true;
 }

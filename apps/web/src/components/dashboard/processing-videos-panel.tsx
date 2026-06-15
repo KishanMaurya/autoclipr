@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/hooks/use-confirm";
-import { deleteVideoRequest } from "@/lib/delete-video";
+import { deleteVideoWithToast } from "@/lib/delete-video";
 
 const PIPELINE_POLL_MS = 3000;
 
@@ -44,7 +44,6 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
   const [pipelines, setPipelines] = useState<Record<string, VideoPipeline>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const pollAll = useCallback(async () => {
     const token = await getAccessToken();
@@ -98,14 +97,10 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
     });
     if (!ok) return;
 
-    setActionError(null);
     setDeletingId(video.id);
     try {
-      const error = await deleteVideoRequest(video.id);
-      if (error) {
-        setActionError(error);
-        return;
-      }
+      const deleted = await deleteVideoWithToast(video.id);
+      if (!deleted) return;
       setVideos((prev) => prev.filter((v) => v.id !== video.id));
       router.refresh();
     } finally {
@@ -138,12 +133,6 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
           {videos.length} active
         </Badge>
       </div>
-
-      {actionError && (
-        <p className="mb-3 rounded-lg border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-400">
-          {actionError}
-        </p>
-      )}
 
       <Card className="glass border-white/10">
         <CardContent className="divide-y divide-white/10 p-0">
