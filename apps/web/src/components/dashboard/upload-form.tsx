@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileVideo, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, type VideoPipeline } from "@/lib/api";
 import { formatPipelineError } from "@/lib/pipeline-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-type PipelineResponse = {
-  video_id: string;
-  title: string;
-  status: string;
-  progress_percent: number;
-  clips_created: number;
-  job?: { status: string; error?: string };
-};
 
 const PIPELINE_POLL_MS = 3000;
 const FILE_INPUT_ID = "autoclipr-video-upload";
@@ -54,7 +45,7 @@ export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "uploading" | "processing">("idle");
-  const [pipeline, setPipeline] = useState<PipelineResponse | null>(null);
+  const [pipeline, setPipeline] = useState<VideoPipeline | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const busy = phase !== "idle";
@@ -103,7 +94,7 @@ export function UploadForm() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) return;
 
-      const res = await apiFetch<PipelineResponse>(
+      const res = await apiFetch<VideoPipeline>(
         `/api/v1/videos/${pipeline.video_id}/pipeline`,
         { token: session.access_token }
       );
@@ -187,7 +178,7 @@ export function UploadForm() {
       return;
     }
 
-    const poll = await apiFetch<PipelineResponse>(
+    const poll = await apiFetch<VideoPipeline>(
       `/api/v1/videos/${init.data.video_id}/pipeline`,
       { token: session.access_token }
     );
@@ -199,6 +190,9 @@ export function UploadForm() {
             video_id: init.data.video_id,
             title,
             status: "processing",
+            source_url: null,
+            current_step: null,
+            steps: [],
             progress_percent: 5,
             clips_created: 0,
           }
