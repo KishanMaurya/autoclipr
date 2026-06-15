@@ -255,4 +255,62 @@ export class ClipsService {
       payload: { clip_id: clipId },
     });
   }
+
+  private storagePathsForClip(clip: Clip): string[] {
+    const bucket = this.clipsBucket();
+    const paths = new Set<string>();
+
+    if (clip.storage_path) {
+      paths.add(clip.storage_path);
+      paths.add(this.storage.clipThumbPath(clip.storage_path));
+    }
+
+    const thumbPath = this.storage.parseObjectPathFromUrl(clip.thumbnail_url, bucket);
+    if (thumbPath) paths.add(thumbPath);
+
+    const subtitlePath = this.storage.parseObjectPathFromUrl(clip.subtitle_url, bucket);
+    if (subtitlePath) paths.add(subtitlePath);
+
+    return [...paths].filter(Boolean);
+  }
+
+  private async removeClipAssets(clip: Clip): Promise<void> {
+    const paths = this.storagePathsForClip(clip);
+    if (!paths.length) return;
+
+    try {
+      await this.storage.removeObjects(this.clipsBucket(), paths);
+    } catch {
+      // Clip row deletion should still proceed if storage files are already gone.
+    }
+  }
+
+  async delete(userId: string, clipId: string) {
+    const clip = await this.clipsRepo.getById(clipId, userId);
+    if (!clip) throw new NotFoundException('Clip not found');
+
+    await this.removeClipAssets(clip);
+    await this.clipsRepo.deleteById(clipId, userId);
+
+    return { deleted: true, id: clipId };
+  }
+
+  async bulkDelete(userId: string, clipIds: string[]) {
+    const deletedIds: string[] = [];
+
+    for (const clipId of clipIds) {
+      const clip = await this.clipsRepo.getById(clipId, userId);
+      if (!clip) continue;
+
+      await this.removeClipAssets(clip);
+      const deleted = await this.clipsRepo.deleteById(clipId, userId);
+      if (deleted) deletedIds.push(clipId);
+    }
+
+    if (!deletedIds.length) {
+      throw new NotFoundException('No clips found');
+    }
+
+    return { deleted_ids: deletedIds };
+  }
 }

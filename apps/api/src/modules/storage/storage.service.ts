@@ -114,4 +114,14 @@ export class StorageService {
     if (error || !data?.signedUrl) return null;
     return data.signedUrl;
   }
+
+  async removeObjects(bucket: string, objectPaths: string[]): Promise<void> {
+    if (!this.client || !objectPaths.length) return;
+
+    const paths = [...new Set(objectPaths.filter(Boolean))];
+    const { error } = await this.client.storage.from(bucket).remove(paths);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
 }

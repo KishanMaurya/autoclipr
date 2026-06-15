@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -16,6 +17,7 @@ import { parsePagination } from '../../common/utils/pagination';
 import { ClipsService } from './clips.service';
 import { GenerateClipsDto } from './dto/generate-clips.dto';
 import { BulkDownloadDto } from './dto/bulk-download.dto';
+import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { PublishClipDto } from '../platforms/dto/platform.dto';
 
 @Controller('clips')
@@ -54,6 +56,12 @@ export class ClipsController {
     });
   }
 
+  @Post('bulk-delete')
+  async bulkDelete(@CurrentUser() user: AuthUser, @Body() dto: BulkDeleteDto) {
+    const result = await this.clipsService.bulkDelete(user.sub, dto.clip_ids);
+    return ApiResponse.ok(result);
+  }
+
   @Post('bulk-download')
   async bulkDownload(@CurrentUser() user: AuthUser, @Body() dto: BulkDownloadDto) {
     const items = await this.clipsService.bulkDownloadUrls(user.sub, dto.clip_ids);
@@ -80,6 +88,12 @@ export class ClipsController {
   async get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const clip = await this.clipsService.get(user.sub, id);
     return ApiResponse.ok(clip);
+  }
+
+  @Delete(':id')
+  async delete(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const result = await this.clipsService.delete(user.sub, id);
+    return ApiResponse.ok(result);
   }
 
   @Post(':id/export')
