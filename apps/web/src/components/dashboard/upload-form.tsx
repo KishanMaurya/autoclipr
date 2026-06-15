@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type PipelineResponse = {
   video_id: string;
@@ -22,10 +23,11 @@ type PipelineResponse = {
 };
 
 const PIPELINE_POLL_MS = 3000;
+const FILE_INPUT_ID = "autoclipr-video-upload";
 
 function UploadDropIcon() {
   return (
-    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-blue-500/25">
+    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow">
       <svg
         width="28"
         height="28"
@@ -70,11 +72,6 @@ export function UploadForm() {
     if (!f?.type.startsWith("video/")) return;
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
-  }
-
-  function openFilePicker() {
-    if (busy) return;
-    fileInputRef.current?.click();
   }
 
   useEffect(() => {
@@ -239,40 +236,44 @@ export function UploadForm() {
       </CardHeader>
       <CardContent className="space-y-6">
         <input
+          id={FILE_INPUT_ID}
           ref={fileInputRef}
           type="file"
           accept="video/*"
           className="sr-only"
+          disabled={busy}
           tabIndex={-1}
-          onChange={(e) => onFileSelected(e.target.files?.[0])}
+          onChange={(e) => {
+            onFileSelected(e.target.files?.[0]);
+            e.target.value = "";
+          }}
         />
 
-        <div
-          role="button"
-          tabIndex={busy ? -1 : 0}
-          aria-label="Upload video file"
-          onClick={openFilePicker}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              openFilePicker();
-            }
-          }}
+        <label
+          htmlFor={busy ? undefined : FILE_INPUT_ID}
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-colors hover:border-sky-500/50 hover:bg-sky-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 disabled:cursor-not-allowed disabled:opacity-60"
+          className={cn(
+            "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-colors",
+            busy
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5",
+          )}
         >
           <UploadDropIcon />
           <p className="text-sm text-muted-foreground">
             Drag & drop your video, or{" "}
-            <span className="font-medium text-sky-400">browse</span>
+            <span className="font-medium text-emerald-400">browse</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/80">
+            Click anywhere in this area to choose a file
           </p>
           {file && (
             <p className="mt-2 text-sm font-medium">
               {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
             </p>
           )}
-        </div>
+        </label>
 
         <div className="space-y-2">
           <Label htmlFor="title">Title</Label>
