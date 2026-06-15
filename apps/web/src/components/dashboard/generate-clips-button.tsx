@@ -55,11 +55,7 @@ export function GenerateClipsButton({
   }
 
   if (!canGenerate) {
-    return (
-      <p className="text-center text-xs text-muted-foreground">
-        Processing… clips generate automatically after upload
-      </p>
-    );
+    return null;
   }
 
   return (

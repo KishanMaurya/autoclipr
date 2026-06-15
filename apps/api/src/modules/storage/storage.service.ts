@@ -46,6 +46,14 @@ export class StorageService {
     return this.config.get<string>('buckets.clips') ?? 'clips';
   }
 
+  videosBucket(): string {
+    return (
+      this.config.get<string>('buckets.videos') ??
+      process.env.STORAGE_BUCKET_VIDEOS ??
+      'videos'
+    );
+  }
+
   avatarsBucket(): string {
     return this.config.get<string>('buckets.avatars') ?? 'avatars';
   }

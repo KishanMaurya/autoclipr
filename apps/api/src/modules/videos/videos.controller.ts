@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -81,5 +82,11 @@ export class VideosController {
   async get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const video = await this.videosService.get(user.sub, id);
     return ApiResponse.ok(video);
+  }
+
+  @Delete(':id')
+  async delete(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const result = await this.videosService.delete(user.sub, id);
+    return ApiResponse.ok(result);
   }
 }

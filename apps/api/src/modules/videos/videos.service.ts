@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MonitoringService, NR_EVENTS } from '@autoclipr/monitoring';
+import { ClipsRepository, type Clip } from '../clips/clips.repository';
 import { JobsService } from '../jobs/jobs.service';
 import { JobsRepository } from '../jobs/jobs.repository';
 import { JobType } from '../jobs/jobs.constants';
@@ -15,6 +16,7 @@ import { getSourceLabel, parseVideoUrl } from './utils/video-url.util';
 export class VideosService {
   constructor(
     private readonly videosRepo: VideosRepository,
+    private readonly clipsRepo: ClipsRepository,
     private readonly storage: StorageService,
     private readonly jobsService: JobsService,
     private readonly jobsRepo: JobsRepository,
@@ -194,5 +196,86 @@ export class VideosService {
     const video = await this.videosRepo.getById(videoId, userId);
     if (!video) throw new NotFoundException('Video not found');
     return video;
+  }
+
+  private clipsBucket(): string {
+    return this.config.get<string>('buckets.clips') ?? 'clips';
+  }
+
+  private videosBucket(): string {
+    return (
+      this.config.get<string>('buckets.videos') ??
+      process.env.STORAGE_BUCKET_VIDEOS ??
+      'videos'
+    );
+  }
+
+  private isStoragePath(path: string | null | undefined): path is string {
+    if (!path) return false;
+    return !path.startsWith('url-import:');
+  }
+
+  private storagePathsForClip(clip: Clip): string[] {
+    const bucket = this.clipsBucket();
+    const paths = new Set<string>();
+
+    if (clip.storage_path) {
+      paths.add(clip.storage_path);
+      paths.add(this.storage.clipThumbPath(clip.storage_path));
+    }
+
+    const thumbPath = this.storage.parseObjectPathFromUrl(clip.thumbnail_url, bucket);
+    if (thumbPath) paths.add(thumbPath);
+
+    const subtitlePath = this.storage.parseObjectPathFromUrl(clip.subtitle_url, bucket);
+    if (subtitlePath) paths.add(subtitlePath);
+
+    return [...paths].filter(Boolean);
+  }
+
+  private storagePathsForVideo(video: {
+    storage_path: string | null;
+    thumbnail_url: string | null;
+  }): string[] {
+    const bucket = this.videosBucket();
+    const paths = new Set<string>();
+
+    if (this.isStoragePath(video.storage_path)) {
+      paths.add(video.storage_path);
+      paths.add(this.storage.clipThumbPath(video.storage_path));
+    }
+
+    const thumbPath = this.storage.parseObjectPathFromUrl(video.thumbnail_url, bucket);
+    if (thumbPath) paths.add(thumbPath);
+
+    return [...paths].filter(Boolean);
+  }
+
+  private async removeStorageObjects(bucket: string, paths: string[]): Promise<void> {
+    if (!paths.length) return;
+    try {
+      await this.storage.removeObjects(bucket, paths);
+    } catch {
+      // Continue DB deletion if files are already gone.
+    }
+  }
+
+  async delete(userId: string, videoId: string) {
+    const video = await this.videosRepo.getById(videoId, userId);
+    if (!video) throw new NotFoundException('Video not found');
+
+    const clips = await this.clipsRepo.listByVideoId(videoId, userId);
+    for (const clip of clips) {
+      await this.removeStorageObjects(this.clipsBucket(), this.storagePathsForClip(clip));
+    }
+
+    await this.removeStorageObjects(
+      this.videosBucket(),
+      this.storagePathsForVideo(video),
+    );
+
+    await this.videosRepo.deleteById(videoId, userId);
+
+    return { deleted: true, id: videoId };
   }
 }

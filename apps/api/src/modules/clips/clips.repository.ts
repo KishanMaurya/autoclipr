@@ -58,6 +58,18 @@ export class ClipsRepository {
     return (data as Clip) ?? null;
   }
 
+  async listByVideoId(videoId: string, userId: string): Promise<Clip[]> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('clips')
+      .select(CLIP_COLUMNS)
+      .eq('video_id', videoId)
+      .eq('user_id', userId);
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Clip[];
+  }
+
   async deleteById(id: string, userId: string): Promise<boolean> {
     const { data, error } = await this.supabase
       .getClient()

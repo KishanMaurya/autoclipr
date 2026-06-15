@@ -142,4 +142,18 @@ export class VideosRepository {
 
     if (error) throw new Error(error.message);
   }
+
+  async deleteById(id: string, userId: string): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('videos')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return !!data;
+  }
 }
