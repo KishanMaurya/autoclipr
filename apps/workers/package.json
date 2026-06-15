@@ -18,6 +18,7 @@
     "@supabase/supabase-js": "^2.47.10",
     "bullmq": "^5.34.5",
     "ioredis": "^5.4.2",
+    "newrelic": "^12.25.1",
     "openai": "^4.77.0",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
@@ -27,8 +28,8 @@
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@types/node": "^22.10.2",
-    "@types/ws": "^8.5.13",
     "@types/pg": "^8.11.10",
+    "@types/ws": "^8.5.13",
     "typescript": "^5.7.2"
   }
 }

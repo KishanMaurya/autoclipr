@@ -63,7 +63,37 @@ Redeploy both services after saving variables.
 3. In NR, open **AutoClipr API** → Logs (not the wizard-created **AutoClipr** entity)
 4. Redeploy after code changes — agent must start with `node -r newrelic`
 5. Generate traffic: hit `/health`, upload a video, or trigger an error
-6. Query: `SELECT * FROM Log WHERE entity.name = 'AutoClipr API' SINCE 30 minutes ago`
+### HTTP request/response logs
+
+Every API request and response is sent to New Relic with:
+
+- `correlationId` — `X-Correlation-Id` / `X-Request-Id` (returned on response headers)
+- `trace.id` / `span.id` — New Relic distributed trace linking
+- `eventType` — `HttpRequest` or `HttpResponse`
+- Sanitized `requestBody` / `responseBody`
+
+```sql
+SELECT correlationId, httpMethod, httpPath, httpStatus, durationMs, message
+FROM Log
+WHERE eventType = 'HttpResponse' AND entity.name = 'AutoClipr API'
+SINCE 1 hour ago
+```
+
+Trace a single request:
+
+```sql
+SELECT * FROM Log WHERE correlationId = 'your-uuid-here' SINCE 1 day ago
+```
+
+```sql
+SELECT * FROM Log WHERE entity.name = 'AutoClipr API' SINCE 1 hour ago
+```
+
+Or search by message:
+
+```sql
+SELECT * FROM Log WHERE message LIKE '%started%' SINCE 1 hour ago
+```
 
 Logs sent intentionally:
 - Errors and warnings

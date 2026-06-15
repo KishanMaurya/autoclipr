@@ -3,10 +3,25 @@ export type LogLevel = 'error' | 'warn' | 'info';
 export type StructuredLogContext = {
   service?: string;
   traceId?: string;
+  spanId?: string;
+  correlationId?: string;
   userId?: string;
   videoId?: string;
   jobId?: string;
   [key: string]: unknown;
+};
+
+export type HttpLogDetails = {
+  correlationId: string;
+  method: string;
+  path: string;
+  statusCode?: number;
+  durationMs?: number;
+  userId?: string;
+  query?: string;
+  requestBody?: string;
+  responseBody?: string;
+  errorMessage?: string;
 };
 
 /** W3C / New Relic distributed trace headers passed through BullMQ jobs. */

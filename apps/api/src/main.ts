@@ -5,7 +5,6 @@ import { NestFactory } from '@nestjs/core';
 import { setDefaultResultOrder } from 'node:dns';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import { MonitoringService } from '@autoclipr/monitoring';
 
 // Supabase direct DB hostnames are often IPv6-only
@@ -17,13 +16,12 @@ async function bootstrap() {
   });
   const monitoring = app.get(MonitoringService);
   app.useGlobalFilters(new HttpExceptionFilter(monitoring));
-  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   const origins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(',').map((o) => o.trim());
   app.enableCors({
     origin: origins,
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Request-Id'],
   });
 
   app.useGlobalPipes(

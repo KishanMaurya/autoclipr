@@ -2,6 +2,7 @@ import { structuredLog, setStructuredLogAgent } from './structured-logger';
 import type {
   CustomEventAttributes,
   DistributedTraceHeaders,
+  HttpLogDetails,
   StructuredLogContext,
 } from './types';
 
@@ -43,7 +44,12 @@ export class MonitoringService {
     return agent.getLinkingMetadata()['trace.id'];
   }
 
-  getTraceContext(): StructuredLogContext {
+  getSpanId(): string | undefined {
+    if (!agent) return undefined;
+    return agent.getLinkingMetadata()['span.id'];
+  }
+
+  getLinkingContext(): StructuredLogContext {
     if (!agent) {
       return { service: this.serviceName };
     }
@@ -52,7 +58,12 @@ export class MonitoringService {
     return {
       service: this.serviceName,
       traceId: meta['trace.id'],
+      spanId: meta['span.id'],
     };
+  }
+
+  getTraceContext(): StructuredLogContext {
+    return this.getLinkingContext();
   }
 
   /** Capture NR trace headers to attach to BullMQ job payloads. */
@@ -127,7 +138,7 @@ export class MonitoringService {
       service: this.serviceName,
       traceId: context.traceId ?? this.getTraceId(),
       ...context,
-    });
+    }, error);
   }
 
   logWarn(message: string, context: StructuredLogContext = {}): void {
@@ -139,10 +150,48 @@ export class MonitoringService {
   }
 
   logInfo(message: string, context: StructuredLogContext = {}): void {
+    const linking = this.getLinkingContext();
     structuredLog('info', message, {
       service: this.serviceName,
-      traceId: context.traceId ?? this.getTraceId(),
+      traceId: context.traceId ?? linking.traceId,
+      spanId: context.spanId ?? linking.spanId,
       ...context,
+    });
+  }
+
+  logHttpRequest(details: HttpLogDetails): void {
+    const linking = this.getLinkingContext();
+    const message = `HTTP → ${details.method} ${details.path}`;
+
+    structuredLog('info', message, {
+      ...linking,
+      eventType: 'HttpRequest',
+      correlationId: details.correlationId,
+      httpMethod: details.method,
+      httpPath: details.path,
+      userId: details.userId,
+      query: details.query,
+      requestBody: details.requestBody,
+    });
+  }
+
+  logHttpResponse(details: HttpLogDetails): void {
+    const linking = this.getLinkingContext();
+    const status = details.statusCode ?? 500;
+    const message = `HTTP ← ${status} ${details.method} ${details.path} ${details.durationMs ?? 0}ms`;
+    const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+
+    structuredLog(level, message, {
+      ...linking,
+      eventType: 'HttpResponse',
+      correlationId: details.correlationId,
+      httpMethod: details.method,
+      httpPath: details.path,
+      httpStatus: status,
+      durationMs: details.durationMs,
+      userId: details.userId,
+      responseBody: details.responseBody,
+      errorMessage: details.errorMessage,
     });
   }
 

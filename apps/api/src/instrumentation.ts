@@ -17,5 +17,5 @@ process.on('uncaughtException', (error) => {
   structuredLog('error', error.message, {
     service: process.env.NEW_RELIC_APP_NAME ?? 'AutoClipr API',
     source: 'uncaughtException',
-  });
+  }, error);
 });
