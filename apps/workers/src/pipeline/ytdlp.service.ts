@@ -6,12 +6,11 @@ import { runCommand } from './exec.util';
 import { resolveBinary } from './resolve-binary.util';
 import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
 
-// tv_embedded first — it doesn't require JS signature solving (no PO token needed)
+// Variants tried in order when no custom YTDLP_EXTRACTOR_ARGS is set (no cookies)
 const DEFAULT_EXTRACTOR_VARIANTS = [
-  'youtube:player_client=tv_embedded;player_skip=webpage,config',
-  'youtube:player_client=android;player_skip=webpage',
-  'youtube:player_client=ios;player_skip=webpage',
-  'youtube:player_client=mweb;player_skip=webpage',
+  'youtube:player_client=mweb',
+  'youtube:player_client=android',
+  'youtube:player_client=ios',
 ];
 
 @Injectable()
@@ -49,10 +48,12 @@ export class YtdlpService implements OnModuleInit {
     if (custom) return [custom];
 
     if (this.cookiesFile) {
+      // With cookies: web client authenticates properly and gets a valid PO token
       return [
-        'youtube:player_client=tv_embedded;player_skip=webpage,config',
-        'youtube:player_client=web;player_skip=webpage',
-        ...DEFAULT_EXTRACTOR_VARIANTS,
+        'youtube:player_client=web',
+        'youtube:player_client=android',
+        'youtube:player_client=mweb',
+        'youtube:player_client=ios',
       ];
     }
 
@@ -67,6 +68,7 @@ export class YtdlpService implements OnModuleInit {
     const args = [
       '--no-playlist',
       '--no-check-formats',
+      '--no-warnings',
       '--retries',
       '5',
       '--fragment-retries',
