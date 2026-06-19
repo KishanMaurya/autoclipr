@@ -16,6 +16,11 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /repo/apps/workers
 ENV NODE_ENV=production
+
+# Install ffmpeg, python3 + pip (required by yt-dlp), then yt-dlp via pip
+RUN apk add --no-cache ffmpeg python3 py3-pip \
+  && pip3 install --break-system-packages --no-cache-dir yt-dlp
+
 COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
 COPY apps/workers/package.json apps/workers/package-lock.json* ./
 RUN npm ci --omit=dev
