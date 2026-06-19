@@ -26,10 +26,9 @@ export default () => ({
   ytdlpMaxHeight: Number(process.env.YTDLP_MAX_HEIGHT ?? 0),
   /** Optional cap on source length in seconds (0 = no limit). */
   ytdlpMaxDurationSeconds: Number(process.env.YTDLP_MAX_DURATION_SECONDS ?? 0),
-  /** Helps bypass YouTube bot checks on cloud IPs (Railway). Override via YTDLP_EXTRACTOR_ARGS. */
-  ytdlpExtractorArgs:
-    process.env.YTDLP_EXTRACTOR_ARGS ??
-    'youtube:player_client=android,web;player_skip=webpage',
+  /** Helps bypass YouTube bot checks on cloud IPs (Railway). Override via YTDLP_EXTRACTOR_ARGS.
+   *  Leave empty so getExtractorVariants() can try multiple player_client fallbacks on failure. */
+  ytdlpExtractorArgs: process.env.YTDLP_EXTRACTOR_ARGS ?? '',
   /** Optional Netscape cookies file — most reliable fix for YouTube on datacenter IPs. */
   ytdlpCookiesFile: process.env.YTDLP_COOKIES_FILE ?? '',
   /** Base64-encoded Netscape cookies file (Railway-friendly alternative to a file path). */
