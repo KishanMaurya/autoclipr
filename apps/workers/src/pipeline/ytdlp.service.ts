@@ -119,13 +119,11 @@ export class YtdlpService implements OnModuleInit {
     const format =
       maxHeight > 0
         ? [
-            `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]`,
             `bestvideo[height<=${maxHeight}]+bestaudio`,
-            `best[height<=${maxHeight}][ext=mp4]`,
             `best[height<=${maxHeight}]`,
-            'best[ext=mp4]/best',
+            'best',
           ].join('/')
-        : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best';
+        : 'bestvideo+bestaudio/best';
 
     const variants = this.getExtractorVariants();
     let lastError: Error | null = null;
