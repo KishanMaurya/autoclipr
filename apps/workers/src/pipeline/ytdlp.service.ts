@@ -6,11 +6,10 @@ import { runCommand } from './exec.util';
 import { resolveBinary } from './resolve-binary.util';
 import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
 
-// Variants tried in order when no custom YTDLP_EXTRACTOR_ARGS is set (no cookies)
 const DEFAULT_EXTRACTOR_VARIANTS = [
-  'youtube:player_client=mweb',
   'youtube:player_client=android',
   'youtube:player_client=ios',
+  'youtube:player_client=mweb',
 ];
 
 @Injectable()
@@ -48,12 +47,11 @@ export class YtdlpService implements OnModuleInit {
     if (custom) return [custom];
 
     if (this.cookiesFile) {
-      // With cookies: web client authenticates properly and gets a valid PO token
       return [
-        'youtube:player_client=web',
         'youtube:player_client=android',
-        'youtube:player_client=mweb',
         'youtube:player_client=ios',
+        'youtube:player_client=web',
+        'youtube:player_client=mweb',
       ];
     }
 
@@ -67,7 +65,7 @@ export class YtdlpService implements OnModuleInit {
   ): string[] {
     const args = [
       '--no-playlist',
-      '--no-warnings',
+      '--geo-bypass',
       '--retries',
       '5',
       '--fragment-retries',
@@ -215,7 +213,7 @@ export class YtdlpService implements OnModuleInit {
   }
 
   private isRetryableYoutubeError(message: string): boolean {
-    return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check/i.test(
+    return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check|requested format is not available|format is not available/i.test(
       message,
     );
   }
