@@ -33,6 +33,9 @@ export default () => ({
   ytdlpCookiesFile: process.env.YTDLP_COOKIES_FILE ?? '',
   /** Base64-encoded Netscape cookies file (Railway-friendly alternative to a file path). */
   ytdlpCookiesB64: process.env.YTDLP_COOKIES_B64 ?? '',
+  /** Proxy for yt-dlp — use a residential proxy to bypass YouTube datacenter IP blocks.
+   *  e.g. socks5://user:pass@host:port  or  http://user:pass@host:port */
+  ytdlpProxy: process.env.YTDLP_PROXY ?? '',
   /** When true, continue pipeline with timed placeholder transcript if OpenAI quota/billing fails */
   openaiFallbackOnQuota: process.env.OPENAI_FALLBACK_ON_QUOTA !== 'false',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',

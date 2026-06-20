@@ -95,6 +95,11 @@ export class YtdlpService implements OnModuleInit {
       args.push('--cookies', this.cookiesFile);
     }
 
+    const proxy = this.config.get<string>('ytdlpProxy');
+    if (proxy) {
+      args.push('--proxy', proxy);
+    }
+
     return args;
   }
 
@@ -201,6 +206,10 @@ export class YtdlpService implements OnModuleInit {
     const args = ['--print', '%(title)s', '--no-download', '--extractor-args', extractorArgs];
     if (this.cookiesFile) {
       args.push('--cookies', this.cookiesFile);
+    }
+    const proxy = this.config.get<string>('ytdlpProxy');
+    if (proxy) {
+      args.push('--proxy', proxy);
     }
     args.push(url);
 
