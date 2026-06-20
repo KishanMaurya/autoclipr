@@ -66,12 +66,12 @@ export function FAQ() {
         </Reveal>
 
         {/* FAQ accordion */}
-        <Accordion type="single" collapsible className="mt-10">
+        <Accordion key={active} type="single" collapsible className="mt-10">
           <Stagger className="space-y-3" amount={0.08}>
             {filtered.map((f, i) => (
-              <MotionItem key={f.q}>
+              <MotionItem key={`${active}-${f.q}`}>
                 <AccordionItem
-                  value={`item-${i}`}
+                  value={`item-${active}-${i}`}
                   className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] px-0 transition-colors hover:border-white/[0.12]"
                 >
                   <AccordionTrigger className="px-6 py-5 text-left text-[15px] font-semibold text-white hover:no-underline [&[data-state=open]]:text-aurora">
