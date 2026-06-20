@@ -67,7 +67,6 @@ export class YtdlpService implements OnModuleInit {
   ): string[] {
     const args = [
       '--no-playlist',
-      '--no-check-formats',
       '--no-warnings',
       '--retries',
       '5',
