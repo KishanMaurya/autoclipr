@@ -17,6 +17,7 @@ import {
   Users,
   LineChart,
   Layers,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,15 +27,19 @@ import { Reveal, Stagger, MotionCard } from "@/components/ui/motion";
 type PlanFeature = {
   label: string;
   icon: LucideIcon;
+  highlight?: boolean;
 };
 
 type Plan = {
   id: string;
   name: string;
   price: number;
+  priceYearly?: number;
+  tagline: string;
   icon: LucideIcon;
   iconClass: string;
-  glowColor: string;
+  accentColor: string;
+  badgeText?: string;
   features: PlanFeature[];
   cta: string;
   popular?: boolean;
@@ -45,13 +50,14 @@ const plans: Plan[] = [
     id: "starter",
     name: "Starter",
     price: 25,
+    tagline: "Perfect for solo creators getting started.",
     icon: Rocket,
-    iconClass: "bg-gradient-to-br from-violet-500 to-pink-500",
-    glowColor: "bg-violet-400",
-    cta: "Go Starter",
+    iconClass: "from-violet-500 to-pink-500",
+    accentColor: "violet",
+    cta: "Start free trial",
     features: [
       { label: "30 short clips / month", icon: PlaySquare },
-      { label: "200 credits", icon: Coins },
+      { label: "200 credits included", icon: Coins },
       { label: "Fast mode up to 60s", icon: Zap },
       { label: "AI viral moment detection", icon: Sparkles },
       { label: "Auto captions & subtitles", icon: Subtitles },
@@ -64,20 +70,22 @@ const plans: Plan[] = [
     id: "creator",
     name: "Creator",
     price: 49,
+    tagline: "For creators who publish daily and grow fast.",
     icon: Aperture,
-    iconClass: "bg-gradient-to-br from-blue-500 to-cyan-400",
-    glowColor: "bg-blue-400",
-    cta: "Go Creator",
+    iconClass: "from-emerald-500 to-cyan-400",
+    accentColor: "emerald",
+    cta: "Start free trial",
     popular: true,
+    badgeText: "Most Popular",
     features: [
-      { label: "90 short clips / month", icon: PlaySquare },
-      { label: "500 credits", icon: Coins },
+      { label: "90 short clips / month", icon: PlaySquare, highlight: true },
+      { label: "500 credits included", icon: Coins, highlight: true },
       { label: "Fast + Pro rendering modes", icon: Zap },
-      { label: "AI clip scoring & highlights", icon: Sparkles },
+      { label: "AI clip scoring & highlights", icon: Sparkles, highlight: true },
       { label: "Short-form video templates", icon: Flame },
       { label: "Auto captions & subtitles", icon: Subtitles },
       { label: "Brand kits", icon: Award },
-      { label: "Priority exports + faster queue", icon: Upload },
+      { label: "Priority exports + faster queue", icon: Upload, highlight: true },
       { label: "Multi-platform publishing", icon: PlaySquare },
       { label: "Unlimited exports", icon: Upload },
     ],
@@ -86,124 +94,152 @@ const plans: Plan[] = [
     id: "business",
     name: "Business",
     price: 99,
+    tagline: "For agencies, teams, and serious power users.",
     icon: Briefcase,
-    iconClass: "bg-gradient-to-br from-zinc-600 to-zinc-900 border border-white/10",
-    glowColor: "bg-indigo-400",
-    cta: "Go Business",
+    iconClass: "from-orange-500 to-amber-400",
+    accentColor: "orange",
+    cta: "Start free trial",
     features: [
-      { label: "200 short clips / month", icon: PlaySquare },
-      { label: "1,200 credits", icon: Coins },
+      { label: "200 short clips / month", icon: PlaySquare, highlight: true },
+      { label: "1,200 credits included", icon: Coins, highlight: true },
       { label: "All rendering modes unlocked", icon: Zap },
       { label: "AI Shorts creator", icon: Sparkles },
       { label: "Auto captions & subtitles", icon: Subtitles },
-      { label: "Team access + commercial rights", icon: Users },
+      { label: "Team access + commercial rights", icon: Users, highlight: true },
       { label: "Priority rendering queue", icon: Upload },
       { label: "Advanced brand kits", icon: Award },
-      { label: "Bulk video creation", icon: Layers },
+      { label: "Bulk video creation", icon: Layers, highlight: true },
       { label: "Analytics & performance tracking", icon: LineChart },
       { label: "Unlimited exports", icon: Upload },
     ],
   },
 ];
 
-function GridPattern() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 opacity-[0.35]"
-      style={{
-        backgroundImage: `
-          linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)
-        `,
-        backgroundSize: "28px 28px",
-      }}
-    />
-  );
-}
+const accentMap: Record<string, { badge: string; icon: string; ring: string; glow: string; btn: string; feature: string }> = {
+  violet: {
+    badge: "bg-violet-500/15 text-violet-300 border-violet-500/20",
+    icon: "from-violet-500 to-pink-500",
+    ring: "border-violet-500/30 shadow-violet-500/10",
+    glow: "bg-violet-400",
+    btn: "bg-white/5 hover:bg-white/10 text-white border border-white/10",
+    feature: "text-violet-400",
+  },
+  emerald: {
+    badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/20",
+    icon: "from-emerald-500 to-cyan-400",
+    ring: "border-emerald-500/40 shadow-emerald-500/15",
+    glow: "bg-emerald-400",
+    btn: "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-900/40 hover:from-emerald-500 hover:to-emerald-400",
+    feature: "text-emerald-400",
+  },
+  orange: {
+    badge: "bg-orange-500/15 text-orange-300 border-orange-500/20",
+    icon: "from-orange-500 to-amber-400",
+    ring: "border-orange-500/30 shadow-orange-500/10",
+    glow: "bg-orange-400",
+    btn: "bg-white/5 hover:bg-white/10 text-white border border-white/10",
+    feature: "text-orange-400",
+  },
+};
 
 function PricingCard({ plan }: { plan: Plan }) {
   const Icon = plan.icon;
+  const ac = accentMap[plan.accentColor];
 
   return (
     <MotionCard
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-2xl border bg-white/[0.03] backdrop-blur-2xl transition-shadow duration-300",
+        "relative flex flex-col overflow-hidden rounded-3xl border bg-[#0d0d18] transition-all duration-300",
         plan.popular
-          ? "border-blue-500/60 shadow-xl shadow-blue-500/10 ring-1 ring-blue-500/30"
-          : "border-white/[0.08] hover:border-white/20 hover:shadow-lg hover:shadow-black/40"
+          ? cn("border-emerald-500/40 shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-500/20 scale-[1.02]", "lg:scale-[1.04]")
+          : "border-white/[0.08] hover:border-white/20"
       )}
     >
-      {plan.popular && (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 py-2 text-center text-xs font-bold uppercase tracking-widest text-white">
-          Most Popular
+      {/* Popular badge */}
+      {plan.badgeText && (
+        <div className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-emerald-500 py-2.5 text-xs font-bold uppercase tracking-widest text-white">
+          <Sparkles className="h-3 w-3" />
+          {plan.badgeText}
         </div>
       )}
 
       {/* Header */}
-      <div className="relative border-b border-white/5 px-6 pb-6 pt-8">
-        <GridPattern />
-        <span
-          className={cn(
-            "absolute right-5 top-5 h-2 w-2 rounded-full blur-[1px]",
-            plan.glowColor,
-            "opacity-80"
-          )}
-        />
-
+      <div className="relative overflow-hidden px-7 pb-7 pt-8">
+        {/* Subtle grid bg */}
         <div
-          className={cn(
-            "relative flex h-14 w-14 items-center justify-center rounded-xl shadow-lg",
-            plan.iconClass
-          )}
-        >
+          className="pointer-events-none absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+            backgroundSize: "24px 24px",
+          }}
+        />
+        {/* Glow dot */}
+        <span className={cn("absolute right-6 top-6 h-2 w-2 rounded-full blur-sm opacity-90", ac.glow)} />
+
+        {/* Icon */}
+        <div className={cn("relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg", ac.icon)}>
           <Icon className="h-7 w-7 text-white" strokeWidth={1.75} />
         </div>
 
-        <h3 className="relative mt-5 text-xl font-bold text-white">{plan.name}</h3>
-        <div className="relative mt-2 flex items-baseline gap-1">
-          <span className="text-4xl font-bold tracking-tight text-white">${plan.price}</span>
-          <span className="text-sm text-muted-foreground">/month</span>
+        {/* Plan name + tagline */}
+        <div className="relative mt-5">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+            {plan.badgeText && (
+              <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider", ac.badge)}>
+                Best value
+              </span>
+            )}
+          </div>
+          <p className="mt-1.5 text-sm text-muted-foreground">{plan.tagline}</p>
         </div>
+
+        {/* Price */}
+        <div className="relative mt-5 flex items-end gap-1">
+          <span className="text-5xl font-extrabold tracking-tight text-white">${plan.price}</span>
+          <span className="mb-2 text-sm text-muted-foreground">/month</span>
+        </div>
+        <p className="relative mt-1 text-xs text-white/30">Billed monthly · Cancel anytime</p>
       </div>
 
+      {/* Divider */}
+      <div className="mx-7 h-px bg-white/[0.06]" />
+
       {/* Features */}
-      <div className="flex flex-1 flex-col px-6 py-6">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex flex-1 flex-col px-7 py-6">
+        <p className="mb-5 text-[10px] font-bold uppercase tracking-widest text-white/30">
           What&apos;s included
         </p>
-        <ul className="space-y-3.5">
+        <ul className="space-y-3">
           {plan.features.map((feature) => {
-            const FeatureIcon = feature.icon;
             return (
-              <li key={feature.label} className="flex items-start gap-3 text-sm">
-                <FeatureIcon
-                  className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500"
-                  strokeWidth={1.75}
-                />
-                <span className="leading-snug text-zinc-300">{feature.label}</span>
+              <li key={feature.label} className="flex items-center gap-3 text-sm">
+                <div className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                  feature.highlight ? `bg-gradient-to-br ${ac.icon} shadow-sm` : "bg-white/[0.06]"
+                )}>
+                  <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
+                </div>
+                <span className={cn("leading-snug", feature.highlight ? "font-medium text-white" : "text-white/60")}>
+                  {feature.label}
+                </span>
               </li>
             );
           })}
         </ul>
 
-        <Button
-          className={cn(
-            "mt-8 w-full rounded-full font-semibold",
-            plan.popular ? "h-12" : "h-11"
-          )}
-          variant={plan.popular ? "default" : "outline"}
-          asChild
-        >
+        {/* CTA */}
+        <div className="mt-8">
           <Link
             href={`/register?plan=${plan.id}`}
             className={cn(
-              plan.popular &&
-                "bg-blue-600 text-white hover:bg-blue-500 hover:opacity-100"
+              "flex w-full items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-semibold transition-all",
+              ac.btn
             )}
           >
             {plan.cta}
           </Link>
-        </Button>
+        </div>
       </div>
     </MotionCard>
   );
@@ -215,29 +251,40 @@ type PricingSectionProps = {
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
   return (
-    <section id="pricing" className="border-t border-white/5 px-4 py-24 sm:px-6">
+    <section id="pricing" className="border-t border-white/5 px-4 py-28 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {showHeader && (
-          <Reveal className="mb-14 text-center">
+          <Reveal className="mb-16 text-center">
             <p className="section-label mx-auto mb-6">Pricing</p>
             <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               Plans that <span className="text-aurora">scale with you</span>
             </h2>
+            <p className="mx-auto mt-4 max-w-xl text-muted-foreground sm:text-lg">
+              Start free. Upgrade when you&apos;re ready. No contracts, no surprises.
+            </p>
           </Reveal>
         )}
 
-        <Stagger className="grid gap-6 lg:grid-cols-3 lg:gap-5" amount={0.15}>
+        <Stagger className="grid items-start gap-5 lg:grid-cols-3" amount={0.15}>
           {plans.map((plan) => (
             <PricingCard key={plan.id} plan={plan} />
           ))}
         </Stagger>
 
-        <p className="mt-10 text-center text-sm text-muted-foreground">
-          All plans include a 7-day free trial. No credit card required to start.{" "}
-          <Link href="/register" className="text-violet-400 hover:underline">
-            Try AutoClipr free →
-          </Link>
-        </p>
+        {/* Footer */}
+        <Reveal className="mt-12 text-center" delay={0.2}>
+          <div className="inline-flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-8 py-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> 7-day free trial</span>
+            <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:block" />
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> No credit card required</span>
+            <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:block" />
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" /> Cancel anytime</span>
+            <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:block" />
+            <Link href="/register" className="font-medium text-aurora hover:underline">
+              Try AutoClipr free →
+            </Link>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
