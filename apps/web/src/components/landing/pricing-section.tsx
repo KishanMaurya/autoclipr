@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Rocket,
@@ -50,6 +51,7 @@ const plans: Plan[] = [
     id: "starter",
     name: "Starter",
     price: 25,
+    priceYearly: 20,
     tagline: "Perfect for solo creators getting started.",
     icon: Rocket,
     iconClass: "from-violet-500 to-pink-500",
@@ -70,6 +72,7 @@ const plans: Plan[] = [
     id: "creator",
     name: "Creator",
     price: 49,
+    priceYearly: 39,
     tagline: "For creators who publish daily and grow fast.",
     icon: Aperture,
     iconClass: "from-emerald-500 to-cyan-400",
@@ -94,6 +97,7 @@ const plans: Plan[] = [
     id: "business",
     name: "Business",
     price: 99,
+    priceYearly: 79,
     tagline: "For agencies, teams, and serious power users.",
     icon: Briefcase,
     iconClass: "from-orange-500 to-amber-400",
@@ -142,9 +146,10 @@ const accentMap: Record<string, { badge: string; icon: string; ring: string; glo
   },
 };
 
-function PricingCard({ plan }: { plan: Plan }) {
+function PricingCard({ plan, yearly }: { plan: Plan; yearly: boolean }) {
   const Icon = plan.icon;
   const ac = accentMap[plan.accentColor];
+  const displayPrice = yearly && plan.priceYearly ? plan.priceYearly : plan.price;
 
   return (
     <MotionCard
@@ -196,10 +201,12 @@ function PricingCard({ plan }: { plan: Plan }) {
 
         {/* Price */}
         <div className="relative mt-5 flex items-end gap-1">
-          <span className="text-5xl font-extrabold tracking-tight text-white">${plan.price}</span>
+          <span className="text-5xl font-extrabold tracking-tight text-white">${displayPrice}</span>
           <span className="mb-2 text-sm text-muted-foreground">/month</span>
         </div>
-        <p className="relative mt-1 text-xs text-white/30">Billed monthly · Cancel anytime</p>
+        <p className="relative mt-1 text-xs text-white/30">
+          {yearly ? "Billed yearly · Cancel anytime" : "Billed monthly · Cancel anytime"}
+        </p>
       </div>
 
       {/* Divider */}
@@ -250,11 +257,13 @@ type PricingSectionProps = {
 };
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
+  const [yearly, setYearly] = useState(true);
+
   return (
     <section id="pricing" className="border-t border-white/5 px-4 py-28 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {showHeader && (
-          <Reveal className="mb-16 text-center">
+          <Reveal className="mb-10 text-center">
             <p className="section-label mx-auto mb-6">Pricing</p>
             <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               Plans that <span className="text-aurora">scale with you</span>
@@ -265,9 +274,36 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </Reveal>
         )}
 
+        {/* Billing toggle */}
+        <Reveal className="mb-10 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1">
+            <button
+              onClick={() => setYearly(false)}
+              className={cn(
+                "rounded-full px-5 py-2 text-sm font-semibold transition-all",
+                !yearly ? "bg-white text-black shadow" : "text-muted-foreground hover:text-white"
+              )}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setYearly(true)}
+              className={cn(
+                "rounded-full px-5 py-2 text-sm font-semibold transition-all",
+                yearly ? "bg-[#5B6CF6] text-white shadow" : "text-muted-foreground hover:text-white"
+              )}
+            >
+              Yearly
+            </button>
+          </div>
+          <p className={cn("text-sm transition-opacity", yearly ? "text-emerald-400 opacity-100" : "opacity-0")}>
+            Billed yearly. Cancel anytime.
+          </p>
+        </Reveal>
+
         <Stagger className="grid items-start gap-5 lg:grid-cols-3" amount={0.15}>
           {plans.map((plan) => (
-            <PricingCard key={plan.id} plan={plan} />
+            <PricingCard key={plan.id} plan={plan} yearly={yearly} />
           ))}
         </Stagger>
 
