@@ -296,8 +296,12 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               Yearly
             </button>
           </div>
-          <p className={cn("text-sm transition-opacity", yearly ? "text-emerald-400 opacity-100" : "opacity-0")}>
-            Billed yearly. Cancel anytime.
+          <p className="text-sm text-muted-foreground">
+            {yearly ? (
+              <span className="text-emerald-400">Billed yearly. Cancel anytime.</span>
+            ) : (
+              "Billed monthly. Cancel anytime."
+            )}
           </p>
         </Reveal>
 
