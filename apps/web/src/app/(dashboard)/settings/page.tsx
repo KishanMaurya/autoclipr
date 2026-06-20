@@ -4,6 +4,7 @@ import { resolveUserFullName } from "@/lib/user-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteAccountSection } from "@/components/dashboard/delete-account-section";
 import { SettingsForm } from "@/components/dashboard/settings-form";
+import { EmailNotificationsSection } from "@/components/dashboard/email-notifications-section";
 
 export const metadata = { title: "Settings" };
 
@@ -51,6 +52,17 @@ export default async function SettingsPage() {
             avatarUrl={profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? ""}
             phone={authPhone}
             emailEditable={needsEmail}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmailNotificationsSection
+            initialEnabled={profile?.email_notifications_enabled ?? true}
           />
         </CardContent>
       </Card>

@@ -10,6 +10,7 @@
     "start:prod": "node dist/main"
   },
   "dependencies": {
+    "@autoclipr/emails": "file:../../apps/emails",
     "@autoclipr/monitoring": "file:../../packages/monitoring",
     "@nestjs/bullmq": "^10.2.3",
     "@nestjs/common": "^10.4.15",

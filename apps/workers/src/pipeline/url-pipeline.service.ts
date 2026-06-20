@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MonitoringService, NR_EVENTS } from '@autoclipr/monitoring';
+import { EmailService } from '@autoclipr/emails';
 import { PipelineLogger } from '../common/pipeline-logger.util';
 import { DatabaseService } from '../database/database.service';
 import { CaptionService } from './caption.service';
@@ -33,6 +35,8 @@ export class UrlPipelineService {
     private readonly captions: CaptionService,
     private readonly storage: WorkersStorageService,
     private readonly monitoring: MonitoringService,
+    private readonly email: EmailService,
+    private readonly config: ConfigService,
   ) {}
 
   async run(data: UrlPipelinePayload, jobId?: string): Promise<void> {
@@ -266,6 +270,9 @@ export class UrlPipelineService {
       if (userId && creditCost && creditCost > 0) {
         await this.deductCredits(userId, creditCost, 'url_import_pipeline', videoId);
       }
+
+      // Send clip-ready email (non-blocking)
+      void this.sendClipReadyEmail(userId, videoId, videoRow.title as string, moments.length);
 
       plog.stepDone('pipeline', Date.now() - pipelineStarted, {
         clips_created: moments.length,
@@ -543,6 +550,29 @@ export class UrlPipelineService {
   private estimateSpeakers(text: string): number {
     const matches = text.match(/\b(Speaker \d|Host:|Guest:)/gi);
     return matches ? Math.min(4, new Set(matches.map((m) => m.toLowerCase())).size) : 1;
+  }
+
+  private async sendClipReadyEmail(userId: string, videoId: string, videoTitle: string, clipsCount: number): Promise<void> {
+    try {
+      const userRes = await this.db.client.query(
+        `SELECT email, email_notifications_enabled FROM profiles WHERE id = $1`,
+        [userId],
+      );
+      const userEmail = userRes.rows[0]?.email as string | undefined;
+      const notificationsEnabled = userRes.rows[0]?.email_notifications_enabled as boolean | undefined;
+      if (!userEmail || notificationsEnabled === false) return;
+
+      const appUrl = this.config.get<string>('appUrl') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://autoclipr.com';
+      await this.email.sendClipReady(userEmail, {
+        userName: userEmail.split('@')[0],
+        clipTitle: videoTitle,
+        clipsCount,
+        generatedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        clipUrl: `${appUrl}/clips?video=${videoId}`,
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to send clip-ready email for video ${videoId}: ${err}`);
+    }
   }
 
   private avgScore(moments: ViralMoment[]): number {

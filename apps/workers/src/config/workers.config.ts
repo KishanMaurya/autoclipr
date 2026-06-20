@@ -40,4 +40,5 @@ export default () => ({
   openaiFallbackOnQuota: process.env.OPENAI_FALLBACK_ON_QUOTA !== 'false',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'https://autoclipr.com',
 });

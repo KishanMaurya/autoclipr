@@ -19,6 +19,7 @@ import { WorkersStorageService } from './pipeline/storage.service';
 import { YtdlpService } from './pipeline/ytdlp.service';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { QueueMetricsService } from './monitoring/queue-metrics.service';
+import { EmailModule } from '@autoclipr/emails';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { QueueMetricsService } from './monitoring/queue-metrics.service';
     }),
     BullModule.registerQueue({ name: CLIP_QUEUE }),
     MonitoringModule,
+    EmailModule,
   ],
   providers: [
     DatabaseService,

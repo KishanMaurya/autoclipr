@@ -20,6 +20,7 @@ import { PlatformsModule } from './modules/platforms/platforms.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { EmailModule } from '@autoclipr/emails';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import { ActionLoggingInterceptor } from './common/interceptors/action-logging.interceptor';
 
@@ -37,6 +38,7 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
         connection: bullMqConnectionOptions(),
       }),
     }),
+    EmailModule,
     DatabaseModule,
     HealthModule,
     AuthModule,

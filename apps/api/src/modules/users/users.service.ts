@@ -96,6 +96,7 @@ export class UsersService {
         dto.avatar_url !== undefined
           ? dto.avatar_url.trim() || null
           : undefined,
+      email_notifications_enabled: dto.email_notifications_enabled,
     });
   }
 

@@ -65,6 +65,7 @@ export interface Profile {
   credits: number;
   subscription_tier: string;
   clip_credit_cost?: number;
+  email_notifications_enabled?: boolean;
 }
 
 export interface Video {
