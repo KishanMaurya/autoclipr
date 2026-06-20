@@ -8,6 +8,29 @@ export interface PlatformConnectedVars {
   supportEmail: string;
 }
 
+const PLATFORM_ICON: Record<string, string> = {
+  'youtube shorts': `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px;">
+    <tr><td align="center">
+      <svg width="64" height="45" viewBox="0 0 64 45" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="45" rx="12" fill="#FF0000"/>
+        <polygon points="26,13 26,32 44,22.5" fill="#FFFFFF"/>
+      </svg>
+    </td></tr>
+  </table>`,
+  youtube: `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px;">
+    <tr><td align="center">
+      <svg width="64" height="45" viewBox="0 0 64 45" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="45" rx="12" fill="#FF0000"/>
+        <polygon points="26,13 26,32 44,22.5" fill="#FFFFFF"/>
+      </svg>
+    </td></tr>
+  </table>`,
+  'instagram reels': `<p style="margin:0 0 16px;font-size:48px;text-align:center;">📸</p>`,
+  instagram: `<p style="margin:0 0 16px;font-size:48px;text-align:center;">📸</p>`,
+  facebook: `<p style="margin:0 0 16px;font-size:48px;text-align:center;">📘</p>`,
+  tiktok: `<p style="margin:0 0 16px;font-size:48px;text-align:center;">🎵</p>`,
+};
+
 const PLATFORM_EMOJI: Record<string, string> = {
   'youtube shorts': '▶️',
   youtube: '▶️',
@@ -22,12 +45,14 @@ export function platformConnectedTemplate(vars: PlatformConnectedVars): {
   html: string;
   text: string;
 } {
-  const emoji = PLATFORM_EMOJI[vars.platformName.toLowerCase()] ?? '🔗';
+  const key = vars.platformName.toLowerCase();
+  const emoji = PLATFORM_EMOJI[key] ?? '🔗';
+  const icon = PLATFORM_ICON[key] ?? `<p style="margin:0 0 16px;font-size:48px;text-align:center;">🔗</p>`;
   const subject = `${emoji} ${vars.platformName} connected to AutoClipr.ai`;
 
   const html = baseLayout(
     `
-    <p style="margin:0 0 16px;font-size:36px;text-align:center;">${emoji}</p>
+    ${icon}
     ${h1(`${vars.platformName} connected, ${highlight(vars.userName)}!`)}
     ${p(`Your <strong style="color:#e5e7eb;">${vars.platformName}</strong> account has been successfully connected to AutoClipr.ai. You can now automatically post your AI-generated clips to this platform.`)}
 
