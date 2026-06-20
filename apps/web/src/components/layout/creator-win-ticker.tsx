@@ -38,10 +38,11 @@ export function CreatorWinTicker() {
         className="group flex items-center gap-0 rounded-full border border-white/[0.08] bg-[#0d0d18]/80 px-1 py-1 pr-3 text-xs backdrop-blur-sm transition hover:border-white/20"
       >
         {/* Trophy badge */}
-        <span className="mr-2.5 flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">
-          <Trophy className="h-3 w-3" />
+        <span className="mr-2.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white/70">
+          <Trophy className="h-3 w-3 text-amber-400" />
           Creator Win
         </span>
+        <span className="mr-2.5 text-white/20">|</span>
 
         {/* Rotating text */}
         <span
