@@ -13,7 +13,7 @@ export function contactConfirmationTemplate(vars: ContactConfirmationVars): {
   html: string;
   text: string;
 } {
-  const subject = 'We got your message – AutoClipr';
+  const subject = 'We got your message – AutoClipr.ai';
   const truncated = vars.message.length > 300 ? vars.message.slice(0, 297) + '…' : vars.message;
 
   const html = baseLayout(
