@@ -17,13 +17,17 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { FAQ } from "@/components/landing/faq";
 import { CTA } from "@/components/landing/cta";
 import { Comparison } from "@/components/landing/comparison";
+import { PlatformMarquee } from "@/components/landing/platform-marquee";
+import { Stats } from "@/components/landing/stats";
 
 export default function HomePage() {
   return (
     <>
       <HomePageJsonLd />
       <Hero />
+      <PlatformMarquee />
       <UrlToShorts />
+      <Stats />
       <Features />
       <HowItWorks />
       <Comparison />

@@ -75,6 +75,10 @@ const config: Config = {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.7s ease-out forwards",
@@ -82,6 +86,7 @@ const config: Config = {
         float: "float 8s ease-in-out infinite",
         "pulse-glow": "pulse-glow 4s ease-in-out infinite",
         "gradient-shift": "gradient-shift 6s ease infinite",
+        marquee: "marquee 22s linear infinite",
       },
     },
   },
