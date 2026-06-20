@@ -260,6 +260,13 @@ export class UrlPipelineService {
 
       steps[4].status = 'completed';
       await this.db.client.query(`UPDATE videos SET status = 'ready' WHERE id = $1`, [videoId]);
+
+      // Deduct credits only after successful completion
+      const creditCost = (data as Record<string, unknown>).credit_cost as number | undefined;
+      if (userId && creditCost && creditCost > 0) {
+        await this.deductCredits(userId, creditCost, 'url_import_pipeline', videoId);
+      }
+
       plog.stepDone('pipeline', Date.now() - pipelineStarted, {
         clips_created: moments.length,
         status: 'ready',
@@ -496,6 +503,41 @@ export class UrlPipelineService {
         jobId,
       ],
     );
+  }
+
+  private async deductCredits(
+    userId: string,
+    amount: number,
+    reason: string,
+    referenceId: string,
+  ): Promise<void> {
+    try {
+      const res = await this.db.client.query<{ credits: number }>(
+        `SELECT credits FROM profiles WHERE id = $1`,
+        [userId],
+      );
+      const balance = res.rows[0]?.credits ?? 0;
+      if (balance < amount) {
+        this.logger.warn(
+          `Cannot deduct ${amount} credits from user ${userId} (balance: ${balance}) — skipping`,
+        );
+        return;
+      }
+      const newBalance = balance - amount;
+      await this.db.client.query(
+        `UPDATE profiles SET credits = $1, updated_at = NOW() WHERE id = $2`,
+        [newBalance, userId],
+      );
+      await this.db.client.query(
+        `INSERT INTO credit_transactions (user_id, amount, balance_after, reason, reference_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, -amount, newBalance, reason, referenceId],
+      );
+      this.logger.log(`Deducted ${amount} credits from ${userId} (balance: ${balance} → ${newBalance})`);
+    } catch (err) {
+      // Non-fatal — clips are already generated; log and continue
+      this.logger.error(`Credit deduction failed for user ${userId}: ${err}`);
+    }
   }
 
   private estimateSpeakers(text: string): number {

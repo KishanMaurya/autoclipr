@@ -13,6 +13,7 @@ import {
   Mic,
   Zap,
   Share2,
+  CreditCard,
 } from "lucide-react";
 import { getAccessToken } from "@/lib/auth-token";
 import { apiFetch, type Profile } from "@/lib/api";
@@ -83,6 +84,7 @@ export function CreateFromUrl() {
 
   const importCost = clipCount * creditCostPerClip;
   const hasEnoughCredits = credits === null || credits >= importCost;
+  const noCredits = credits !== null && credits === 0;
 
   useEffect(() => {
     async function loadCredits() {
@@ -523,25 +525,40 @@ export function CreateFromUrl() {
                 {creditCostPerClip === 1 ? "" : "s"} each) · You have{" "}
                 <span className="font-semibold">{credits}</span> credits
               </p>
-              {!hasEnoughCredits && (
+              {noCredits ? (
                 <p className="mt-1 text-xs opacity-90">
-                  Lower clip count to {Math.floor(credits / creditCostPerClip) || 1} or fewer, or
-                  add credits in Supabase / Billing.
+                  You have no credits left. Subscribe to get more credits and continue generating clips.
                 </p>
-              )}
+              ) : !hasEnoughCredits ? (
+                <p className="mt-1 text-xs opacity-90">
+                  Lower clip count to {Math.floor(credits! / creditCostPerClip) || 1} or fewer, or upgrade your plan for more credits.
+                </p>
+              ) : null}
             </div>
           )}
 
-          <Button
-            variant="gradient"
-            size="lg"
-            className="w-full text-base font-bold"
-            disabled={!url.trim() || !hasEnoughCredits}
-            onClick={handleCreate}
-          >
-            <Sparkles className="mr-2 h-5 w-5" />
-            Create Viral Shorts
-          </Button>
+          {noCredits ? (
+            <Button
+              variant="gradient"
+              size="lg"
+              className="w-full text-base font-bold"
+              onClick={() => router.push("/billing")}
+            >
+              <CreditCard className="mr-2 h-5 w-5" />
+              Take Subscription
+            </Button>
+          ) : (
+            <Button
+              variant="gradient"
+              size="lg"
+              className="w-full text-base font-bold"
+              disabled={!url.trim() || !hasEnoughCredits}
+              onClick={handleCreate}
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              Create Viral Shorts
+            </Button>
+          )}
         </>
       )}
     </div>

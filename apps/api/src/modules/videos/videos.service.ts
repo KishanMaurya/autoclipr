@@ -78,23 +78,6 @@ export class VideosService {
       );
     }
 
-    try {
-      await this.usersRepo.deductCredits(
-        userId,
-        totalCost,
-        'url_import_pipeline',
-        undefined,
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('insufficient credits')) {
-        throw new BadRequestException(
-          `Not enough credits: need ${totalCost} (${clipCount} clips × ${costPerClip} credits). You have ${balance}.`,
-        );
-      }
-      throw err;
-    }
-
     const title =
       dto.title?.trim() ||
       `${getSourceLabel(parsed.sourceType)} import · ${new Date().toLocaleDateString()}`;
