@@ -16,6 +16,8 @@ export function isQuotaOrBillingError(err: unknown): boolean {
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
     if (/insufficient_quota|exceeded your current quota|billing/.test(msg)) return true;
+    // OpenAI returns an HTML/non-JSON body (not parseable) when billing is not set up
+    if (/invalid response body|premature close/i.test(msg)) return true;
   }
   return false;
 }
