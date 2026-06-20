@@ -69,7 +69,7 @@ export class PlatformsService {
           void this.email.sendPlatformConnected(profile.email, {
             userName: profile.full_name || profile.email.split('@')[0],
             platformName: PLATFORM_LABELS[dto.platform],
-            accountName: row.account_name,
+            accountName: row.account_name ?? PLATFORM_LABELS[dto.platform],
           });
         }
       });
