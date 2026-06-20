@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,21 +8,20 @@ import { cn } from "@/lib/utils";
 export function AnnouncementBanner() {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     const target = document.getElementById("url-to-shorts");
     if (!target) return;
 
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
-      },
-      { threshold: 0.1 }
-    );
+    const check = () => {
+      // Show when the top of the section has scrolled past 30% of the viewport height
+      const rect = target.getBoundingClientRect();
+      setVisible(rect.top < window.innerHeight * 0.3);
+    };
 
-    observerRef.current.observe(target);
-    return () => observerRef.current?.disconnect();
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => window.removeEventListener("scroll", check);
   }, []);
 
   if (dismissed) return null;
