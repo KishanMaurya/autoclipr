@@ -1,4 +1,4 @@
-import { baseLayout, h1, p, highlight, divider, infoTable, button } from './base';
+import { baseLayout, h1, p, highlight, divider, infoTable, ctaButton } from './base';
 
 export interface PlatformConnectedVars {
   userName: string;
@@ -9,7 +9,9 @@ export interface PlatformConnectedVars {
 }
 
 const PLATFORM_EMOJI: Record<string, string> = {
+  'youtube shorts': '▶️',
   youtube: '▶️',
+  'instagram reels': '📸',
   instagram: '📸',
   facebook: '📘',
   tiktok: '🎵',
@@ -40,7 +42,7 @@ export function platformConnectedTemplate(vars: PlatformConnectedVars): {
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 28px;">
       <tr>
         <td align="center">
-          ${button('Go to Dashboard', `${vars.appUrl}/dashboard`)}
+          ${ctaButton('Go to Dashboard', `${vars.appUrl}/dashboard`)}
         </td>
       </tr>
     </table>
