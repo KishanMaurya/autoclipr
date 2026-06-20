@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Check, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Reveal, Stagger, MotionItem } from "@/components/ui/motion";
@@ -141,13 +142,13 @@ export function Comparison() {
             <div className="grid grid-cols-[1fr_1fr_1fr] border-t border-white/[0.08] bg-white/[0.02]">
               <div className="p-5 lg:p-6" />
               <div className="border-l border-white/[0.08] p-5 text-center lg:p-6">
-                <a
+                <Link
                   href="/register"
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/40 transition-all hover:scale-[1.03] hover:shadow-emerald-800/50"
                 >
                   <Zap className="h-3.5 w-3.5" />
                   Start free trial
-                </a>
+                </Link>
               </div>
               <div className="flex items-center justify-center border-l border-white/[0.08] p-5 lg:p-6">
                 <span className="text-xs text-white/25">No equivalent</span>
