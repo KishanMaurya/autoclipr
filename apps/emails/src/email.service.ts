@@ -16,6 +16,7 @@ import { paymentFailedTemplate, type PaymentFailedVars } from './templates/payme
 import { feedbackConfirmationTemplate, type FeedbackConfirmationVars } from './templates/feedback-confirmation';
 import { contactConfirmationTemplate, type ContactConfirmationVars } from './templates/contact-confirmation';
 import { accountDeletedTemplate, type AccountDeletedVars } from './templates/account-deleted';
+import { platformConnectedTemplate, type PlatformConnectedVars } from './templates/platform-connected';
 
 @Injectable()
 export class EmailService {
@@ -211,6 +212,16 @@ export class EmailService {
 
   async sendAccountDeleted(to: string, vars: Omit<AccountDeletedVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = accountDeletedTemplate({
+      ...vars,
+      userName: this.firstName(vars.userName),
+      appUrl: this.config.appUrl,
+      supportEmail: this.config.supportEmail,
+    });
+    await this.sendSafe({ to, subject, html, text, from: this.fromField() });
+  }
+
+  async sendPlatformConnected(to: string, vars: Omit<PlatformConnectedVars, 'appUrl' | 'supportEmail'>): Promise<void> {
+    const { subject, html, text } = platformConnectedTemplate({
       ...vars,
       userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,

@@ -5,8 +5,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import { EmailService } from '@autoclipr/emails';
 import { ConnectPlatformDto, type PlatformId } from './dto/platform.dto';
 import { PlatformsRepository } from './platforms.repository';
+import { UsersRepository } from '../users/users.repository';
 
 const PLATFORM_LABELS: Record<PlatformId, string> = {
   youtube: 'YouTube Shorts',
@@ -25,6 +27,8 @@ export class PlatformsService {
   constructor(
     private readonly platformsRepo: PlatformsRepository,
     private readonly config: ConfigService,
+    private readonly usersRepo: UsersRepository,
+    private readonly email: EmailService,
   ) {}
 
   list(userId: string) {
@@ -57,6 +61,19 @@ export class PlatformsService {
       refresh_token: existing?.refresh_token ?? undefined,
       token_expires_at: existing?.token_expires_at ?? undefined,
     });
+
+    // Only send for non-YouTube platforms (YouTube sends after OAuth callback)
+    if (dto.platform !== 'youtube') {
+      void this.usersRepo.getById(userId).then((profile) => {
+        if (profile?.email && profile.email_notifications_enabled !== false) {
+          void this.email.sendPlatformConnected(profile.email, {
+            userName: profile.full_name || profile.email.split('@')[0],
+            platformName: PLATFORM_LABELS[dto.platform],
+            accountName: row.account_name,
+          });
+        }
+      });
+    }
 
     return {
       ...row,
@@ -113,6 +130,17 @@ export class PlatformsService {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token ?? null,
       token_expires_at: tokens.expires_at,
+    });
+
+    // Fire-and-forget: notify user of successful YouTube connection
+    void this.usersRepo.getById(userId).then((profile) => {
+      if (profile?.email && profile.email_notifications_enabled !== false) {
+        void this.email.sendPlatformConnected(profile.email, {
+          userName: profile.full_name || profile.email.split('@')[0],
+          platformName: 'YouTube Shorts',
+          accountName,
+        });
+      }
     });
 
     const webUrl = this.config.get<string>('webAppUrl') ?? 'http://localhost:3000';
