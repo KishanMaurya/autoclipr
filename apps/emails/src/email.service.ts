@@ -64,11 +64,18 @@ export class EmailService {
     }
   }
 
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  private firstName(name: string): string {
+    return name.trim().split(/\s+/)[0] ?? name.trim();
+  }
+
   // ─── Public send methods ──────────────────────────────────────────────────
 
   async sendWelcome(to: string, vars: Omit<WelcomeVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = welcomeTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       dashboardUrl: vars.dashboardUrl || `${this.config.appUrl}/dashboard`,
@@ -79,6 +86,7 @@ export class EmailService {
   async sendSubscriptionConfirmed(to: string, vars: Omit<SubscriptionConfirmedVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = subscriptionConfirmedTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       dashboardUrl: vars.dashboardUrl || `${this.config.appUrl}/dashboard`,
@@ -129,6 +137,7 @@ export class EmailService {
   async sendClipReady(to: string, vars: Omit<ClipReadyVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = clipReadyTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
     });
@@ -138,6 +147,7 @@ export class EmailService {
   async sendUpgradeRequired(to: string, vars: Omit<UpgradeRequiredVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = upgradeRequiredTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       upgradeUrl: vars.upgradeUrl || `${this.config.appUrl}/billing`,
@@ -148,6 +158,7 @@ export class EmailService {
   async sendTrialExpiring(to: string, vars: Omit<TrialExpiringVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = trialExpiringTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       upgradeUrl: vars.upgradeUrl || `${this.config.appUrl}/billing`,
@@ -158,6 +169,7 @@ export class EmailService {
   async sendRenewalSuccess(to: string, vars: Omit<RenewalSuccessVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = renewalSuccessTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       dashboardUrl: vars.dashboardUrl || `${this.config.appUrl}/dashboard`,
@@ -168,6 +180,7 @@ export class EmailService {
   async sendPaymentFailed(to: string, vars: Omit<PaymentFailedVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = paymentFailedTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
       updatePaymentUrl: vars.updatePaymentUrl || `${this.config.appUrl}/billing`,
@@ -178,6 +191,7 @@ export class EmailService {
   async sendFeedbackConfirmation(to: string, vars: Omit<FeedbackConfirmationVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = feedbackConfirmationTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
     });
@@ -187,6 +201,7 @@ export class EmailService {
   async sendContactConfirmation(to: string, vars: Omit<ContactConfirmationVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = contactConfirmationTemplate({
       ...vars,
+      userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
     });
