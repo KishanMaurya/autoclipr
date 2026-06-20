@@ -132,11 +132,16 @@ ${segmentLines}`;
       );
 
       const score = Math.min(96, 74 + i * 3);
+      const startLabel = this.formatTimestamp(start_ms);
+      const text = seg?.text?.trim();
+      const title = text && !text.match(/^segment at \d/i)
+        ? text.slice(0, 60)
+        : `Clip ${i + 1} · ${startLabel}`;
       moments.push({
         start_ms: Math.max(0, start_ms),
         end_ms: Math.max(start_ms + 5000, end_ms),
-        title: seg?.text.slice(0, 60) || `Viral moment ${i + 1}`,
-        hook_text: seg?.text.slice(0, 120) || '',
+        title,
+        hook_text: text?.slice(0, 120) || '',
         viral_score: score,
         metrics: {
           hook_strength: score - 5,
@@ -148,6 +153,13 @@ ${segmentLines}`;
     }
 
     return moments;
+  }
+
+  private formatTimestamp(ms: number): string {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return m > 0 ? `${m}m${s.toString().padStart(2, '0')}s` : `${s}s`;
   }
 
   private normalizeMoments(

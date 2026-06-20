@@ -128,7 +128,7 @@ export class WhisperService {
       segments.push({
         start: t,
         end: Math.min(t + chunk, safeDuration),
-        text: `Segment at ${t}s`,
+        text: '',
       });
     }
 
