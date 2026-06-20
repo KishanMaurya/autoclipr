@@ -11,7 +11,7 @@ export function baseLayout(content: string, previewText = ''): string {
   <![endif]-->
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; background-color: #0d0d14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+    body { margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-text-size-adjust: 100%; }
     table { border-collapse: collapse; }
     a { color: #10b981; text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -30,7 +30,7 @@ export function baseLayout(content: string, previewText = ''): string {
   ${previewText ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${previewText}&nbsp;‌&nbsp;‌&nbsp;‌&nbsp;‌&nbsp;‌&nbsp;‌</div>` : ''}
 
   <!-- Outer wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0d0d14;padding:40px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f3f4f6;padding:40px 16px;">
     <tr>
       <td align="center">
 
@@ -64,16 +64,16 @@ export function baseLayout(content: string, previewText = ''): string {
 
           <!-- Footer -->
           <tr>
-            <td style="background:#0d0d14;border-top:1px solid #ffffff0a;padding:24px 40px;text-align:center;">
-              <p style="margin:0 0 8px;font-size:12px;color:#4b5563;">
+            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">
                 © ${new Date().getFullYear()} AutoClipr · AI-Powered Video Clips
               </p>
-              <p style="margin:0;font-size:12px;color:#374151;">
-                <a href="{{appUrl}}/dashboard" style="color:#6b7280;">Dashboard</a>
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                <a href="{{appUrl}}/dashboard" style="color:#10b981;">Dashboard</a>
                 &nbsp;·&nbsp;
-                <a href="{{appUrl}}/billing" style="color:#6b7280;">Billing</a>
+                <a href="{{appUrl}}/billing" style="color:#10b981;">Billing</a>
                 &nbsp;·&nbsp;
-                <a href="mailto:{{supportEmail}}" style="color:#6b7280;">Support</a>
+                <a href="mailto:{{supportEmail}}" style="color:#10b981;">Support</a>
               </p>
             </td>
           </tr>
