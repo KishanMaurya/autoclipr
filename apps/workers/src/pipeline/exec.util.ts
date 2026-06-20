@@ -4,7 +4,7 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 
 const ERROR_KEYWORD =
-  /error|invalid|unable|failed|not found|no such|fontconfig|libass|subtitle|permission denied|conversion failed|cannot open|no decoder/i;
+  /error|invalid|unable|failed|not found|no such|fontconfig|libass|subtitle|permission denied|conversion failed|cannot open|no decoder|warning|no streams|matches no streams|unrecognized option/i;
 
 function extractMeaningfulError(detail: string): string {
   const normalized = detail.replace(/\r\n/g, '\n').trim();

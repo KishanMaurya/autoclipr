@@ -105,7 +105,7 @@ export class FfmpegService {
     await runCommand(this.ffmpeg, [
       '-hide_banner',
       '-loglevel',
-      'error',
+      'warning',
       '-y',
       '-ss',
       startSec,
@@ -124,13 +124,15 @@ export class FfmpegService {
       '-map',
       '0:v:0',
       '-map',
-      '0:a:0?',
+      '0:a?',
       '-c:a',
       'aac',
       '-b:a',
       '128k',
       '-movflags',
       '+faststart',
+      '-threads',
+      '2',
       outputPath,
     ]);
   }
