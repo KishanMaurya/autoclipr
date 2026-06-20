@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/hooks/use-confirm";
 import { deleteVideoWithToast } from "@/lib/delete-video";
 
-const PIPELINE_POLL_MS = 3000;
+const PIPELINE_POLL_MS = 6000;
 
 const STATUS_LABELS: Record<string, string> = {
   importing: "Importing",
@@ -52,6 +52,9 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
     let shouldRefresh = false;
 
     for (const video of videos) {
+      // Skip polling videos that already have a terminal error
+      if (errors[video.id]) continue;
+
       const res = await apiFetch<VideoPipeline>(`/api/v1/videos/${video.id}/pipeline`, {
         token,
         skipGlobalLoader: true,
