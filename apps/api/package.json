@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "prebuild": "npm run build --prefix ../../packages/monitoring",
+    "prebuild": "npm run build --prefix ../../packages/monitoring && npm run build --prefix ../../apps/emails",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
