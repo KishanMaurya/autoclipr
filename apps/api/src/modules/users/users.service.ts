@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { StorageService } from '../storage/storage.service';
 import { UsersRepository } from './users.repository';
@@ -22,6 +23,7 @@ export class UsersService {
     private readonly config: ConfigService,
     private readonly supabaseAdmin: SupabaseAdminService,
     private readonly storage: StorageService,
+    private readonly email: EmailService,
   ) {}
 
   async getMe(userId: string) {
@@ -46,6 +48,14 @@ export class UsersService {
   async deleteAccount(userId: string) {
     const existing = await this.usersRepo.getById(userId);
     if (!existing) throw new NotFoundException('Profile not found');
+
+    // Send goodbye email before deletion (profile + email gone after deleteUser)
+    if (existing.email && existing.email_notifications_enabled !== false) {
+      void this.email.sendAccountDeleted(existing.email, {
+        userName: existing.full_name || existing.email.split('@')[0],
+        email: existing.email,
+      });
+    }
 
     const { error } = await this.supabaseAdmin
       .getClient()

@@ -15,3 +15,4 @@ export type { RenewalSuccessVars } from './templates/renewal-success';
 export type { PaymentFailedVars } from './templates/payment-failed';
 export type { FeedbackConfirmationVars } from './templates/feedback-confirmation';
 export type { ContactConfirmationVars } from './templates/contact-confirmation';
+export type { AccountDeletedVars } from './templates/account-deleted';

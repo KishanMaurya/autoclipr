@@ -15,6 +15,7 @@ import { renewalSuccessTemplate, type RenewalSuccessVars } from './templates/ren
 import { paymentFailedTemplate, type PaymentFailedVars } from './templates/payment-failed';
 import { feedbackConfirmationTemplate, type FeedbackConfirmationVars } from './templates/feedback-confirmation';
 import { contactConfirmationTemplate, type ContactConfirmationVars } from './templates/contact-confirmation';
+import { accountDeletedTemplate, type AccountDeletedVars } from './templates/account-deleted';
 
 @Injectable()
 export class EmailService {
@@ -200,6 +201,16 @@ export class EmailService {
 
   async sendContactConfirmation(to: string, vars: Omit<ContactConfirmationVars, 'appUrl' | 'supportEmail'>): Promise<void> {
     const { subject, html, text } = contactConfirmationTemplate({
+      ...vars,
+      userName: this.firstName(vars.userName),
+      appUrl: this.config.appUrl,
+      supportEmail: this.config.supportEmail,
+    });
+    await this.sendSafe({ to, subject, html, text, from: this.fromField() });
+  }
+
+  async sendAccountDeleted(to: string, vars: Omit<AccountDeletedVars, 'appUrl' | 'supportEmail'>): Promise<void> {
+    const { subject, html, text } = accountDeletedTemplate({
       ...vars,
       userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
