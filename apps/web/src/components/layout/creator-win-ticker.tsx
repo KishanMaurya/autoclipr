@@ -11,6 +11,10 @@ const WINS = [
   { creator: "CodeWithRaj", from: "1 upload/week", to: "viral in 3 days", highlight: "viral" },
   { creator: "ChefMarcos", from: "manual editing", to: "10× faster workflow", highlight: "10× faster" },
   { creator: "GamingWithZara", from: "500 views/video", to: "250K+ reach", highlight: "250K+ reach" },
+  { creator: "MindsetWithLeo", from: "0 subscribers", to: "10K subs in 60 days", highlight: "10K subs" },
+  { creator: "StyleByNadia", from: "3 min edits", to: "30s clips auto-generated", highlight: "auto-generated" },
+  { creator: "CryptoWithJay", from: "low engagement", to: "3× watch time", highlight: "3× watch time" },
+  { creator: "PetsByMia", from: "hobby channel", to: "monetized in 45 days", highlight: "monetized" },
 ];
 
 export function CreatorWinTicker() {
