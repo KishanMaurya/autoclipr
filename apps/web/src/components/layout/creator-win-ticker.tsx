@@ -36,7 +36,7 @@ export function CreatorWinTicker() {
   const text = `${win.creator} · ${win.from} → `;
 
   return (
-    <div className="flex justify-center py-6">
+    <div className="flex justify-center py-12">
       <Link
         href="/register"
         className="group flex items-center gap-0 rounded-full border border-white/[0.08] bg-[#0d0d18]/80 px-1 py-1 pr-3 text-xs backdrop-blur-sm transition hover:border-white/20"
@@ -46,7 +46,7 @@ export function CreatorWinTicker() {
           <Trophy className="h-3 w-3 text-amber-400" />
           Creator Win
         </span>
-        <span className="mr-2.5 text-white/20">|</span>
+        <span className="mr-2 text-white">|</span>
 
         {/* Rotating text */}
         <span
