@@ -28,6 +28,6 @@ export function emailConfigFromEnv(): EmailConfig {
     smtpPass: process.env.SMTP_PASS,
     smtpSecure: process.env.SMTP_SECURE === 'true',
     supportEmail: process.env.SUPPORT_EMAIL ?? 'support@autoclipr.com',
-    appUrl: (process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'https://autoclipr.com').replace(/\/$/, ''),
+    appUrl: (process.env.WEB_APP_URL ?? process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://autoclipr.com').replace(/\/$/, ''),
   };
 }
