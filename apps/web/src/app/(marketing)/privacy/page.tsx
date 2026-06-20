@@ -13,9 +13,7 @@ export const metadata: Metadata = pageMetadata({
 export default function PrivacyPage() {
   return (
     <div className="pt-16">
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-        <LegalDocument document={PRIVACY_POLICY} />
-      </div>
+      <LegalDocument document={PRIVACY_POLICY} type="privacy" />
     </div>
   );
 }

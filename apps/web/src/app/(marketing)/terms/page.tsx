@@ -13,9 +13,7 @@ export const metadata: Metadata = pageMetadata({
 export default function TermsPage() {
   return (
     <div className="pt-16">
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-        <LegalDocument document={TERMS_AND_CONDITIONS} />
-      </div>
+      <LegalDocument document={TERMS_AND_CONDITIONS} type="terms" />
     </div>
   );
 }
