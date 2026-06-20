@@ -1,6 +1,6 @@
 import { SITE_NAME, SITE_URL } from "./seo";
 
-export const CONTACT_EMAIL = "hello@autoclipr.ai";
+export const CONTACT_EMAIL = "hello@autoclipr.com";
 export const LEGAL_LAST_UPDATED = "June 10, 2026";
 
 export type LegalSection = {
