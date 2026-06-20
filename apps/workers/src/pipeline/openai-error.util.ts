@@ -27,7 +27,7 @@ export function isRetryableOpenAiError(err: unknown): boolean {
     return true;
   }
   if (err instanceof Error) {
-    return /connection error|timeout|ECONNRESET|ETIMEDOUT|ENOTFOUND|socket hang up/i.test(
+    return /connection error|timeout|ECONNRESET|ETIMEDOUT|ENOTFOUND|socket hang up|premature close/i.test(
       err.message,
     );
   }

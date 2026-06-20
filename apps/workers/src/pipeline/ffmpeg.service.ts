@@ -63,7 +63,7 @@ export class FfmpegService {
       '-ac',
       '1',
       '-b:a',
-      '64k',
+      '32k',
       audioPath,
     ]);
   }
