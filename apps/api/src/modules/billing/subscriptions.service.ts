@@ -9,6 +9,12 @@ const PLAN_TIER: Record<string, string> = {
   business: 'business',
 };
 
+const PLAN_CREDITS: Record<string, number> = {
+  starter: 100,
+  creator: 500,
+  business: 1200,
+};
+
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
@@ -83,11 +89,18 @@ export class SubscriptionsService {
       return;
     }
 
-    // Update profile subscription_tier
+    // Update profile subscription_tier and credits on activation
     const profileTier = status === 'active' ? tier : 'starter';
+    const profileUpdate: Record<string, any> = {
+      subscription_tier: profileTier,
+      updated_at: new Date().toISOString(),
+    };
+    if (status === 'active') {
+      profileUpdate.credits = PLAN_CREDITS[planId] ?? 100;
+    }
     const { error: profileError } = await this.supabase.getClient()
       .from('profiles')
-      .update({ subscription_tier: profileTier, updated_at: new Date().toISOString() })
+      .update(profileUpdate)
       .eq('id', userId);
 
     if (profileError) {
