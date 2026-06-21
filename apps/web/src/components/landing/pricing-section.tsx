@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { type CurrencyCode, PLAN_PRICES, formatPrice } from "@/lib/pricing";
 import Link from "next/link";
 import {
   Rocket,
@@ -146,10 +147,12 @@ const accentMap: Record<string, { badge: string; icon: string; ring: string; glo
   },
 };
 
-function PricingCard({ plan, yearly }: { plan: Plan; yearly: boolean }) {
+function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; currency: CurrencyCode }) {
   const Icon = plan.icon;
   const ac = accentMap[plan.accentColor];
-  const displayPrice = yearly && plan.priceYearly ? plan.priceYearly : plan.price;
+  const planPrices = PLAN_PRICES[plan.id]?.[currency];
+  const displayPrice = yearly ? (planPrices?.yearly ?? 0) : (planPrices?.monthly ?? 0);
+  const priceLabel = formatPrice(displayPrice, currency);
 
   return (
     <MotionCard
@@ -201,9 +204,7 @@ function PricingCard({ plan, yearly }: { plan: Plan; yearly: boolean }) {
 
         {/* Price */}
         <div className="relative mt-5 flex items-end gap-1">
-          <span className="text-5xl font-extrabold tracking-tight text-white">
-            {displayPrice === 0 ? "Free" : `₹${displayPrice}`}
-          </span>
+          <span className="text-5xl font-extrabold tracking-tight text-white">{priceLabel}</span>
           {displayPrice > 0 && <span className="mb-2 text-sm text-muted-foreground">/month</span>}
         </div>
         <p className="relative mt-1 text-xs text-white/30">
@@ -260,6 +261,18 @@ type PricingSectionProps = {
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
   const [yearly, setYearly] = useState(true);
+  const [currency, setCurrency] = useState<CurrencyCode>("INR");
+  const [country, setCountry] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/geo")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.currency?.code) setCurrency(data.currency.code as CurrencyCode);
+        if (data?.country) setCountry(data.country);
+      })
+      .catch(() => {}); // keep INR as default on error
+  }, []);
 
   return (
     <section id="pricing" className="border-t border-white/5 px-4 py-28 sm:px-6">
@@ -307,9 +320,15 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </p>
         </Reveal>
 
+        {country && (
+          <p className="mb-4 text-center text-xs text-white/30">
+            Showing prices for {country} · {currency}
+          </p>
+        )}
+
         <Stagger className="grid items-start gap-5 lg:grid-cols-3" amount={0.15}>
           {plans.map((plan) => (
-            <PricingCard key={plan.id} plan={plan} yearly={yearly} />
+            <PricingCard key={plan.id} plan={plan} yearly={yearly} currency={currency} />
           ))}
         </Stagger>
 
