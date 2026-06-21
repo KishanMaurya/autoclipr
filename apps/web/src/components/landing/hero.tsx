@@ -55,16 +55,6 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 export function Hero() {
   return (
     <section className="relative overflow-hidden px-4 pb-28 pt-2 sm:px-6 lg:pt-2">
-      {/* Green spotlight — concentrated on ticker + badge area */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2"
-        style={{
-          width: "700px",
-          height: "300px",
-          background: "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.28) 0%, rgba(16,185,129,0.10) 55%, transparent 80%)",
-          filter: "blur(32px)",
-        }}
-      />
       <Stagger className="relative mx-auto max-w-[100vw] text-center" amount={0.1}>
         <MotionItem>
           <motion.span
