@@ -1,16 +1,16 @@
 "use client";
 
 const CREATORS = [
-  { name: "Ali Abdaal", stat: "420M Views", seed: "ali-abdaal", emoji: "👨‍💻" },
-  { name: "MrBeast", stat: "40B Views", seed: "mrbeast", emoji: "🤑" },
-  { name: "Chad Wild Clay", stat: "7B Views", seed: "chad-wild", emoji: "🕵️" },
-  { name: "Think Media", stat: "350M Views", seed: "think-media", emoji: "🎬" },
-  { name: "SB737", stat: "1B Views", seed: "sb737", emoji: "⛏️" },
-  { name: "Masha and Bear", stat: "52.6M Subs", seed: "masha-bear", emoji: "🐻" },
-  { name: "Jordan Matter", stat: "31.7M Subs", seed: "jordan-matter", emoji: "📸" },
-  { name: "Preston", stat: "31.3M Subs", seed: "preston", emoji: "🎮" },
-  { name: "Veritasium", stat: "18B Views", seed: "veritasium", emoji: "🔬" },
-  { name: "Kurzgesagt", stat: "2B Views", seed: "kurzgesagt", emoji: "🌌" },
+  { name: "Ali Abdaal", stat: "420M Views", img: "https://unavatar.io/youtube/aliabdaal", emoji: "👨‍💻" },
+  { name: "MrBeast", stat: "40B Views", img: "https://unavatar.io/youtube/MrBeast6000", emoji: "🤑" },
+  { name: "Chad Wild Clay", stat: "7B Views", img: "https://unavatar.io/youtube/ChadWildClay", emoji: "🕵️" },
+  { name: "Think Media", stat: "350M Views", img: "https://unavatar.io/youtube/ThinkMediaTV", emoji: "🎬" },
+  { name: "SB737", stat: "1B Views", img: "https://unavatar.io/youtube/SB737", emoji: "⛏️" },
+  { name: "Jordan Matter", stat: "31.7M Subs", img: "https://unavatar.io/youtube/JordanMatter", emoji: "📸" },
+  { name: "Preston", stat: "31.3M Subs", img: "https://unavatar.io/youtube/PrestonPlayz", emoji: "🎮" },
+  { name: "Veritasium", stat: "18B Views", img: "https://unavatar.io/youtube/veritasium", emoji: "🔬" },
+  { name: "Kurzgesagt", stat: "2B Views", img: "https://unavatar.io/youtube/inanutshell", emoji: "🌌" },
+  { name: "Mark Rober", stat: "800M Views", img: "https://unavatar.io/youtube/MarkRober", emoji: "🚀" },
 ];
 
 function MicrosoftLogo() {
@@ -123,7 +123,7 @@ function CreatorCard({ creator }: { creator: typeof CREATORS[number] }) {
     <div className="flex shrink-0 flex-col items-center gap-2 px-5">
       <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/10 bg-[#0d0d18]">
         <img
-          src={`https://api.dicebear.com/9.x/personas/svg?seed=${creator.seed}&backgroundColor=0d0d18`}
+          src={creator.img}
           alt={creator.name}
           className="h-full w-full object-cover"
           loading="lazy"
