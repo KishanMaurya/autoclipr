@@ -46,7 +46,7 @@ export function CreatorWinTicker() {
           <Trophy className="h-3 w-3 text-amber-400" />
           Creator Win
         </span>
-        <span className="mr-2 text-white">|</span>
+        <span className="mr-1 text-white">|</span>
 
         {/* Rotating text */}
         <span
