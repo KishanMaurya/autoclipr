@@ -31,11 +31,14 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Manage Your Membership</h1>
-        <p className="text-muted-foreground">
-          View your subscription and credit usage
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Manage Your Membership</h1>
+          <p className="text-muted-foreground">View your subscription and credit usage</p>
+        </div>
+        <Button variant="gradient" asChild className="shrink-0">
+          <Link href="/pricing">Change Subscription</Link>
+        </Button>
       </div>
 
       <Card className="glass relative overflow-hidden">
@@ -68,14 +71,6 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Button variant="secondary" asChild>
-          <Link href="/dashboard">Go to Dashboard</Link>
-        </Button>
-        <Button variant="gradient" asChild>
-          <Link href="/pricing">Change Subscription</Link>
-        </Button>
-      </div>
     </div>
   );
 }
