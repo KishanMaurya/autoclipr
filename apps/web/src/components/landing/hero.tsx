@@ -55,7 +55,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 export function Hero() {
   return (
     <section className="relative overflow-hidden px-4 pb-28 pt-2 sm:px-6 lg:pt-2">
-      <Stagger className="relative mx-auto max-w-5xl text-center" amount={0.1}>
+      <Stagger className="relative mx-auto max-w-[100vw] text-center" amount={0.1}>
         <MotionItem>
           <motion.span
             className="section-label mx-auto mb-8 inline-flex"
@@ -67,10 +67,13 @@ export function Hero() {
         </MotionItem>
 
         <MotionItem>
-          <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl lg:leading-[1.05]">
+          <h1
+            className="font-extrabold tracking-tight leading-[1] px-2"
+            style={{ fontSize: "clamp(2.5rem, 8.5vw, 9rem)" }}
+          >
             Turn long videos into{" "}
             <span className="text-aurora">viral shorts</span>
-            <br className="hidden sm:block" /> — automatically
+            <br /> — automatically
           </h1>
         </MotionItem>
 
