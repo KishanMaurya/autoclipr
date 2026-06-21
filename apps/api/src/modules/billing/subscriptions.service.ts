@@ -72,15 +72,19 @@ export class SubscriptionsService {
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
     const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
     const amountPaid = planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
-    await this.supabase.getClient().from('billing_transactions').insert({
-      user_id: userId,
-      invoice_number: invoiceNumber,
-      plan_id: planId,
-      amount: amountPaid,
-      status: 'paid',
-      transaction_id: transactionId || null,
-      payment_date: new Date().toISOString(),
-    }).catch((e: any) => this.logger.warn(`Failed to record transaction: ${e.message}`));
+    try {
+      await this.supabase.getClient().from('billing_transactions').insert({
+        user_id: userId,
+        invoice_number: invoiceNumber,
+        plan_id: planId,
+        amount: amountPaid,
+        status: 'paid',
+        transaction_id: transactionId || null,
+        payment_date: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      this.logger.warn(`Failed to record transaction: ${e.message}`);
+    }
 
     // Pass email directly so it works even when profile email is empty (OAuth users)
     await this.sendSubscriptionEmails(userId, planId, transactionId, { payment_id: transactionId }, userEmail);
