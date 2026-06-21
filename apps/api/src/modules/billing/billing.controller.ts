@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { IsString } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -17,6 +18,7 @@ import { DodoService } from './dodo.service';
 import { SubscriptionsService } from './subscriptions.service';
 
 class CreateCheckoutDto {
+  @IsString()
   planId!: string;
 }
 
