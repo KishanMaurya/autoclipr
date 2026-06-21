@@ -5,10 +5,14 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
+  Res,
   RawBodyRequest,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { InvoicePdfService } from '@autoclipr/emails';
 import { IsString } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponse } from '../../common/api-response';
@@ -34,6 +38,7 @@ export class BillingController {
     private readonly usersService: UsersService,
     private readonly dodo: DodoService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly invoicePdf: InvoicePdfService,
   ) {}
 
   @Get('billing/subscription')
@@ -66,6 +71,45 @@ export class BillingController {
     }
     const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId);
     return ApiResponse.ok({ url });
+  }
+
+  @Get('billing/invoice/download')
+  @UseGuards(JwtAuthGuard)
+  async downloadInvoice(
+    @CurrentUser() user: AuthUser,
+    @Query('invoiceNumber') invoiceNumber: string,
+    @Query('plan') plan: string,
+    @Query('amount') amount: string,
+    @Query('date') date: string,
+    @Res() res: Response,
+  ) {
+    let email = user.email ?? '';
+    let fullName = email.split('@')[0];
+    try {
+      const profile = await this.usersService.getMe(user.sub);
+      email = profile.email || email;
+      fullName = profile.full_name || fullName;
+    } catch { /* use JWT values */ }
+
+    const appUrl = process.env.WEB_APP_URL ?? 'https://autoclipr.com';
+    const pdfBuffer = await this.invoicePdf.generate({
+      invoiceNumber: invoiceNumber ?? 'N/A',
+      transactionId: '-',
+      paymentDate: date ?? new Date().toLocaleDateString('en-IN'),
+      userName: fullName,
+      userEmail: email,
+      planName: plan ?? 'Creator',
+      amount: amount ?? '₹349.00',
+      companyName: 'AutoClipr',
+      companyWebsite: appUrl,
+    });
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="autoclipr-invoice-${invoiceNumber ?? 'invoice'}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 
   // Called from frontend on payment success redirect — fallback when webhook is delayed/missing

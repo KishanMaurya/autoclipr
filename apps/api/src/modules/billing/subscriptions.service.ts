@@ -193,7 +193,8 @@ export class SubscriptionsService {
       dashboardUrl: `${appUrl}/dashboard`,
     });
 
-    // 2. Invoice email (with PDF attachment)
+    // 2. Invoice email (with PDF attachment — also include download link)
+    const invoiceDownloadUrl = `${this.config.get<string>('API_URL') ?? 'https://api.autoclipr.com'}/api/v1/billing/invoice/download?invoiceNumber=${invoiceNumber}&plan=${encodeURIComponent(planName)}&amount=${encodeURIComponent(amountPaid)}&date=${encodeURIComponent(paymentDate)}`;
     await this.email.sendInvoice(toEmail, {
       userName: profile?.full_name ?? toEmail.split('@')[0],
       invoiceNumber,
@@ -201,7 +202,7 @@ export class SubscriptionsService {
       paymentDate,
       amount: amountPaid,
       planName,
-      invoiceUrl: `${appUrl}/dashboard/billing`,
+      invoiceUrl: invoiceDownloadUrl,
     });
   }
 }
