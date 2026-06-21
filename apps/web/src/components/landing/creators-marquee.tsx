@@ -121,7 +121,7 @@ const BRAND_LOGOS = [
 function CreatorCard({ creator }: { creator: typeof CREATORS[number] }) {
   return (
     <div className="flex shrink-0 flex-col items-center gap-2 px-5">
-      <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/10 bg-[#0d0d18]">
+      <div className="relative h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-[#0d0d18]">
         <img
           src={creator.img}
           alt={creator.name}
