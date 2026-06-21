@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -48,12 +49,17 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateCheckoutDto,
   ) {
-    const profile = await this.usersService.getMe(user.sub);
-    const url = await this.subscriptions.createCheckoutUrl(
-      user.sub,
-      profile.email,
-      dto.planId,
-    );
+    // Use email from JWT directly — avoids profile-not-found if profile row is missing
+    let email = user.email ?? '';
+    if (!email) {
+      try {
+        const profile = await this.usersService.getMe(user.sub);
+        email = profile.email;
+      } catch {
+        throw new BadRequestException('Could not determine user email for checkout');
+      }
+    }
+    const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId);
     return ApiResponse.ok({ url });
   }
 
