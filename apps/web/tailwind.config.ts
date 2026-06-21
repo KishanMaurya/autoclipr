@@ -79,6 +79,10 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-100%)" },
         },
+        "marquee-reverse": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.7s ease-out forwards",
@@ -87,6 +91,7 @@ const config: Config = {
         "pulse-glow": "pulse-glow 4s ease-in-out infinite",
         "gradient-shift": "gradient-shift 6s ease infinite",
         marquee: "marquee 22s linear infinite",
+        "marquee-reverse": "marquee-reverse 22s linear infinite",
       },
     },
   },
