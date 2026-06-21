@@ -68,7 +68,8 @@ export class SubscriptionsService {
       })
       .eq('id', userId);
 
-    await this.sendSubscriptionEmails(userId, planId, '', {});
+    // Pass email directly so it works even when profile email is empty (OAuth users)
+    await this.sendSubscriptionEmails(userId, planId, '', {}, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
   }
 
@@ -154,6 +155,7 @@ export class SubscriptionsService {
     planId: string,
     subscriptionId: string,
     data: any,
+    fallbackEmail = '',
   ): Promise<void> {
     // Fetch user email + name from profiles
     const { data: profile } = await this.supabase.getClient()
@@ -162,7 +164,11 @@ export class SubscriptionsService {
       .eq('id', userId)
       .single();
 
-    if (!profile?.email) return;
+    const toEmail = profile?.email || fallbackEmail;
+    if (!toEmail) {
+      this.logger.warn(`No email found for userId=${userId}, skipping subscription emails`);
+      return;
+    }
 
     const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
     const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
@@ -177,8 +183,8 @@ export class SubscriptionsService {
     const transactionId = data.payment_id ?? subscriptionId;
 
     // 1. Subscription confirmation email
-    await this.email.sendSubscriptionConfirmed(profile.email, {
-      userName: profile.full_name ?? profile.email,
+    await this.email.sendSubscriptionConfirmed(toEmail, {
+      userName: profile?.full_name ?? toEmail.split('@')[0],
       planName,
       amount: amountPaid,
       billingCycle: 'Yearly',
@@ -188,8 +194,8 @@ export class SubscriptionsService {
     });
 
     // 2. Invoice email (with PDF attachment)
-    await this.email.sendInvoice(profile.email, {
-      userName: profile.full_name ?? profile.email,
+    await this.email.sendInvoice(toEmail, {
+      userName: profile?.full_name ?? toEmail.split('@')[0],
       invoiceNumber,
       transactionId,
       paymentDate,
