@@ -13,6 +13,7 @@ import { Features } from "@/components/landing/features";
 import { UrlToShorts } from "@/components/landing/url-to-shorts";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Testimonials } from "@/components/landing/testimonials";
+import { Suspense } from "react";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { CTA } from "@/components/landing/cta";
 import { Comparison } from "@/components/landing/comparison";
@@ -35,7 +36,9 @@ export default function HomePage() {
       <PlatformsShowcase />
       <Comparison />
       <Testimonials />
-      <PricingSection />
+      <Suspense>
+        <PricingSection />
+      </Suspense>
       <CTA />
     </>
   );

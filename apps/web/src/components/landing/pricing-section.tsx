@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { type CurrencyCode, PLAN_PRICES, formatPrice } from "@/lib/pricing";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   Rocket,
@@ -162,20 +164,33 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
     }
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/checkout`, {
+      // Check if user is logged in
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        // Not logged in — redirect to login, then back to pricing to trigger checkout
+        window.location.href = `/login?redirect=/pricing?checkout=${plan.id}`;
+        return;
+      }
+
+      // Logged in — call checkout API
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/checkout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ planId: plan.id }),
       });
       const data = await res.json();
       if (data?.data?.url) {
         window.location.href = data.data.url;
       } else {
-        window.location.href = "/register?plan=" + plan.id;
+        alert("Could not start checkout. Please try again.");
       }
     } catch {
-      window.location.href = "/register?plan=" + plan.id;
+      alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -291,6 +306,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
   const [yearly, setYearly] = useState(true);
   const [currency, setCurrency] = useState<CurrencyCode>("INR");
   const [country, setCountry] = useState<string>("");
+  const searchParams = useSearchParams();
+  const autoCheckoutTriggered = useRef(false);
 
   useEffect(() => {
     fetch("/api/geo")
@@ -299,8 +316,38 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
         if (data?.currency?.code) setCurrency(data.currency.code as CurrencyCode);
         if (data?.country) setCountry(data.country);
       })
-      .catch(() => {}); // keep INR as default on error
+      .catch(() => {});
   }, []);
+
+  // After login redirect: auto-trigger checkout if ?checkout=planId is in URL
+  useEffect(() => {
+    const checkoutPlan = searchParams?.get("checkout");
+    if (!checkoutPlan || autoCheckoutTriggered.current) return;
+
+    async function triggerAutoCheckout() {
+      autoCheckoutTriggered.current = true;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/checkout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ planId: checkoutPlan }),
+        });
+        const data = await res.json();
+        if (data?.data?.url) window.location.href = data.data.url;
+      } catch {
+        // silently fail — user can click manually
+      }
+    }
+
+    triggerAutoCheckout();
+  }, [searchParams]);
 
   return (
     <section id="pricing" className="border-t border-white/5 px-4 py-28 sm:px-6">
