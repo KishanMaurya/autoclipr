@@ -54,7 +54,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 pb-28 pt-8 sm:px-6 lg:pt-12">
+    <section className="relative overflow-hidden px-4 pb-28 pt-2 sm:px-6 lg:pt-2">
       <Stagger className="relative mx-auto max-w-5xl text-center" amount={0.1}>
         <MotionItem>
           <motion.span
