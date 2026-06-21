@@ -52,9 +52,9 @@ export class DodoService {
     return this.client.subscriptions.update(subscriptionId, { status: 'cancelled' });
   }
 
-  verifyWebhook(payload: string, signature: string): any {
+  verifyWebhook(payload: string, headers: Record<string, string>): any {
     const webhookSecret = this.config.get<string>('DODO_WEBHOOK_SECRET') ?? '';
-    // Dodo uses webhook-secret header verification
-    return DodoPayments.Webhooks.constructEvent(payload, signature, webhookSecret);
+    // client.webhooks.unwrap verifies HMAC signature and returns parsed event
+    return this.client.webhooks.unwrap(payload, { headers, key: webhookSecret });
   }
 }

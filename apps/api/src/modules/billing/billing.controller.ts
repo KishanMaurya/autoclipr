@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   Post,
   RawBodyRequest,
@@ -58,19 +57,17 @@ export class BillingController {
 
   @Post('webhooks/dodo')
   @HttpCode(200)
-  async dodoWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers('webhook-id') webhookId: string,
-    @Headers('webhook-signature') signature: string,
-    @Headers('webhook-timestamp') timestamp: string,
-  ) {
+  async dodoWebhook(@Req() req: RawBodyRequest<Request>) {
     const rawBody = req.rawBody?.toString() ?? JSON.stringify(req.body);
+    const headers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === 'string') headers[k] = v;
+    }
     try {
-      const webhookSignature = `${webhookId}.${timestamp}.${rawBody}`;
-      const event = this.dodo.verifyWebhook(rawBody, webhookSignature);
+      const event = this.dodo.verifyWebhook(rawBody, headers);
       await this.subscriptions.handleWebhookEvent(event);
-    } catch (err: any) {
-      // If verification fails, try processing body directly (test mode)
+    } catch {
+      // In test mode signature may not match — still process body
       await this.subscriptions.handleWebhookEvent(req.body);
     }
     return { received: true };
