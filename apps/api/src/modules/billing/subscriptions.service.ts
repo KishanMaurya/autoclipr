@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { DodoService } from './dodo.service';
 
@@ -23,6 +24,7 @@ export class SubscriptionsService {
     private readonly dodo: DodoService,
     private readonly supabase: SupabaseAdminService,
     private readonly config: ConfigService,
+    private readonly email: EmailService,
   ) {}
 
   async createCheckoutUrl(userId: string, email: string, planId: string): Promise<string> {
@@ -106,5 +108,60 @@ export class SubscriptionsService {
     if (profileError) {
       this.logger.error(`Failed to update profile tier: ${profileError.message}`);
     }
+
+    // Send confirmation + invoice emails only on new activation
+    if (status === 'active') {
+      await this.sendSubscriptionEmails(userId, planId, subscriptionId, data);
+    }
+  }
+
+  private async sendSubscriptionEmails(
+    userId: string,
+    planId: string,
+    subscriptionId: string,
+    data: any,
+  ): Promise<void> {
+    // Fetch user email + name from profiles
+    const { data: profile } = await this.supabase.getClient()
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.email) return;
+
+    const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
+    const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
+    const renewalDate = data.next_billing_date
+      ? new Date(data.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : 'N/A';
+    const paymentDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    const amountPaid = data.amount
+      ? `₹${(data.amount / 100).toFixed(2)}`
+      : planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
+    const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+    const transactionId = data.payment_id ?? subscriptionId;
+
+    // 1. Subscription confirmation email
+    await this.email.sendSubscriptionConfirmed(profile.email, {
+      userName: profile.full_name ?? profile.email,
+      planName,
+      amount: amountPaid,
+      billingCycle: 'Yearly',
+      renewalDate,
+      subscriptionId,
+      dashboardUrl: `${appUrl}/dashboard`,
+    });
+
+    // 2. Invoice email (with PDF attachment)
+    await this.email.sendInvoice(profile.email, {
+      userName: profile.full_name ?? profile.email,
+      invoiceNumber,
+      transactionId,
+      paymentDate,
+      amount: amountPaid,
+      planName,
+      invoiceUrl: `${appUrl}/dashboard/billing`,
+    });
   }
 }
