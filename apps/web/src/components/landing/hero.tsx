@@ -78,8 +78,8 @@ export function Hero() {
 
         <MotionItem>
           <h1
-            className="font-extrabold tracking-tight leading-[1] px-2"
-            style={{ fontSize: "clamp(2.5rem, 8.5vw, 9rem)" }}
+            className="font-bold tracking-[-1.28px] leading-[1.1] px-2 text-darks-off-white"
+            style={{ fontSize: "clamp(2rem, 5vw, 5rem)" }}
           >
             Turn long videos into{" "}
             <span className="text-aurora">viral shorts</span>
