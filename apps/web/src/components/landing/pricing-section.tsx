@@ -59,8 +59,8 @@ const plans: Plan[] = [
     accentColor: "violet",
     cta: "Get started free",
     features: [
-      { label: "30 short clips / month", icon: PlaySquare },
-      { label: "200 credits included", icon: Coins },
+      { label: "20 short clips / month", icon: PlaySquare },
+      { label: "100 credits included", icon: Coins },
       { label: "Fast mode up to 60s", icon: Zap },
       { label: "AI viral moment detection", icon: Sparkles },
       { label: "Auto captions & subtitles", icon: Subtitles },
