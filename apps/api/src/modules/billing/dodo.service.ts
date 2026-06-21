@@ -41,6 +41,16 @@ export class DodoService {
 
     const url = (session as any).payment_link ?? (session as any).url;
     if (!url) throw new Error('Dodo did not return a payment URL');
+
+    // Embed subscription ID into the success URL so frontend captures it on redirect
+    const subscriptionId: string = (session as any).subscription_id ?? (session as any).id ?? '';
+    if (subscriptionId) {
+      return url.replace(
+        encodeURIComponent(opts.successUrl),
+        encodeURIComponent(`${opts.successUrl}&subscription_id=${subscriptionId}`),
+      );
+    }
+
     return url;
   }
 
