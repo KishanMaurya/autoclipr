@@ -153,6 +153,33 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
   const planPrices = PLAN_PRICES[plan.id]?.[currency];
   const displayPrice = yearly ? (planPrices?.yearly ?? 0) : (planPrices?.monthly ?? 0);
   const priceLabel = formatPrice(displayPrice, currency);
+  const [loading, setLoading] = useState(false);
+
+  async function handleCheckout() {
+    if (plan.id === "starter") {
+      window.location.href = "/register";
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ planId: plan.id }),
+      });
+      const data = await res.json();
+      if (data?.data?.url) {
+        window.location.href = data.data.url;
+      } else {
+        window.location.href = "/register?plan=" + plan.id;
+      }
+    } catch {
+      window.location.href = "/register?plan=" + plan.id;
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <MotionCard
@@ -240,15 +267,16 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
 
         {/* CTA */}
         <div className="mt-8">
-          <Link
-            href={`/register?plan=${plan.id}`}
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
             className={cn(
-              "flex w-full items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-semibold transition-all",
+              "flex w-full items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed",
               ac.btn
             )}
           >
-            {plan.cta}
-          </Link>
+            {loading ? "Redirecting..." : plan.cta}
+          </button>
         </div>
       </div>
     </MotionCard>
