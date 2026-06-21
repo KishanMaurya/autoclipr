@@ -78,7 +78,7 @@ const plans: Plan[] = [
     icon: Aperture,
     iconClass: "from-emerald-500 to-cyan-400",
     accentColor: "emerald",
-    cta: "Start free trial",
+    cta: "Get started",
     popular: true,
     badgeText: "Most Popular",
     features: [
@@ -103,7 +103,7 @@ const plans: Plan[] = [
     icon: Briefcase,
     iconClass: "from-orange-500 to-amber-400",
     accentColor: "orange",
-    cta: "Start free trial",
+    cta: "Get started",
     features: [
       { label: "200 short clips / month", icon: PlaySquare, highlight: true },
       { label: "1,200 credits included", icon: Coins, highlight: true },
