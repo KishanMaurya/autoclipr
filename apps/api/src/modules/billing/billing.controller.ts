@@ -17,6 +17,7 @@ import { IsString } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import { DodoService } from './dodo.service';
@@ -74,30 +75,22 @@ export class BillingController {
   }
 
   @Get('billing/invoice/download')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async downloadInvoice(
-    @CurrentUser() user: AuthUser,
     @Query('invoiceNumber') invoiceNumber: string,
     @Query('plan') plan: string,
     @Query('amount') amount: string,
     @Query('date') date: string,
+    @Query('name') name: string,
     @Res() res: Response,
   ) {
-    let email = user.email ?? '';
-    let fullName = email.split('@')[0];
-    try {
-      const profile = await this.usersService.getMe(user.sub);
-      email = profile.email || email;
-      fullName = profile.full_name || fullName;
-    } catch { /* use JWT values */ }
-
     const appUrl = process.env.WEB_APP_URL ?? 'https://autoclipr.com';
     const pdfBuffer = await this.invoicePdf.generate({
       invoiceNumber: invoiceNumber ?? 'N/A',
       transactionId: '-',
       paymentDate: date ?? new Date().toLocaleDateString('en-IN'),
-      userName: fullName,
-      userEmail: email,
+      userName: name ?? 'Customer',
+      userEmail: '',
       planName: plan ?? 'Creator',
       amount: amount ?? '₹349.00',
       companyName: 'AutoClipr',
