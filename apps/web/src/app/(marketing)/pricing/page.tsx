@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { FAQ } from "@/components/landing/faq";
 import { pageMetadata } from "@/lib/seo";
@@ -19,7 +20,9 @@ export default function PricingPage() {
           Flexible plans for solo creators, agencies, and teams.
         </p>
       </div>
-      <PricingSection showHeader={false} />
+      <Suspense>
+        <PricingSection showHeader={false} />
+      </Suspense>
       <FAQ />
     </div>
   );
