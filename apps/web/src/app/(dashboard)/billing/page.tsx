@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { TransactionHistory } from "@/components/billing/transaction-history";
 
 export const metadata = { title: "Billing" };
 
@@ -14,20 +15,33 @@ type BillingData = {
   credits: number;
 };
 
+export type Transaction = {
+  id: string;
+  invoice_number: string;
+  plan_id: string;
+  amount: string;
+  status: string;
+  transaction_id: string | null;
+  payment_date: string;
+};
+
 export default async function BillingPage() {
   const supabase = await createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const billingRes = await apiFetch<BillingData>("/api/v1/billing/subscription", {
-    token: session!.access_token,
-  });
+  const [billingRes, txRes] = await Promise.all([
+    apiFetch<BillingData>("/api/v1/billing/subscription", { token: session!.access_token }),
+    apiFetch<Transaction[]>("/api/v1/billing/transactions", { token: session!.access_token }),
+  ]);
 
   const billing = billingRes.data;
   const tier = billing?.profile?.subscription_tier ?? "free";
   const credits = billing?.credits ?? 10;
   const planId = billing?.subscription?.plan_id ?? "free";
+  const maxCredits = planId === "business" ? 1200 : planId === "creator" ? 500 : 100;
+  const transactions = txRes.data ?? [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -49,7 +63,7 @@ export default async function BillingPage() {
           <CardTitle>Current Plan</CardTitle>
           <p className="text-3xl font-bold capitalize">{planId}</p>
           <p className="text-sm text-muted-foreground">
-            {tier === "free"
+            {tier === "free" || tier === "starter"
               ? "Limited trial access to AutoClipr."
               : "Full access to your plan features."}
           </p>
@@ -60,7 +74,7 @@ export default async function BillingPage() {
               <span>Credits remaining</span>
               <span className="font-medium">{credits}</span>
             </div>
-            <Progress value={Math.min(100, (credits / 100) * 100)} />
+            <Progress value={Math.min(100, (credits / maxCredits) * 100)} />
           </div>
           {billing?.subscription?.current_period_end && (
             <p className="text-xs text-muted-foreground">
@@ -71,6 +85,7 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
+      <TransactionHistory transactions={transactions} />
     </div>
   );
 }

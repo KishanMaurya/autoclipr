@@ -68,9 +68,31 @@ export class SubscriptionsService {
       })
       .eq('id', userId);
 
+    // Record transaction
+    const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+    const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
+    const amountPaid = planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
+    await this.supabase.getClient().from('billing_transactions').insert({
+      user_id: userId,
+      invoice_number: invoiceNumber,
+      plan_id: planId,
+      amount: amountPaid,
+      status: 'paid',
+      payment_date: new Date().toISOString(),
+    }).catch((e: any) => this.logger.warn(`Failed to record transaction: ${e.message}`));
+
     // Pass email directly so it works even when profile email is empty (OAuth users)
     await this.sendSubscriptionEmails(userId, planId, '', {}, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
+  }
+
+  async getTransactions(userId: string) {
+    const { data } = await this.supabase.getClient()
+      .from('billing_transactions')
+      .select('id, invoice_number, plan_id, amount, status, transaction_id, payment_date')
+      .eq('user_id', userId)
+      .order('payment_date', { ascending: false });
+    return data ?? [];
   }
 
   async handleWebhookEvent(event: any): Promise<void> {

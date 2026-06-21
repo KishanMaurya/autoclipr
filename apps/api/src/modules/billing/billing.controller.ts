@@ -74,6 +74,13 @@ export class BillingController {
     return ApiResponse.ok({ url });
   }
 
+  @Get('billing/transactions')
+  @UseGuards(JwtAuthGuard)
+  async transactions(@CurrentUser() user: AuthUser) {
+    const data = await this.subscriptions.getTransactions(user.sub);
+    return ApiResponse.ok(data);
+  }
+
   @Get('billing/invoice/download')
   @Public()
   async downloadInvoice(
