@@ -50,13 +50,13 @@ const plans: Plan[] = [
   {
     id: "starter",
     name: "Starter",
-    price: 25,
-    priceYearly: 20,
+    price: 0,
+    priceYearly: 0,
     tagline: "Perfect for solo creators getting started.",
     icon: Rocket,
     iconClass: "from-violet-500 to-pink-500",
     accentColor: "violet",
-    cta: "Start free trial",
+    cta: "Get started free",
     features: [
       { label: "30 short clips / month", icon: PlaySquare },
       { label: "200 credits included", icon: Coins },
@@ -71,8 +71,8 @@ const plans: Plan[] = [
   {
     id: "creator",
     name: "Creator",
-    price: 49,
-    priceYearly: 39,
+    price: 399,
+    priceYearly: 399,
     tagline: "For creators who publish daily and grow fast.",
     icon: Aperture,
     iconClass: "from-emerald-500 to-cyan-400",
@@ -96,8 +96,8 @@ const plans: Plan[] = [
   {
     id: "business",
     name: "Business",
-    price: 99,
-    priceYearly: 79,
+    price: 1999,
+    priceYearly: 1999,
     tagline: "For agencies, teams, and serious power users.",
     icon: Briefcase,
     iconClass: "from-orange-500 to-amber-400",
@@ -201,8 +201,10 @@ function PricingCard({ plan, yearly }: { plan: Plan; yearly: boolean }) {
 
         {/* Price */}
         <div className="relative mt-5 flex items-end gap-1">
-          <span className="text-5xl font-extrabold tracking-tight text-white">${displayPrice}</span>
-          <span className="mb-2 text-sm text-muted-foreground">/month</span>
+          <span className="text-5xl font-extrabold tracking-tight text-white">
+            {displayPrice === 0 ? "Free" : `₹${displayPrice}`}
+          </span>
+          {displayPrice > 0 && <span className="mb-2 text-sm text-muted-foreground">/month</span>}
         </div>
         <p className="relative mt-1 text-xs text-white/30">
           {yearly ? "Billed yearly · Cancel anytime" : "Billed monthly · Cancel anytime"}
