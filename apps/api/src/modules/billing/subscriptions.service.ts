@@ -41,7 +41,7 @@ export class SubscriptionsService {
   }
 
   // Called on payment success redirect as a reliable fallback to webhooks
-  async activatePlanForUser(userId: string, planId: string, userEmail = ''): Promise<void> {
+  async activatePlanForUser(userId: string, planId: string, userEmail = '', transactionId = ''): Promise<void> {
     const tier = PLAN_TIER[planId];
     if (!tier) throw new Error(`Unknown plan: ${planId}`);
 
@@ -78,11 +78,12 @@ export class SubscriptionsService {
       plan_id: planId,
       amount: amountPaid,
       status: 'paid',
+      transaction_id: transactionId || null,
       payment_date: new Date().toISOString(),
     }).catch((e: any) => this.logger.warn(`Failed to record transaction: ${e.message}`));
 
     // Pass email directly so it works even when profile email is empty (OAuth users)
-    await this.sendSubscriptionEmails(userId, planId, '', {}, userEmail);
+    await this.sendSubscriptionEmails(userId, planId, transactionId, { payment_id: transactionId }, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
   }
 

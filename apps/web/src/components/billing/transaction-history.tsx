@@ -73,7 +73,7 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
                   month: "short",
                   year: "numeric",
                 });
-                const downloadUrl = `${API_URL}/api/v1/billing/invoice/download?invoiceNumber=${encodeURIComponent(tx.invoice_number)}&plan=${encodeURIComponent(tx.plan_id.charAt(0).toUpperCase() + tx.plan_id.slice(1))}&amount=${encodeURIComponent(tx.amount)}&date=${encodeURIComponent(date)}`;
+                const downloadUrl = `${API_URL}/api/v1/billing/invoice/download?invoiceNumber=${encodeURIComponent(tx.invoice_number)}&plan=${encodeURIComponent(tx.plan_id.charAt(0).toUpperCase() + tx.plan_id.slice(1))}&amount=${encodeURIComponent(tx.amount)}&date=${encodeURIComponent(date)}${tx.transaction_id ? `&txId=${encodeURIComponent(tx.transaction_id)}` : ""}`;
 
                 return (
                   <tr

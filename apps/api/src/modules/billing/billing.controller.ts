@@ -31,6 +31,9 @@ class CreateCheckoutDto {
 class ActivatePlanDto {
   @IsString()
   planId!: string;
+
+  @IsString()
+  transactionId?: string;
 }
 
 @Controller()
@@ -89,12 +92,13 @@ export class BillingController {
     @Query('amount') amount: string,
     @Query('date') date: string,
     @Query('name') name: string,
+    @Query('txId') txId: string,
     @Res() res: Response,
   ) {
     const appUrl = process.env.WEB_APP_URL ?? 'https://autoclipr.com';
     const pdfBuffer = await this.invoicePdf.generate({
       invoiceNumber: invoiceNumber ?? 'N/A',
-      transactionId: '-',
+      transactionId: txId || '-',
       paymentDate: date ?? new Date().toLocaleDateString('en-IN'),
       userName: name ?? 'Customer',
       userEmail: '',
@@ -119,7 +123,7 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: ActivatePlanDto,
   ) {
-    await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email);
+    await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email, dto.transactionId);
     return ApiResponse.ok({ activated: true });
   }
 

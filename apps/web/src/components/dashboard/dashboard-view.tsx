@@ -108,13 +108,19 @@ export function DashboardView({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
       try {
+        // Capture Dodo's transaction/subscription ID from URL if present
+        const transactionId =
+          searchParams.get("subscription_id") ??
+          searchParams.get("payment_id") ??
+          searchParams.get("transaction_id") ??
+          "";
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/activate`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ planId: plan }),
+          body: JSON.stringify({ planId: plan, transactionId }),
         });
         // Remove query params and refresh to show updated plan
         router.replace("/dashboard");
