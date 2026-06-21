@@ -19,6 +19,7 @@ import { CTA } from "@/components/landing/cta";
 import { Comparison } from "@/components/landing/comparison";
 import { PlatformMarquee } from "@/components/landing/platform-marquee";
 import { Stats } from "@/components/landing/stats";
+import { PlatformsShowcase } from "@/components/landing/platforms-showcase";
 
 export default function HomePage() {
   return (
@@ -30,6 +31,7 @@ export default function HomePage() {
       <Stats />
       <Features />
       <HowItWorks />
+      <PlatformsShowcase />
       <Comparison />
       <Testimonials />
       <PricingSection />
