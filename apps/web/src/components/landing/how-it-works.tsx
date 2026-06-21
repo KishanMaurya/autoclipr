@@ -145,7 +145,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative border-y border-white/[0.06] px-4 py-28 sm:px-6">
+    <section id="how-it-works" className="relative px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="section-label mx-auto mb-6">Workflow</p>

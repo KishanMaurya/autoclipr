@@ -11,7 +11,7 @@ const stats = [
 
 export function Stats() {
   return (
-    <section className="relative border-y border-white/[0.06] bg-white/[0.015] px-4 py-20 sm:px-6">
+    <section className="relative bg-white/[0.015] px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <Reveal className="mb-12 text-center">
           <p className="section-label mx-auto mb-4">By the numbers</p>
