@@ -20,12 +20,14 @@ import { Comparison } from "@/components/landing/comparison";
 import { PlatformMarquee } from "@/components/landing/platform-marquee";
 import { Stats } from "@/components/landing/stats";
 import { PlatformsShowcase } from "@/components/landing/platforms-showcase";
+import { CreatorsMarquee } from "@/components/landing/creators-marquee";
 
 export default function HomePage() {
   return (
     <>
       <HomePageJsonLd />
       <Hero />
+      <CreatorsMarquee />
       <PlatformMarquee />
       <UrlToShorts />
       <Stats />
