@@ -160,7 +160,7 @@ function BrandTrack() {
 
 export function CreatorsMarquee() {
   return (
-    <div className="relative border-y border-white/[0.06] bg-white/[0.01] py-8 overflow-hidden">
+    <div className="relative py-8 overflow-hidden">
       <div className="mx-auto max-w-5xl overflow-hidden">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 z-10 [background:linear-gradient(to_right,hsl(var(--background)),transparent)]" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 z-10 [background:linear-gradient(to_left,hsl(var(--background)),transparent)]" />
@@ -171,7 +171,7 @@ export function CreatorsMarquee() {
           <CreatorTrack />
         </div>
 
-        <div className="mx-4 mb-6 border-t border-white/[0.06]" />
+        <div className="mb-6" />
 
         {/* Brand logos row — scrolls right */}
         <div className="flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
