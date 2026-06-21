@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { apiFetch, type Clip, type PlatformConnection, type Video, type YoutubeChannel } from "@/lib/api";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
@@ -19,11 +20,13 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <DashboardView
-      initialChannels={channelsRes.data ?? []}
-      initialClips={clipsRes.data ?? []}
-      initialVideos={videosRes.data ?? []}
-      initialPlatforms={platformsRes.data ?? []}
-    />
+    <Suspense>
+      <DashboardView
+        initialChannels={channelsRes.data ?? []}
+        initialClips={clipsRes.data ?? []}
+        initialVideos={videosRes.data ?? []}
+        initialPlatforms={platformsRes.data ?? []}
+      />
+    </Suspense>
   );
 }

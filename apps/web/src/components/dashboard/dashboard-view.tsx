@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   User,
   Plus,
@@ -49,6 +49,8 @@ export function DashboardView({
   initialPlatforms,
 }: DashboardViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activateRef = useRef(false);
   const [isPending, startTransition] = useTransition();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -93,6 +95,36 @@ export function DashboardView({
     setPlatformCount(initialPlatforms.length);
     setConnectedPlatforms(initialPlatforms.map((p) => p.platform));
   }, [initialPlatforms]);
+
+  // Activate subscription on payment success redirect (webhook fallback)
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    const plan = searchParams.get("plan");
+    if (payment !== "success" || !plan || activateRef.current) return;
+    activateRef.current = true;
+
+    async function activate() {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/activate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ planId: plan }),
+        });
+        // Remove query params and refresh to show updated plan
+        router.replace("/dashboard");
+        router.refresh();
+      } catch {
+        // silently fail — webhook will handle it
+      }
+    }
+    activate();
+  }, [searchParams, router]);
 
   useEffect(() => {
     const onChannelsUpdated = () => {

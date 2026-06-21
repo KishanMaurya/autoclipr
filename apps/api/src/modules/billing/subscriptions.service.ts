@@ -38,6 +38,35 @@ export class SubscriptionsService {
     });
   }
 
+  // Called on payment success redirect as a reliable fallback to webhooks
+  async activatePlanForUser(userId: string, planId: string): Promise<void> {
+    const tier = PLAN_TIER[planId];
+    if (!tier) throw new Error(`Unknown plan: ${planId}`);
+
+    await this.supabase.getClient()
+      .from('user_subscriptions')
+      .upsert({
+        user_id: userId,
+        plan_id: planId,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    await this.supabase.getClient()
+      .from('profiles')
+      .update({
+        subscription_tier: tier,
+        credits: PLAN_CREDITS[planId] ?? 100,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    await this.sendSubscriptionEmails(userId, planId, '', {});
+    this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
+  }
+
   async handleWebhookEvent(event: any): Promise<void> {
     const type: string = event.event_type ?? event.type ?? '';
     this.logger.log(`Dodo webhook: ${type}`);

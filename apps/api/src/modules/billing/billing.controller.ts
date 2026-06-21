@@ -23,6 +23,11 @@ class CreateCheckoutDto {
   planId!: string;
 }
 
+class ActivatePlanDto {
+  @IsString()
+  planId!: string;
+}
+
 @Controller()
 export class BillingController {
   constructor(
@@ -61,6 +66,17 @@ export class BillingController {
     }
     const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId);
     return ApiResponse.ok({ url });
+  }
+
+  // Called from frontend on payment success redirect — fallback when webhook is delayed/missing
+  @Post('billing/activate')
+  @UseGuards(JwtAuthGuard)
+  async activatePlan(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ActivatePlanDto,
+  ) {
+    await this.subscriptions.activatePlanForUser(user.sub, dto.planId);
+    return ApiResponse.ok({ activated: true });
   }
 
   @Post('webhooks/dodo')
