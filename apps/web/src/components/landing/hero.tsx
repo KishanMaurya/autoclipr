@@ -108,15 +108,17 @@ export function Hero() {
           </Button>
         </MotionItem>
 
-        <MotionItem className="mt-14 flex flex-wrap items-center justify-center gap-8 sm:gap-12">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-2xl font-bold text-aurora sm:text-3xl">{stat.value}</p>
-              <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                {stat.label}
-              </p>
-            </div>
-          ))}
+        <MotionItem className="mt-14 flex justify-center">
+          <div className="inline-flex divide-x divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 backdrop-blur-sm">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center px-8 py-5 sm:px-12">
+                <p className="text-2xl font-bold text-aurora sm:text-3xl">{stat.value}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-widest text-white/40">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
         </MotionItem>
       </Stagger>
 
