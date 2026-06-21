@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
+import { UsersRepository } from '../users/users.repository';
 import { DodoService } from './dodo.service';
 
 const PLAN_TIER: Record<string, string> = {
@@ -25,6 +26,7 @@ export class SubscriptionsService {
     private readonly supabase: SupabaseAdminService,
     private readonly config: ConfigService,
     private readonly email: EmailService,
+    private readonly usersRepo: UsersRepository,
   ) {}
 
   async createCheckoutUrl(userId: string, email: string, planId: string): Promise<string> {
@@ -39,9 +41,12 @@ export class SubscriptionsService {
   }
 
   // Called on payment success redirect as a reliable fallback to webhooks
-  async activatePlanForUser(userId: string, planId: string): Promise<void> {
+  async activatePlanForUser(userId: string, planId: string, userEmail = ''): Promise<void> {
     const tier = PLAN_TIER[planId];
     if (!tier) throw new Error(`Unknown plan: ${planId}`);
+
+    // Ensure profile exists for OAuth users who skipped sync
+    await this.usersRepo.ensureProfile(userId, userEmail);
 
     await this.supabase.getClient()
       .from('user_subscriptions')

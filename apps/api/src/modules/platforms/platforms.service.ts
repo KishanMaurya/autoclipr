@@ -42,10 +42,13 @@ export class PlatformsService {
     );
   }
 
-  async connect(userId: string, dto: ConnectPlatformDto) {
+  async connect(userId: string, dto: ConnectPlatformDto, userEmail?: string) {
     if (dto.platform === 'tiktok') {
       throw new BadRequestException('TikTok posting is not available yet');
     }
+
+    // Ensure profile exists (Google OAuth users may not have been synced yet)
+    await this.usersRepo.upsertFromAuth(userId, userEmail ?? '', '', '').catch(() => {});
 
     const existing = await this.platformsRepo.getByPlatform(userId, dto.platform);
 

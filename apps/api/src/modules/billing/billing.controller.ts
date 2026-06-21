@@ -75,7 +75,7 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: ActivatePlanDto,
   ) {
-    await this.subscriptions.activatePlanForUser(user.sub, dto.planId);
+    await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email);
     return ApiResponse.ok({ activated: true });
   }
 

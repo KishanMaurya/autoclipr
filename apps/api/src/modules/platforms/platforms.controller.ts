@@ -39,7 +39,7 @@ export class PlatformsController {
 
   @Post()
   async connect(@CurrentUser() user: AuthUser, @Body() dto: ConnectPlatformDto) {
-    const row = await this.platformsService.connect(user.sub, dto);
+    const row = await this.platformsService.connect(user.sub, dto, user.email);
     return ApiResponse.ok(row);
   }
 

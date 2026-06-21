@@ -62,6 +62,18 @@ export class UsersRepository {
     return data as Profile;
   }
 
+  /** Ensures a profile row exists — safe to call for any authenticated user */
+  async ensureProfile(userId: string, email = ''): Promise<void> {
+    const { data } = await this.supabase.getClient()
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!data) {
+      await this.upsertFromAuth(userId, email, '', '').catch(() => {});
+    }
+  }
+
   async updateProfile(
     userId: string,
     patch: { full_name?: string; email?: string; phone?: string; avatar_url?: string | null; email_notifications_enabled?: boolean },
