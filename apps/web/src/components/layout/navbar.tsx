@@ -6,8 +6,8 @@ import { resolveUserFullName } from "@/lib/user-avatar";
 import { UserMenu } from "./user-menu";
 import { FreeToolsDropdown } from "./free-tools-dropdown";
 
-const links = [
-  { href: "/#features", label: "Features" },
+const linksLeft = [{ href: "/#features", label: "Features" }];
+const linksRight = [
   { href: "/#how-it-works", label: "How it Works" },
   { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Blog" },
@@ -33,7 +33,7 @@ export async function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {links.map((l) => (
+          {linksLeft.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -43,6 +43,15 @@ export async function Navbar() {
             </Link>
           ))}
           <FreeToolsDropdown />
+          {linksRight.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-lg px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+            >
+              {l.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
