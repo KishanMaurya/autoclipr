@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowLeft, Video, Calendar, Globe, BadgeCheck, TrendingUp, Eye, Users, DollarSign } from "lucide-react";
 import { searchChannel, getTopVideos, formatCount, estimateMonthlyEarnings } from "@/lib/youtube-api";
 import { ChannelCharts } from "./channel-charts";
+
+// Rank lookup — ordered list matches CREATORS_META
+const CREATOR_RANKS: Record<string, number> = {
+  "mrbeast": 1, "t-series": 2, "cocomelon": 3, "set india": 4,
+  "vlad and niki": 5, "stokes twins": 6, "kids diana show": 7, "like nastya": 8,
+  "zee music company": 9, "5-minute crafts": 10, "blackpink": 11, "justin bieber": 12,
+  "mark rober": 13, "dude perfect": 14, "nicki minaj": 15, "shakira": 16,
+  "abp news": 17, "beatboxjcop": 18, "toys and colors": 19, "alan's universe": 20,
+};
 
 type Props = { params: Promise<{ channel: string }> };
 
@@ -52,11 +60,15 @@ export default async function ChannelPage({ params }: Props) {
   const earnings = estimateMonthlyEarnings(channelData.views);
   const yearsOld = Math.floor((Date.now() - new Date(channelData.publishedAt).getTime()) / (365.25 * 24 * 3600 * 1000));
 
+  const globalRank = CREATOR_RANKS[name.toLowerCase()];
+  const rankDisplay = globalRank ? `#${globalRank}` : "—";
+  const rankSub = globalRank ? `Top ${globalRank <= 10 ? 10 : 20} Worldwide` : "Not in top 20";
+
   const STATS = [
     { icon: Users, label: "Subscribers", value: subs, color: "text-emerald-400" },
     { icon: Eye, label: "Total Video Views", value: views, color: "text-cyan-400" },
     { icon: DollarSign, label: "Est. Monthly Earnings", value: earnings, color: "text-yellow-400" },
-    { icon: TrendingUp, label: "Ranking (Global)", value: "#1", sub: "Worldwide", color: "text-violet-400" },
+    { icon: TrendingUp, label: "Ranking (Global)", value: rankDisplay, sub: rankSub, color: "text-violet-400" },
   ];
 
   return (
