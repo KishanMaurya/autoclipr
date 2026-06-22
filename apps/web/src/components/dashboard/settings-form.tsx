@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth-token";
@@ -42,8 +43,6 @@ export function SettingsForm({
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
   const avatarImageUrl = getUserAvatarImageUrl(avatarUrl);
   const avatarFallback = getUserAvatarFallback({
@@ -79,19 +78,17 @@ export function SettingsForm({
   async function onAvatarSelected(file: File | null) {
     if (!file) return;
 
-    setError(null);
-    setInfo(null);
-
     if (!AVATAR_ACCEPT.split(",").includes(file.type)) {
-      setError("Use a JPEG, PNG, or WebP image.");
+      toast.error("Use a JPEG, PNG, or WebP image.");
       return;
     }
     if (file.size > AVATAR_MAX_BYTES) {
-      setError("Profile photo must be 2 MB or smaller.");
+      toast.error("Profile photo must be 2 MB or smaller.");
       return;
     }
 
     setAvatarLoading(true);
+    const toastId = toast.loading("Uploading photo…");
 
     try {
       const token = await getAccessToken();
@@ -102,11 +99,7 @@ export function SettingsForm({
         {
           method: "POST",
           token,
-          body: JSON.stringify({
-            filename: file.name,
-            mime_type: file.type,
-            size: file.size,
-          }),
+          body: JSON.stringify({ filename: file.name, mime_type: file.type, size: file.size }),
         },
       );
 
@@ -120,15 +113,13 @@ export function SettingsForm({
         body: file,
       });
 
-      if (!uploadRes.ok) {
-        throw new Error("Upload failed. Please try again.");
-      }
+      if (!uploadRes.ok) throw new Error("Upload failed. Please try again.");
 
       const publicUrl = `${init.data.avatar_url}?t=${Date.now()}`;
       await persistAvatarUrl(publicUrl);
-      setInfo("Profile photo updated.");
+      toast.success("Profile photo updated!", { id: toastId });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload photo");
+      toast.error(err instanceof Error ? err.message : "Failed to upload photo", { id: toastId });
     } finally {
       setAvatarLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -137,14 +128,12 @@ export function SettingsForm({
 
   async function removeAvatar() {
     setAvatarLoading(true);
-    setError(null);
-    setInfo(null);
-
+    const toastId = toast.loading("Removing photo…");
     try {
       await persistAvatarUrl("");
-      setInfo("Profile photo removed.");
+      toast.success("Profile photo removed.", { id: toastId });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove photo");
+      toast.error(err instanceof Error ? err.message : "Failed to remove photo", { id: toastId });
     } finally {
       setAvatarLoading(false);
     }
@@ -152,12 +141,10 @@ export function SettingsForm({
 
   async function save() {
     setLoading(true);
-    setError(null);
-    setInfo(null);
 
     const token = await getAccessToken();
     if (!token) {
-      setError("Session expired. Please sign in again.");
+      toast.error("Session expired. Please sign in again.");
       setLoading(false);
       return;
     }
@@ -172,31 +159,24 @@ export function SettingsForm({
     });
 
     if (!res.success) {
-      setError(res.error?.message ?? "Failed to save profile");
+      toast.error(res.error?.message ?? "Failed to save profile");
       setLoading(false);
       return;
     }
 
     const supabase = createClient();
-    await supabase.auth.updateUser({
-      data: { full_name: fullName.trim() },
-    });
+    await supabase.auth.updateUser({ data: { full_name: fullName.trim() } });
 
     if (emailEditable && email.trim() && email.trim() !== initialEmail) {
-      setInfo(
-        "Profile saved. If you added a new email, check your inbox to verify it — required for YouTube posting.",
-      );
+      toast.success("Profile saved! Check your inbox to verify the new email.");
     } else {
-      setInfo("Profile saved.");
+      toast.success("Profile saved!");
     }
 
     setSaved(true);
     setLoading(false);
     router.refresh();
-    setTimeout(() => {
-      setSaved(false);
-      setInfo(null);
-    }, 5000);
+    setTimeout(() => setSaved(false), 3000);
   }
 
   return (
@@ -291,17 +271,6 @@ export function SettingsForm({
           onChange={(e) => setFullName(e.target.value)}
         />
       </div>
-
-      {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-400">
-          {error}
-        </p>
-      )}
-      {info && (
-        <p className="rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
-          {info}
-        </p>
-      )}
 
       <Button variant="gradient" onClick={save} disabled={loading}>
         {loading ? "Saving…" : saved ? "Saved!" : "Save changes"}
