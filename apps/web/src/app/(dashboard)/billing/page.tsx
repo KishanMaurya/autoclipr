@@ -23,6 +23,8 @@ export type Transaction = {
   status: string;
   transaction_id: string | null;
   payment_date: string;
+  period_end: string | null;
+  billing_period: string | null;
 };
 
 export default async function BillingPage() {

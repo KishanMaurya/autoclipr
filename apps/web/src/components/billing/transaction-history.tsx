@@ -62,6 +62,7 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
                 <th className="px-6 py-3">Plan</th>
                 <th className="px-6 py-3">Amount</th>
                 <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Next Billing</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Receipt</th>
               </tr>
@@ -73,6 +74,13 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
                   month: "short",
                   year: "numeric",
                 });
+                const nextBilling = tx.period_end
+                  ? new Date(tx.period_end).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "—";
                 const downloadUrl = `${API_URL}/api/v1/billing/invoice/download?invoiceNumber=${encodeURIComponent(tx.invoice_number)}&plan=${encodeURIComponent(tx.plan_id.charAt(0).toUpperCase() + tx.plan_id.slice(1))}&amount=${encodeURIComponent(tx.amount)}&date=${encodeURIComponent(date)}${tx.transaction_id ? `&txId=${encodeURIComponent(tx.transaction_id)}` : ""}`;
 
                 return (
@@ -83,9 +91,17 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
                     <td className="px-6 py-4 font-mono text-xs text-white/70">
                       #{tx.invoice_number}
                     </td>
-                    <td className="px-6 py-4 capitalize font-medium">{tx.plan_id}</td>
+                    <td className="px-6 py-4 capitalize font-medium">
+                      {tx.plan_id}
+                      {tx.billing_period && (
+                        <span className="ml-1.5 text-[10px] text-white/30 capitalize">
+                          · {tx.billing_period}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 font-semibold text-emerald-400">{tx.amount}</td>
                     <td className="px-6 py-4 text-muted-foreground">{date}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{nextBilling}</td>
                     <td className="px-6 py-4">
                       <Badge variant="success" className="text-xs">
                         {tx.status}

@@ -93,6 +93,8 @@ export class SubscriptionsService {
         status: 'paid',
         transaction_id: internalTxId,
         payment_date: new Date().toISOString(),
+        period_end: periodEnd,
+        billing_period: billingPeriod,
       });
     } catch (e: any) {
       this.logger.warn(`Failed to record transaction: ${e.message}`);
@@ -106,7 +108,7 @@ export class SubscriptionsService {
   async getTransactions(userId: string) {
     const { data } = await this.supabase.getClient()
       .from('billing_transactions')
-      .select('id, invoice_number, plan_id, amount, status, transaction_id, payment_date')
+      .select('id, invoice_number, plan_id, amount, status, transaction_id, payment_date, period_end, billing_period')
       .eq('user_id', userId)
       .order('payment_date', { ascending: false });
     return data ?? [];
