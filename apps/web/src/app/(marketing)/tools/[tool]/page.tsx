@@ -19,7 +19,7 @@ export default async function ToolPage({ params }: Props) {
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10">
         <Construction className="h-8 w-8 text-emerald-400" />
       </div>
-      <h1 className="text-3xl font-bold text-white">{name}</h1>
+      <h1 className="text-2xl font-bold text-white sm:text-3xl">{name}</h1>
       <p className="mt-3 max-w-md text-white/50">
         This tool is coming soon. We&apos;re building it — check back shortly.
       </p>

@@ -77,7 +77,7 @@ export function ChannelCharts({ channelName, subscribers, totalViews, topVideos 
         </div>
 
         {/* Summary stats */}
-        <div className="mb-4 flex gap-8">
+        <div className="mb-4 flex flex-wrap gap-5 sm:gap-8">
           <div>
             <p className="text-2xl font-extrabold text-white">{totalForPeriod}</p>
             <p className="text-xs text-white/30">All views</p>

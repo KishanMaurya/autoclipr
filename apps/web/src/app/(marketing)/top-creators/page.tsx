@@ -92,7 +92,7 @@ export default function TopCreatorsPage() {
   });
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen pt-2">
       {/* Hero */}
       <div className="border-b border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-7xl">
@@ -237,8 +237,8 @@ export default function TopCreatorsPage() {
               })}
             </div>
 
-            {/* Table header */}
-            <div className="mb-2 grid grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3 px-4 text-[10px] font-bold uppercase tracking-widest text-white/25">
+            {/* Table header — hidden on mobile */}
+            <div className="mb-2 hidden sm:grid grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3 px-4 text-[10px] font-bold uppercase tracking-widest text-white/25">
               <div className="w-10">Rank</div>
               <div>Channel</div>
               <div className="text-right">Subscribers</div>
@@ -253,53 +253,71 @@ export default function TopCreatorsPage() {
                 <div key={creator.rank}>
                   {/* Mid-list CTA */}
                   {i === 10 && (
-                    <div className="my-4 flex items-center justify-between rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4">
+                    <div className="my-4 flex flex-col gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                       <div>
                         <p className="font-semibold text-white">See a creator you want to beat?</p>
                         <p className="text-sm text-white/40">Clip their best moments — start in 30 seconds.</p>
                       </div>
                       <Link
                         href="/register"
-                        className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400"
+                        className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-emerald-400"
                       >
                         Start free
                       </Link>
                     </div>
                   )}
+                  {/* Mobile card layout / Desktop grid row */}
                   <div
                     onClick={() => router.push(`/top-creators/${encodeURIComponent(creator.name.toLowerCase().replace(/\s+/g, "-"))}`)}
-                    className="group grid cursor-pointer grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3 rounded-2xl border border-transparent px-4 py-3 transition-all hover:border-white/[0.06] hover:bg-white/[0.03]"
+                    className="group cursor-pointer rounded-2xl border border-transparent px-3 py-3 transition-all hover:border-white/[0.06] hover:bg-white/[0.03] sm:px-4"
                   >
-                    <RankBadge rank={creator.rank} tier={creator.tier} />
-                    <div className="flex min-w-0 items-center gap-3">
+                    {/* Mobile layout */}
+                    <div className="flex items-center gap-3 sm:hidden">
+                      <RankBadge rank={creator.rank} tier={creator.tier} />
                       <AvatarPlaceholder name={creator.name} />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-white">{creator.name}</p>
                         <p className="text-xs text-white/35">{creator.country} · {creator.niche}</p>
                       </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold text-white">{creator.subs}</p>
+                        <p className="text-[10px] text-white/30">subs</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-white">{creator.subs}</p>
-                      <p className="text-[10px] text-white/30">subs</p>
+                    {/* Desktop grid layout */}
+                    <div className="hidden sm:grid grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3">
+                      <RankBadge rank={creator.rank} tier={creator.tier} />
+                      <div className="flex min-w-0 items-center gap-3">
+                        <AvatarPlaceholder name={creator.name} />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-white">{creator.name}</p>
+                          <p className="text-xs text-white/35">{creator.country} · {creator.niche}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-white">{creator.subs}</p>
+                        <p className="text-[10px] text-white/30">subs</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-white">{creator.views}</p>
+                        <p className="text-[10px] text-white/30">views</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-white">{creator.videos}</p>
+                        <p className="text-[10px] text-white/30">videos</p>
+                      </div>
+                      <button className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] text-white/30 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-400 opacity-0 group-hover:opacity-100">
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-white">{creator.views}</p>
-                      <p className="text-[10px] text-white/30">views</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-white">{creator.videos}</p>
-                      <p className="text-[10px] text-white/30">videos</p>
-                    </div>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] text-white/30 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-400 group-hover:opacity-100 opacity-0">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Bottom CTA */}
-            <div className="mt-8 rounded-3xl bg-gradient-to-r from-emerald-600 to-cyan-600 p-8 text-center">
+            <div className="mt-8 rounded-3xl bg-gradient-to-r from-emerald-600 to-cyan-600 p-6 text-center sm:p-8">
               <h2 className="text-2xl font-bold text-white">Your turn to climb the rankings</h2>
               <p className="mt-2 text-white/70">
                 Auto-clip top creators&apos; best moments, add captions, and publish across platforms — in minutes.

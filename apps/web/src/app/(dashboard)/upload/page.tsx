@@ -17,7 +17,7 @@ export default function UploadPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Create Viral Shorts</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">Create Viral Shorts</h1>
         <p className="text-muted-foreground">
           Paste any video URL or upload a file — AI handles analysis, clips, captions, and export.
         </p>

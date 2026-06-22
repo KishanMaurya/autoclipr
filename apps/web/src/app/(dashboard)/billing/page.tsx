@@ -47,12 +47,12 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Manage Your Membership</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">Manage Your Membership</h1>
           <p className="text-muted-foreground">View your subscription and credit usage</p>
         </div>
-        <Button variant="gradient" asChild className="shrink-0">
+        <Button variant="gradient" asChild className="shrink-0 self-start">
           <Link href="/pricing">Change Subscription</Link>
         </Button>
       </div>

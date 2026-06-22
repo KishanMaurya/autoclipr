@@ -27,7 +27,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>
         <p className="text-muted-foreground">Manage your account and posting identity</p>
       </div>
 

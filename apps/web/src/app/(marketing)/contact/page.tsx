@@ -39,7 +39,7 @@ export default async function ContactPage() {
     <div className="pt-16">
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold">Contact us</h1>
+          <h1 className="text-3xl font-bold sm:text-4xl">Contact us</h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
             Have a question about your account, billing, or using AutoClipr? Send a message and
             we&apos;ll get back to you as soon as we can.

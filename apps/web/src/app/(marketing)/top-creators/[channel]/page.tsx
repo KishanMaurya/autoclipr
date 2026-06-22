@@ -73,7 +73,7 @@ export default async function ChannelPage({ params }: Props) {
       {/* Hero */}
       <div className="border-b border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="flex items-start gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
             {/* Avatar */}
             <div className="relative shrink-0">
               {channelData.thumbnail ? (
@@ -117,7 +117,7 @@ export default async function ChannelPage({ params }: Props) {
           </div>
 
           {/* Stat cards */}
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:grid-cols-4">
             {STATS.map((s) => {
               const Icon = s.icon;
               return (

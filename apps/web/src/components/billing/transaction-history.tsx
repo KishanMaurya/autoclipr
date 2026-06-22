@@ -24,7 +24,7 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02]">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 border-b border-white/[0.06] px-6 py-4">
+      <div className="flex flex-col gap-3 border-b border-white/[0.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-emerald-400" />
           <h2 className="font-semibold">Transaction History</h2>
@@ -34,7 +34,7 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
             </span>
           )}
         </div>
-        <div className="relative w-56">
+        <div className="relative w-full sm:w-56">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search transactions..."

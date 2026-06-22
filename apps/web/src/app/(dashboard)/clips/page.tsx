@@ -36,7 +36,7 @@ export default async function ClipsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">My Clips</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">My Clips</h1>
         <p className="text-muted-foreground">
           AI-generated shorts from your uploaded videos
         </p>
@@ -51,7 +51,7 @@ export default async function ClipsPage() {
       <section>
         <h2 className="mb-4 text-lg font-semibold">All clips</h2>
         {clips.length === 0 ? (
-          <Card className="glass flex flex-col items-center p-16 text-center">
+          <Card className="glass flex flex-col items-center p-8 text-center sm:p-16">
             <Scissors className="mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-medium">
               {processingVideos.length > 0 ? "Clips are on the way" : "No clips yet"}
