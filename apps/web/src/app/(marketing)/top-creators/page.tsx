@@ -1,34 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingUp, Users, Eye, Video, ArrowRight, ChevronRight } from "lucide-react";
 import { ChannelSearchBar } from "@/components/top-creators/channel-search-bar";
 import { cn } from "@/lib/utils";
 
-const CREATORS = [
-  { rank: 1, name: "MrBeast", niche: "Entertainment", subs: "503M", views: "130.38B", videos: "987", country: "🇺🇸", tier: "gold" },
-  { rank: 2, name: "T-Series", niche: "Music", subs: "268M", views: "245.7B", videos: "20.4K", country: "🇮🇳", tier: "silver" },
-  { rank: 3, name: "Cocomelon", niche: "Kids", subs: "201M", views: "223.34B", videos: "2.04K", country: "🇺🇸", tier: "bronze" },
-  { rank: 4, name: "SET India", niche: "Entertainment", subs: "189M", views: "189.41B", videos: "171.96K", country: "🇮🇳" },
-  { rank: 5, name: "Vlad and Niki", niche: "Kids", subs: "150M", views: "121.57B", videos: "1.03K", country: "🇺🇸" },
-  { rank: 6, name: "Stokes Twins", niche: "Entertainment", subs: "140M", views: "30.99B", videos: "451", country: "🇺🇸" },
-  { rank: 7, name: "Kids Diana Show", niche: "Kids", subs: "138M", views: "124.82B", videos: "1.66K", country: "🇺🇦" },
-  { rank: 8, name: "Like Nastya", niche: "Kids", subs: "132M", views: "121.48B", videos: "1.08K", country: "🇷🇺" },
-  { rank: 9, name: "Zee Music Company", niche: "Music", subs: "122M", views: "89.03B", videos: "16.5K", country: "🇮🇳" },
-  { rank: 10, name: "5-Minute Crafts", niche: "Lifestyle", subs: "80.7M", views: "28.52B", videos: "8.22K", country: "🇨🇾" },
-  { rank: 11, name: "BLACKPINK", niche: "Music", subs: "101M", views: "42.18B", videos: "666", country: "🇰🇷" },
-  { rank: 12, name: "Justin Bieber", niche: "Music", subs: "78.7M", views: "38.68B", videos: "278", country: "🇨🇦" },
-  { rank: 13, name: "Mark Rober", niche: "Technology", subs: "78.6M", views: "17.59B", videos: "260", country: "🇺🇸" },
-  { rank: 14, name: "Dude Perfect", niche: "Sports", subs: "60M", views: "17.21B", videos: "360", country: "🇺🇸" },
-  { rank: 15, name: "Nicki Minaj", niche: "Music", subs: "55.2M", views: "23.91B", videos: "312", country: "🇹🇹" },
-  { rank: 16, name: "Shakira", niche: "Music", subs: "51.3M", views: "36.61B", videos: "409", country: "🇨🇴" },
-  { rank: 17, name: "ABP NEWS", niche: "News", subs: "50.9M", views: "30.69B", videos: "606.57K", country: "🇮🇳" },
-  { rank: 18, name: "BeatboxJCOP", niche: "Entertainment", subs: "50.6M", views: "28.58B", videos: "1.57K", country: "🇲🇽" },
-  { rank: 19, name: "Toys and Colors", niche: "Kids", subs: "82.7M", views: "119.65B", videos: "1.86K", country: "🇺🇸" },
-  { rank: 20, name: "Alan's Universe", niche: "Entertainment", subs: "101M", views: "62.52B", videos: "1.72K", country: "🇵🇭" },
+// Static metadata (rank, niche, country flag) — real stats/thumbnails come from YouTube API
+const CREATORS_META = [
+  { rank: 1, name: "MrBeast",          niche: "Entertainment", country: "🇺🇸", tier: "gold"   },
+  { rank: 2, name: "T-Series",          niche: "Music",         country: "🇮🇳", tier: "silver" },
+  { rank: 3, name: "Cocomelon",         niche: "Kids",          country: "🇺🇸", tier: "bronze" },
+  { rank: 4, name: "SET India",         niche: "Entertainment", country: "🇮🇳" },
+  { rank: 5, name: "Vlad and Niki",     niche: "Kids",          country: "🇺🇸" },
+  { rank: 6, name: "Stokes Twins",      niche: "Entertainment", country: "🇺🇸" },
+  { rank: 7, name: "Kids Diana Show",   niche: "Kids",          country: "🇺🇦" },
+  { rank: 8, name: "Like Nastya",       niche: "Kids",          country: "🇷🇺" },
+  { rank: 9, name: "Zee Music Company", niche: "Music",         country: "🇮🇳" },
+  { rank: 10, name: "5-Minute Crafts",  niche: "Lifestyle",     country: "🇨🇾" },
+  { rank: 11, name: "BLACKPINK",        niche: "Music",         country: "🇰🇷" },
+  { rank: 12, name: "Justin Bieber",    niche: "Music",         country: "🇨🇦" },
+  { rank: 13, name: "Mark Rober",       niche: "Technology",    country: "🇺🇸" },
+  { rank: 14, name: "Dude Perfect",     niche: "Sports",        country: "🇺🇸" },
+  { rank: 15, name: "Nicki Minaj",      niche: "Music",         country: "🇹🇹" },
+  { rank: 16, name: "Shakira",          niche: "Music",         country: "🇨🇴" },
+  { rank: 17, name: "ABP NEWS",         niche: "News",          country: "🇮🇳" },
+  { rank: 18, name: "BeatboxJCOP",      niche: "Entertainment", country: "🇲🇽" },
+  { rank: 19, name: "Toys and Colors",  niche: "Kids",          country: "🇺🇸" },
+  { rank: 20, name: "Alan's Universe",  niche: "Entertainment", country: "🇵🇭" },
 ];
+
+type YTLive = { name: string; thumbnail: string; subs: string; views: string; videos: string; country: string };
+type Creator = typeof CREATORS_META[number] & { thumbnail?: string; subs: string; views: string; videos: string };
 
 const COUNTRIES = ["🇺🇸 United States", "🇮🇳 India", "🇬🇧 United Kingdom", "🇨🇦 Canada", "🇧🇷 Brazil", "🇰🇷 South Korea", "🇯🇵 Japan", "🇲🇽 Mexico"];
 const CATEGORIES = ["Entertainment", "Music", "Kids", "Gaming", "Education", "Technology", "Sports", "Lifestyle", "News", "Food", "Travel"];
@@ -62,20 +66,41 @@ function RankBadge({ rank, tier }: { rank: number; tier?: string }) {
   );
 }
 
-function AvatarPlaceholder({ name }: { name: string }) {
-  const colors = [
-    "from-emerald-500 to-cyan-500",
-    "from-violet-500 to-purple-500",
-    "from-orange-500 to-red-500",
-    "from-blue-500 to-indigo-500",
-    "from-pink-500 to-rose-500",
-  ];
-  const color = colors[name.charCodeAt(0) % colors.length];
+const GRAD_COLORS = [
+  "from-emerald-500 to-cyan-500",
+  "from-violet-500 to-purple-500",
+  "from-orange-500 to-red-500",
+  "from-blue-500 to-indigo-500",
+  "from-pink-500 to-rose-500",
+];
+
+function Avatar({ name, thumbnail }: { name: string; thumbnail?: string }) {
+  if (thumbnail) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={thumbnail} alt={name} className="h-11 w-11 shrink-0 rounded-full object-cover border border-white/10 shadow-lg" />
+    );
+  }
+  const color = GRAD_COLORS[name.charCodeAt(0) % GRAD_COLORS.length];
   return (
     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${color} text-base font-bold text-white shadow-lg`}>
       {name.charAt(0)}
     </div>
   );
+}
+
+// Merge static meta with live YouTube data
+function buildCreators(liveMap: Record<string, YTLive>): Creator[] {
+  return CREATORS_META.map((m) => {
+    const live = liveMap[m.name];
+    return {
+      ...m,
+      thumbnail: live?.thumbnail ?? "",
+      subs: live?.subs ?? "—",
+      views: live?.views ?? "—",
+      videos: live?.videos ?? "—",
+    };
+  });
 }
 
 export default function TopCreatorsPage() {
@@ -84,6 +109,21 @@ export default function TopCreatorsPage() {
   const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [channelSearch, setChannelSearch] = useState("");
+  const [liveMap, setLiveMap] = useState<Record<string, YTLive>>({});
+
+  useEffect(() => {
+    fetch("/api/youtube/creators")
+      .then((r) => r.json())
+      .then((data: YTLive[]) => {
+        if (!Array.isArray(data)) return;
+        const map: Record<string, YTLive> = {};
+        for (const d of data) map[d.name] = d;
+        setLiveMap(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const CREATORS = buildCreators(liveMap);
 
   const filtered = CREATORS.filter((c) => {
     if (activeCategory && c.niche !== activeCategory) return false;
@@ -274,7 +314,7 @@ export default function TopCreatorsPage() {
                     {/* Mobile layout */}
                     <div className="flex items-center gap-3 sm:hidden">
                       <RankBadge rank={creator.rank} tier={creator.tier} />
-                      <AvatarPlaceholder name={creator.name} />
+                      <Avatar name={creator.name} thumbnail={creator.thumbnail} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-white">{creator.name}</p>
                         <p className="text-xs text-white/35">{creator.country} · {creator.niche}</p>
@@ -289,7 +329,7 @@ export default function TopCreatorsPage() {
                     <div className="hidden sm:grid grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3">
                       <RankBadge rank={creator.rank} tier={creator.tier} />
                       <div className="flex min-w-0 items-center gap-3">
-                        <AvatarPlaceholder name={creator.name} />
+                        <Avatar name={creator.name} thumbnail={creator.thumbnail} />
                         <div className="min-w-0">
                           <p className="truncate font-semibold text-white">{creator.name}</p>
                           <p className="text-xs text-white/35">{creator.country} · {creator.niche}</p>
