@@ -1,4 +1,3 @@
-const YT_KEY = process.env.YOUTUBE_API_KEY ?? '';
 const BASE = 'https://www.googleapis.com/youtube/v3';
 
 export type YTChannel = {
@@ -24,26 +23,30 @@ export type YTVideo = {
 };
 
 async function ytFetch(path: string) {
-  const res = await fetch(`${BASE}${path}&key=${YT_KEY}`, { next: { revalidate: 3600 } });
-  if (!res.ok) throw new Error(`YouTube API error: ${res.status}`);
+  const key = process.env.YOUTUBE_API_KEY ?? '';
+  if (!key) throw new Error('YOUTUBE_API_KEY not set');
+  const res = await fetch(`${BASE}${path}&key=${key}`, { cache: 'no-store' });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`YouTube API ${res.status}: ${body.slice(0, 200)}`);
+  }
   return res.json();
 }
 
 export async function searchChannel(query: string): Promise<YTChannel | null> {
-  if (!YT_KEY) return null;
   try {
     const search = await ytFetch(`/search?part=snippet&type=channel&maxResults=1&q=${encodeURIComponent(query)}`);
     const item = search.items?.[0];
     if (!item) return null;
     const channelId = item.id.channelId;
     return getChannelById(channelId);
-  } catch {
+  } catch (err) {
+    console.error('[YouTube] searchChannel error:', err);
     return null;
   }
 }
 
 export async function getChannelById(channelId: string): Promise<YTChannel | null> {
-  if (!YT_KEY) return null;
   try {
     const data = await ytFetch(`/channels?part=snippet,statistics&id=${channelId}`);
     const ch = data.items?.[0];
@@ -60,13 +63,13 @@ export async function getChannelById(channelId: string): Promise<YTChannel | nul
       videoCount: ch.statistics.videoCount ?? '0',
       customUrl: ch.snippet.customUrl ?? '',
     };
-  } catch {
+  } catch (err) {
+    console.error('[YouTube] getChannelById error:', err);
     return null;
   }
 }
 
 export async function getTopVideos(channelId: string): Promise<YTVideo[]> {
-  if (!YT_KEY) return [];
   try {
     const search = await ytFetch(
       `/search?part=snippet&channelId=${channelId}&order=viewCount&type=video&maxResults=10`
@@ -82,7 +85,8 @@ export async function getTopVideos(channelId: string): Promise<YTVideo[]> {
       views: v.statistics.viewCount ?? '0',
       likes: v.statistics.likeCount ?? '0',
     }));
-  } catch {
+  } catch (err) {
+    console.error('[YouTube] getTopVideos error:', err);
     return [];
   }
 }

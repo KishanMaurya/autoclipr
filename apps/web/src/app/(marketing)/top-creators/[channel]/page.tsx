@@ -23,14 +23,22 @@ export default async function ChannelPage({ params }: Props) {
     searchChannel(name).then((ch) => ch ? getTopVideos(ch.id) : []),
   ]);
 
+  const hasKey = !!process.env.YOUTUBE_API_KEY;
+
   if (!channelData) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center px-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
           <Users className="h-8 w-8 text-white/30" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Channel not found</h1>
-        <p className="text-white/40">We couldn&apos;t find YouTube data for &quot;{name}&quot;.</p>
+        <h1 className="text-2xl font-bold text-white">
+          {hasKey ? "Channel not found" : "API key not configured"}
+        </h1>
+        <p className="text-white/40 max-w-sm">
+          {hasKey
+            ? `We couldn't find YouTube data for "${name}". Try checking the spelling.`
+            : "YOUTUBE_API_KEY is missing from environment variables."}
+        </p>
         <Link href="/top-creators" className="mt-2 inline-flex items-center gap-2 text-sm text-emerald-400 hover:underline">
           <ArrowLeft className="h-4 w-4" /> Back to Top Creators
         </Link>
