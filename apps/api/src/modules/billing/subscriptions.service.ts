@@ -79,7 +79,7 @@ export class SubscriptionsService {
       business: { monthly: '₹1,999.00', yearly: '₹20,988.00' },
       starter:  { monthly: 'Free',      yearly: 'Free' },
     };
-    const amountPaid = PLAN_AMOUNTS[planId]?.[billingPeriod] ?? 'Free';
+    const amountPaid = PLAN_AMOUNTS[planId]?.[billingPeriod as 'monthly' | 'yearly'] ?? 'Free';
 
     // Record transaction
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
@@ -223,7 +223,7 @@ export class SubscriptionsService {
       starter:  { monthly: 'Free',      yearly: 'Free' },
     };
     const amountPaid = data.amount_override
-      ?? (data.amount ? `₹${(data.amount / 100).toFixed(2)}` : (PLAN_AMOUNTS[planId]?.[billingPeriod] ?? 'Free'));
+      ?? (data.amount ? `₹${(data.amount / 100).toFixed(2)}` : (PLAN_AMOUNTS[planId]?.[billingPeriod as 'monthly' | 'yearly'] ?? 'Free'));
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
     const transactionId = `TRN${Date.now().toString().slice(-9).padStart(9, '0')}`;
 
