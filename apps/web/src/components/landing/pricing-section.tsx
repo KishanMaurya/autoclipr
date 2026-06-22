@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { type CurrencyCode, PLAN_PRICES, formatPrice } from "@/lib/pricing";
+import { type CurrencyCode, PLAN_PRICES, formatPrice, CURRENCY_SYMBOLS } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
@@ -245,13 +245,37 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
         </div>
 
         {/* Price */}
-        <div className="relative mt-5 flex items-end gap-1">
-          <span className="text-5xl font-extrabold tracking-tight text-white">{priceLabel}</span>
-          {displayPrice > 0 && <span className="mb-2 text-sm text-muted-foreground">/month</span>}
+        <div className="relative mt-5">
+          <div className="flex items-end gap-1">
+            <span className="text-5xl font-extrabold tracking-tight text-white">{priceLabel}</span>
+            {displayPrice > 0 && <span className="mb-2 text-sm text-muted-foreground">/month</span>}
+          </div>
+          {/* Yearly total + discount */}
+          {yearly && displayPrice > 0 && (() => {
+            const monthlyPrice = planPrices?.monthly ?? 0;
+            const yearlyTotal = displayPrice * 12;
+            const savings = (monthlyPrice - displayPrice) * 12;
+            const discountPct = Math.round((savings / (monthlyPrice * 12)) * 100);
+            const sym = CURRENCY_SYMBOLS[currency];
+            return (
+              <div className="mt-2 flex items-center gap-2">
+                <p className="text-xs text-white/40">
+                  {sym}{yearlyTotal.toLocaleString()} billed yearly
+                </p>
+                {discountPct > 0 && (
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/20">
+                    Save {discountPct}%
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+          {(!yearly || displayPrice === 0) && (
+            <p className="mt-1 text-xs text-white/30">
+              {displayPrice === 0 ? "Free forever" : "Billed monthly · Cancel anytime"}
+            </p>
+          )}
         </div>
-        <p className="relative mt-1 text-xs text-white/30">
-          {yearly ? "Billed yearly · Cancel anytime" : "Billed monthly · Cancel anytime"}
-        </p>
       </div>
 
       {/* Divider */}
@@ -388,7 +412,12 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </div>
           <p className="text-sm text-muted-foreground">
             {yearly ? (
-              <span className="text-emerald-400">Billed yearly. Cancel anytime.</span>
+              <span className="flex items-center gap-2">
+                <span className="text-emerald-400">Billed yearly. Cancel anytime.</span>
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
+                  Save up to 13%
+                </span>
+              </span>
             ) : (
               "Billed monthly. Cancel anytime."
             )}
