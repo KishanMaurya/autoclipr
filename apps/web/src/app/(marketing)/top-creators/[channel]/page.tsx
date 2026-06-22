@@ -60,7 +60,7 @@ export default async function ChannelPage({ params }: Props) {
   ];
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen">
       {/* Back */}
       <div className="border-b border-white/[0.06] px-4 py-3 sm:px-6">
         <div className="mx-auto max-w-6xl">
