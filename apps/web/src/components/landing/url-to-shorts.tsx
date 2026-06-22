@@ -57,7 +57,7 @@ const pipeline = [
 
 export function UrlToShorts() {
   return (
-    <section id="url-to-shorts" className="relative px-4 py-24 sm:px-6 sm:py-32">
+    <section id="url-to-shorts" className="relative px-4 py-12 sm:px-6 sm:py-32">
       <div className="absolute inset-0 bg-mesh-violet opacity-40" aria-hidden />
       <div className="relative mx-auto max-w-7xl">
         <Reveal className="mx-auto max-w-3xl text-center">

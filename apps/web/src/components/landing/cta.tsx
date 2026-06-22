@@ -19,7 +19,7 @@ const trust = [
 
 export function CTA() {
   return (
-    <section className="px-4 py-28 sm:px-6">
+    <section className="px-4 py-12 sm:px-6">
       <Reveal
         className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl"
         variant={{

@@ -21,7 +21,7 @@ const TRUST_ITEMS = [
 
 export default function PricingPage() {
   return (
-    <div className="relative overflow-hidden pt-16">
+    <div className="relative overflow-hidden pt-4">
       {/* Background glow blobs */}
       <div
         className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2"
@@ -44,15 +44,15 @@ export default function PricingPage() {
       />
 
       {/* Hero header */}
-      <div className="relative mx-auto max-w-3xl px-4 pb-4 pt-14 text-center sm:px-6">
+      <div className="relative mx-auto max-w-3xl px-4 pb-4 pt-10 text-center sm:px-6">
         {/* Label pill */}
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/8 px-4 py-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.6)]" />
           <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
-            Simple Pricing
+            Pricing &
           </span>
           <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-            _Plan
+            Plan
           </span>
         </div>
 

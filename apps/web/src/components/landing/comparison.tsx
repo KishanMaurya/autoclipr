@@ -62,7 +62,7 @@ const summary = [
 
 export function Comparison() {
   return (
-    <section className="px-4 py-28 sm:px-6">
+    <section className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <Reveal className="text-center">
           <p className="section-label mx-auto mb-6">Comparison</p>

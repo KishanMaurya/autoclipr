@@ -29,7 +29,7 @@ export function FAQ() {
     : MARKETING_FAQS.filter((f) => f.category === active);
 
   return (
-    <section id="faq" className="px-4 py-28 sm:px-6">
+    <section id="faq" className="px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-4xl">
         <Reveal className="text-center">
           <p className="section-label mx-auto mb-6">FAQ</p>

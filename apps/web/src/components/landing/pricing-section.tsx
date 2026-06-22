@@ -374,7 +374,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
   }, [searchParams]);
 
   return (
-    <section id="pricing" className="border-t border-white/5 px-4 py-28 sm:px-6">
+    <section id="pricing" className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {showHeader && (
           <Reveal className="mb-10 text-center">
