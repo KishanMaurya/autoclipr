@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Scissors, ChevronDown, X, Menu } from "lucide-react";
 
@@ -31,6 +32,9 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [open, setOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const close = () => {
     setOpen(false);
@@ -38,20 +42,8 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
     setResourcesOpen(false);
   };
 
-  return (
-    <div className="md:hidden">
-      {/* Hamburger */}
-      <button
-        onClick={() => setOpen(true)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:text-white transition-colors"
-        aria-label="Open menu"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
-
-      {/* Full-screen overlay */}
-      {open && (
-        <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#0a0a18]">
+  const overlay = open && mounted ? createPortal(
+    <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#0a0a18]" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Top bar */}
           <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.06]">
             <Link href="/" onClick={close} className="flex items-center gap-2 font-bold">
@@ -171,8 +163,21 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
               </>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+    document.body
+  ) : null;
+
+  return (
+    <div className="md:hidden">
+      {/* Hamburger */}
+      <button
+        onClick={() => setOpen(true)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:text-white transition-colors"
+        aria-label="Open menu"
+      >
+        <Menu className="h-6 w-6" />
+      </button>
+      {overlay}
     </div>
   );
 }
