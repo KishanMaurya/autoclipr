@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { TrendingUp, Users, Eye, Video, ArrowRight, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Eye, Video, ArrowRight, ChevronRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CREATORS = [
@@ -80,9 +80,11 @@ export default function TopCreatorsPage() {
   const [sort, setSort] = useState("rank");
   const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [channelSearch, setChannelSearch] = useState("");
 
   const filtered = CREATORS.filter((c) => {
     if (activeCategory && c.niche !== activeCategory) return false;
+    if (channelSearch && !c.name.toLowerCase().includes(channelSearch.toLowerCase())) return false;
     return true;
   });
 
@@ -115,6 +117,31 @@ export default function TopCreatorsPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+
+          {/* Search bar */}
+          <div className="mt-6 relative max-w-xl">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input
+              type="text"
+              placeholder="Find a channel..."
+              value={channelSearch}
+              onChange={(e) => setChannelSearch(e.target.value)}
+              className="w-full rounded-2xl border border-white/[0.10] bg-white/[0.04] py-3.5 pl-11 pr-10 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-emerald-500/50 focus:bg-white/[0.06] focus:ring-2 focus:ring-emerald-500/20"
+            />
+            {channelSearch && (
+              <button
+                onClick={() => setChannelSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/30 hover:text-white/70"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {channelSearch && (
+            <p className="mt-2 text-xs text-white/30">
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} for &quot;{channelSearch}&quot;
+            </p>
+          )}
         </div>
       </div>
 
