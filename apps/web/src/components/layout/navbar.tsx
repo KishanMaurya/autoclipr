@@ -10,7 +10,6 @@ import { MobileMenu } from "./mobile-menu";
 
 const linksLeft = [{ href: "/#features", label: "Features" }];
 const linksRight = [
-  { href: "/#how-it-works", label: "How it Works" },
   { href: "/coaching", label: "Coaching" },
   { href: "/top-creators", label: "Top Creators" },
   { href: "/pricing", label: "Pricing" },
