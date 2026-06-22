@@ -2,10 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import DodoPayments from 'dodopayments';
 
-const PRODUCT_IDS: Record<string, string> = {
-  starter: process.env.DODO_PRODUCT_STARTER ?? '',
-  creator: process.env.DODO_PRODUCT_CREATOR ?? '',
-  business: process.env.DODO_PRODUCT_BUSINESS ?? '',
+const PRODUCT_IDS: Record<string, { monthly: string; yearly: string }> = {
+  starter: { monthly: '', yearly: '' },
+  creator: {
+    monthly: process.env.DODO_PRODUCT_CREATOR_MONTHLY ?? process.env.DODO_PRODUCT_CREATOR ?? '',
+    yearly: process.env.DODO_PRODUCT_CREATOR_YEARLY ?? process.env.DODO_PRODUCT_CREATOR ?? '',
+  },
+  business: {
+    monthly: process.env.DODO_PRODUCT_BUSINESS_MONTHLY ?? process.env.DODO_PRODUCT_BUSINESS ?? '',
+    yearly: process.env.DODO_PRODUCT_BUSINESS_YEARLY ?? process.env.DODO_PRODUCT_BUSINESS ?? '',
+  },
 };
 
 @Injectable()
@@ -21,13 +27,16 @@ export class DodoService {
 
   async createCheckoutUrl(opts: {
     planId: string;
+    billingPeriod: 'monthly' | 'yearly';
     userId: string;
     email: string;
     successUrl: string;
     cancelUrl: string;
   }): Promise<string> {
-    const productId = PRODUCT_IDS[opts.planId];
-    if (!productId) throw new Error(`Unknown plan: ${opts.planId}`);
+    const planProducts = PRODUCT_IDS[opts.planId];
+    if (!planProducts) throw new Error(`Unknown plan: ${opts.planId}`);
+    const productId = planProducts[opts.billingPeriod];
+    if (!productId) throw new Error(`No product configured for ${opts.planId} ${opts.billingPeriod}`);
 
     const session = await this.client.subscriptions.create({
       billing: { city: '', country: 'IN', state: '', street: '', zipcode: '' },
@@ -36,7 +45,7 @@ export class DodoService {
       quantity: 1,
       payment_link: true,
       return_url: opts.successUrl,
-      metadata: { user_id: opts.userId, plan_id: opts.planId },
+      metadata: { user_id: opts.userId, plan_id: opts.planId, billing_period: opts.billingPeriod },
     });
 
     const url = (session as any).payment_link ?? (session as any).url;
@@ -64,7 +73,6 @@ export class DodoService {
 
   verifyWebhook(payload: string, headers: Record<string, string>): any {
     const webhookSecret = this.config.get<string>('DODO_WEBHOOK_SECRET') ?? '';
-    // client.webhooks.unwrap verifies HMAC signature and returns parsed event
     return this.client.webhooks.unwrap(payload, { headers, key: webhookSecret });
   }
 }

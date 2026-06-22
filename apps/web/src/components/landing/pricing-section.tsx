@@ -170,7 +170,7 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
 
       if (!session) {
         // Not logged in — redirect to login, then back to pricing to trigger checkout
-        window.location.href = `/login?redirect=/pricing?checkout=${plan.id}`;
+        window.location.href = `/login?redirect=/pricing?checkout=${plan.id}&billing=${yearly ? "yearly" : "monthly"}`;
         return;
       }
 
@@ -181,7 +181,7 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ planId: plan.id }),
+        body: JSON.stringify({ planId: plan.id, billingPeriod: yearly ? "yearly" : "monthly" }),
       });
       const data = await res.json();
       if (data?.data?.url) {
@@ -361,7 +361,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ planId: checkoutPlan }),
+          body: JSON.stringify({ planId: checkoutPlan, billingPeriod: searchParams?.get("billing") ?? "yearly" }),
         });
         const data = await res.json();
         if (data?.data?.url) window.location.href = data.data.url;

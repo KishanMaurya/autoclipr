@@ -29,13 +29,14 @@ export class SubscriptionsService {
     private readonly usersRepo: UsersRepository,
   ) {}
 
-  async createCheckoutUrl(userId: string, email: string, planId: string): Promise<string> {
+  async createCheckoutUrl(userId: string, email: string, planId: string, billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<string> {
     const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
     return this.dodo.createCheckoutUrl({
       planId,
+      billingPeriod,
       userId,
       email,
-      successUrl: `${appUrl}/dashboard?payment=success&plan=${planId}`,
+      successUrl: `${appUrl}/dashboard?payment=success&plan=${planId}&billing=${billingPeriod}`,
       cancelUrl: `${appUrl}/pricing?payment=cancelled`,
     });
   }

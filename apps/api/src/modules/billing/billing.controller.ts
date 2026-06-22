@@ -26,6 +26,9 @@ import { SubscriptionsService } from './subscriptions.service';
 class CreateCheckoutDto {
   @IsString()
   planId!: string;
+
+  @IsString()
+  billingPeriod?: 'monthly' | 'yearly';
 }
 
 class ActivatePlanDto {
@@ -73,7 +76,7 @@ export class BillingController {
         throw new BadRequestException('Could not determine user email for checkout');
       }
     }
-    const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId);
+    const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId, dto.billingPeriod ?? 'yearly');
     return ApiResponse.ok({ url });
   }
 
