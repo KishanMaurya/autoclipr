@@ -60,6 +60,10 @@ export default async function ChannelPage({ params }: Props) {
   const earnings = estimateMonthlyEarnings(channelData.views);
   const yearsOld = Math.floor((Date.now() - new Date(channelData.publishedAt).getTime()) / (365.25 * 24 * 3600 * 1000));
 
+  const countryFlag = channelData.country
+    ? [...channelData.country.toUpperCase()].map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join("")
+    : "";
+
   const globalRank = CREATOR_RANKS[name.toLowerCase()];
   const rankDisplay = globalRank ? `#${globalRank}` : "—";
   const rankSub = globalRank ? `Top ${globalRank <= 10 ? 10 : 20} Worldwide` : "Not in top 20";
@@ -115,7 +119,7 @@ export default async function ChannelPage({ params }: Props) {
                 <span className="flex items-center gap-1"><Video className="h-3.5 w-3.5" /> {videos} Videos</span>
                 <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {yearsOld} years</span>
                 {channelData.country && (
-                  <span className="flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> {channelData.country}</span>
+                  <span className="flex items-center gap-1">{countryFlag} {channelData.country}</span>
                 )}
                 <span className="text-white/20">Updated {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
               </div>
