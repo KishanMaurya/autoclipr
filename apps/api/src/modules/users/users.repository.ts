@@ -156,6 +156,14 @@ export class UsersRepository {
     return data;
   }
 
+  async markWelcomeSent(userId: string): Promise<void> {
+    await this.supabase
+      .getClient()
+      .from('profiles')
+      .update({ welcome_sent: true })
+      .eq('id', userId);
+  }
+
   async listPlans() {
     const { data, error } = await this.supabase
       .getClient()

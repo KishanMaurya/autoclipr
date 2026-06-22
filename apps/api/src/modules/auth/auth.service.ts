@@ -16,14 +16,17 @@ export class AuthService {
     const resolvedAvatar = phone ? resolvePhoneAvatar(phone, avatarUrl) : avatarUrl;
     const profile = await this.usersRepo.upsertFromAuth(userId, userEmail, fullName, resolvedAvatar, phone);
 
-    // Send welcome email only on first registration (created_at within 30s of now)
+    // Send welcome email on first sign-in (within 24h of account creation, not yet sent)
     const age = Date.now() - new Date(profile.created_at).getTime();
-    if (age < 30_000 && profile.email && profile.email_notifications_enabled !== false) {
+    const isNew = age < 86_400_000; // 24 hours
+    if (isNew && !profile.welcome_sent && profile.email && profile.email_notifications_enabled !== false) {
       const appUrl = this.config.get<string>('webAppUrl') ?? 'https://autoclipr.com';
       void this.email.sendWelcome(profile.email, {
         userName: profile.full_name || profile.email.split('@')[0],
         dashboardUrl: `${appUrl}/dashboard`,
       });
+      // Mark welcome as sent so it doesn't fire again on next login
+      void this.usersRepo.markWelcomeSent(userId).catch(() => {});
     }
 
     return profile;
