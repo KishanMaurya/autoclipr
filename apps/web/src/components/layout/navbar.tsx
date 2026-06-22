@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { resolveUserFullName } from "@/lib/user-avatar";
 import { UserMenu } from "./user-menu";
+import { FreeToolsDropdown } from "./free-tools-dropdown";
 
 const links = [
   { href: "/#features", label: "Features" },
@@ -41,6 +42,7 @@ export async function Navbar() {
               {l.label}
             </Link>
           ))}
+          <FreeToolsDropdown />
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
