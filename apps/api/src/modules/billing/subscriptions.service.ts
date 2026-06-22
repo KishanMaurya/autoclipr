@@ -222,7 +222,7 @@ export class SubscriptionsService {
 
     // 2. Invoice email (with PDF attachment — also include download link)
     const userName = profile?.full_name ?? toEmail.split('@')[0];
-    const invoiceDownloadUrl = `${this.config.get<string>('API_URL') ?? 'https://api.autoclipr.com'}/api/v1/billing/invoice/download?invoiceNumber=${invoiceNumber}&plan=${encodeURIComponent(planName)}&amount=${encodeURIComponent(amountPaid)}&date=${encodeURIComponent(paymentDate)}&name=${encodeURIComponent(userName)}`;
+    const invoiceDownloadUrl = `${this.config.get<string>('API_URL') ?? 'https://api.autoclipr.com'}/api/v1/billing/invoice/download?invoiceNumber=${invoiceNumber}&plan=${encodeURIComponent(planName)}&amount=${encodeURIComponent(amountPaid)}&date=${encodeURIComponent(paymentDate)}&name=${encodeURIComponent(userName)}&txId=${encodeURIComponent(transactionId)}`;
     await this.email.sendInvoice(toEmail, {
       userName: profile?.full_name ?? toEmail.split('@')[0],
       invoiceNumber,
