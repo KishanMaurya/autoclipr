@@ -7,11 +7,11 @@ const CHANNEL_IDS: Record<string, string> = {
   Cocomelon:           "UCbCmjCuTUZos6Inko4u57UQ",
   "SET India":         "UCpEhnqL0y41EpW2TvWAHD7Q",
   "Vlad and Niki":     "UCvlE5gTbOvjiolFlEm-c_Ow",
-  "Stokes Twins":      "UCuDZT7nIHVrWFRVpMp9t5HA",
+  "Stokes Twins":      "UCbp9MyKCTEww4CxEzc_Tp0Q",
   "Kids Diana Show":   "UCk8GzjMOrta8yxDcKfylJYw",
   "Like Nastya":       "UCJplp5SjeGSdVdwsfb9Q7lQ",
   "Zee Music Company": "UCFFbwnve3yF62-tVXkTyHqg",
-  "5-Minute Crafts":   "UC295-Dw0tDd-y83Yuuu4UNQ",
+  "5-Minute Crafts":   "UC295-Dw_tDNtZXFeAPAW6Aw",
   BLACKPINK:           "UCrDkAvocapwLoNZ_MhwFe3A",
   "Justin Bieber":     "UCIwFjwMjI0y7PDBVEO9-bkQ",
   "Mark Rober":        "UCY1kMZp36IQSyNx_9h4mpCg",
@@ -19,9 +19,9 @@ const CHANNEL_IDS: Record<string, string> = {
   "Nicki Minaj":       "UCMMJBWA_h1B1v803oZxumiQ",
   Shakira:             "UCYLNGLIzMhRTi6ZOLjAPSmw",
   "ABP NEWS":          "UC1b0OBqgkJ_MTrOBm5JRBhA",
-  BeatboxJCOP:         "UCCbfB3cQtkEAiKfdRQnfQvA",
+  BeatboxJCOP:         "UCdX5KXiCTPYWYZscfphgQ4g",
   "Toys and Colors":   "UCgFXm4TI8htWmCyJ6KiX9rQ",
-  "Alan's Universe":   "UCkAGrHCLFmlK3H2kd6isipg",
+  "Alan's Universe":   "UC5gxP-2QqIh_09djvlm9Xcg",
 };
 
 function fmt(n: string | number): string {
