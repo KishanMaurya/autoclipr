@@ -33,7 +33,7 @@ export class StorageService {
 
     const { data, error } = await this.client.storage
       .from(bucket)
-      .createSignedUploadUrl(objectPath);
+      .createSignedUploadUrl(objectPath, { upsert: true });
 
     if (error || !data) {
       throw new Error(error?.message ?? 'Failed to create signed upload URL');
