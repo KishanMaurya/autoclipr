@@ -6,6 +6,7 @@ import { resolveUserFullName } from "@/lib/user-avatar";
 import { UserMenu } from "./user-menu";
 import { FreeToolsDropdown } from "./free-tools-dropdown";
 import { ResourcesDropdown } from "./resources-dropdown";
+import { MobileMenu } from "./mobile-menu";
 
 const linksLeft = [{ href: "/#features", label: "Features" }];
 const linksRight = [
@@ -57,6 +58,7 @@ export async function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <MobileMenu isLoggedIn={!!user} />
           {user ? (
             <UserMenu
               email={user.email}
@@ -69,14 +71,14 @@ export async function Navbar() {
               }
             />
           ) : (
-            <>
+            <div className="hidden md:flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/login">Log in</Link>
               </Button>
               <Button variant="gradient" size="sm" asChild>
                 <Link href="/register">Start free</Link>
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
