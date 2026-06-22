@@ -10,12 +10,13 @@ export interface Profile {
   credits: number;
   subscription_tier: string;
   email_notifications_enabled: boolean;
+  welcome_sent: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
 const PROFILE_COLUMNS =
-  'id, email, full_name, avatar_url, phone, credits, subscription_tier, email_notifications_enabled, created_at, updated_at';
+  'id, email, full_name, avatar_url, phone, credits, subscription_tier, email_notifications_enabled, welcome_sent, created_at, updated_at';
 
 @Injectable()
 export class UsersRepository {
