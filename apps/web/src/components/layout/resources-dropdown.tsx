@@ -80,7 +80,7 @@ export function ResourcesDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[520px] rounded-2xl border border-white/[0.08] bg-[#0a0a1a]/95 p-5 shadow-2xl backdrop-blur-2xl">
+        <div className="absolute right-0 top-full mt-2 w-[520px] rounded-2xl border border-white/[0.12] bg-[#0d0d1f] p-5 shadow-2xl">
           {/* Top accent line */}
           <div className="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
 
