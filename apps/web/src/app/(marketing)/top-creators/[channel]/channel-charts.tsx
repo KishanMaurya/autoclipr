@@ -112,7 +112,7 @@ export function ChannelCharts({ channelName, subscribers, totalViews, topVideos 
                 contentStyle={{ background: "#0d0d1f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }}
                 labelStyle={{ color: "rgba(255,255,255,0.5)" }}
                 itemStyle={{ color: "#10b981" }}
-                formatter={(v: number) => [formatCount(v), ""]}
+                formatter={(v: unknown) => [formatCount(v as number), ""]}
               />
               <Area type="monotone" dataKey="views" stroke="#10b981" strokeWidth={2} fill="url(#gViews)" dot={false} />
               <Area type="monotone" dataKey="shorts" stroke="#06b6d4" strokeWidth={1.5} fill="url(#gShorts)" dot={false} />
