@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TrendingUp, Users, Eye, Video, ArrowRight, ChevronRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,7 @@ function AvatarPlaceholder({ name }: { name: string }) {
 }
 
 export default function TopCreatorsPage() {
+  const router = useRouter();
   const [sort, setSort] = useState("rank");
   const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -123,9 +125,14 @@ export default function TopCreatorsPage() {
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
             <input
               type="text"
-              placeholder="Find a channel..."
+              placeholder="Find a channel... (press Enter to view stats)"
               value={channelSearch}
               onChange={(e) => setChannelSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && channelSearch.trim()) {
+                  router.push(`/top-creators/${encodeURIComponent(channelSearch.trim().toLowerCase().replace(/\s+/g, "-"))}`);
+                }
+              }}
               className="w-full rounded-2xl border border-white/[0.10] bg-white/[0.04] py-3.5 pl-11 pr-10 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-emerald-500/50 focus:bg-white/[0.06] focus:ring-2 focus:ring-emerald-500/20"
             />
             {channelSearch && (
@@ -275,7 +282,10 @@ export default function TopCreatorsPage() {
                       </Link>
                     </div>
                   )}
-                  <div className="group grid grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3 rounded-2xl border border-transparent px-4 py-3 transition-all hover:border-white/[0.06] hover:bg-white/[0.03]">
+                  <div
+                    onClick={() => router.push(`/top-creators/${encodeURIComponent(creator.name.toLowerCase().replace(/\s+/g, "-"))}`)}
+                    className="group grid cursor-pointer grid-cols-[auto_1fr_100px_100px_80px_36px] items-center gap-3 rounded-2xl border border-transparent px-4 py-3 transition-all hover:border-white/[0.06] hover:bg-white/[0.03]"
+                  >
                     <RankBadge rank={creator.rank} tier={creator.tier} />
                     <div className="flex min-w-0 items-center gap-3">
                       <AvatarPlaceholder name={creator.name} />
