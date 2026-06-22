@@ -42,12 +42,16 @@ export class SubscriptionsService {
   }
 
   // Called on payment success redirect as a reliable fallback to webhooks
-  async activatePlanForUser(userId: string, planId: string, userEmail = '', transactionId = ''): Promise<void> {
+  async activatePlanForUser(userId: string, planId: string, userEmail = '', transactionId = '', billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<void> {
     const tier = PLAN_TIER[planId];
     if (!tier) throw new Error(`Unknown plan: ${planId}`);
 
     // Ensure profile exists for OAuth users who skipped sync
     await this.usersRepo.ensureProfile(userId, userEmail);
+
+    const periodEnd = billingPeriod === 'yearly'
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await this.supabase.getClient()
       .from('user_subscriptions')
@@ -56,7 +60,7 @@ export class SubscriptionsService {
         plan_id: planId,
         status: 'active',
         current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        current_period_end: periodEnd,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
@@ -69,11 +73,17 @@ export class SubscriptionsService {
       })
       .eq('id', userId);
 
+    // Compute amount based on plan + billing period
+    const PLAN_AMOUNTS: Record<string, { monthly: string; yearly: string }> = {
+      creator:  { monthly: '₹399.00',   yearly: '₹4,188.00' },
+      business: { monthly: '₹1,999.00', yearly: '₹20,988.00' },
+      starter:  { monthly: 'Free',      yearly: 'Free' },
+    };
+    const amountPaid = PLAN_AMOUNTS[planId]?.[billingPeriod] ?? 'Free';
+
     // Record transaction
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
     const internalTxId = `TRN${Date.now().toString().slice(-9).padStart(9, '0')}`;
-    const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
-    const amountPaid = planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
     try {
       await this.supabase.getClient().from('billing_transactions').insert({
         user_id: userId,
@@ -89,7 +99,7 @@ export class SubscriptionsService {
     }
 
     // Pass email directly so it works even when profile email is empty (OAuth users)
-    await this.sendSubscriptionEmails(userId, planId, internalTxId, { payment_id: internalTxId }, userEmail);
+    await this.sendSubscriptionEmails(userId, planId, internalTxId, { payment_id: internalTxId, billing_period: billingPeriod, amount_override: amountPaid }, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
   }
 
@@ -201,13 +211,19 @@ export class SubscriptionsService {
 
     const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
     const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
+    const billingPeriod: string = data.billing_period ?? 'yearly';
+    const billingCycleLabel = billingPeriod === 'monthly' ? 'Monthly' : 'Yearly';
     const renewalDate = data.next_billing_date
       ? new Date(data.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
       : 'N/A';
     const paymentDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-    const amountPaid = data.amount
-      ? `₹${(data.amount / 100).toFixed(2)}`
-      : planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
+    const PLAN_AMOUNTS: Record<string, { monthly: string; yearly: string }> = {
+      creator:  { monthly: '₹399.00',   yearly: '₹4,188.00' },
+      business: { monthly: '₹1,999.00', yearly: '₹20,988.00' },
+      starter:  { monthly: 'Free',      yearly: 'Free' },
+    };
+    const amountPaid = data.amount_override
+      ?? (data.amount ? `₹${(data.amount / 100).toFixed(2)}` : (PLAN_AMOUNTS[planId]?.[billingPeriod] ?? 'Free'));
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
     const transactionId = `TRN${Date.now().toString().slice(-9).padStart(9, '0')}`;
 
@@ -216,7 +232,7 @@ export class SubscriptionsService {
       userName: profile?.full_name ?? toEmail.split('@')[0],
       planName,
       amount: amountPaid,
-      billingCycle: 'Yearly',
+      billingCycle: billingCycleLabel,
       renewalDate,
       subscriptionId,
       dashboardUrl: `${appUrl}/dashboard`,

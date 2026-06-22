@@ -37,6 +37,9 @@ class ActivatePlanDto {
 
   @IsString()
   transactionId?: string;
+
+  @IsString()
+  billingPeriod?: 'monthly' | 'yearly';
 }
 
 @Controller()
@@ -126,7 +129,7 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: ActivatePlanDto,
   ) {
-    await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email, dto.transactionId);
+    await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email, dto.transactionId, dto.billingPeriod ?? 'yearly');
     return ApiResponse.ok({ activated: true });
   }
 

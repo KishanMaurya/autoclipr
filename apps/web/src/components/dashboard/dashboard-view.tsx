@@ -120,7 +120,7 @@ export function DashboardView({
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ planId: plan, transactionId }),
+          body: JSON.stringify({ planId: plan, transactionId, billingPeriod: searchParams.get("billing") ?? "yearly" }),
         });
         // Remove query params and refresh to show updated plan
         router.replace("/dashboard");
