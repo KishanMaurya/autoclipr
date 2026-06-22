@@ -1,7 +1,6 @@
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
-import { CreatorWinTicker } from "@/components/layout/creator-win-ticker";
 import { PageBackground } from "@/components/ui/page-background";
 
 export default function MarketingLayout({
@@ -12,7 +11,7 @@ export default function MarketingLayout({
   return (
     <div className="relative min-h-screen">
       <PageBackground variant="marketing" />
-      {/* Green spotlight covering navbar → ticker → hero badge area */}
+      {/* Green spotlight covering navbar → hero badge area */}
       <div
         className="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2 z-0"
         style={{
@@ -23,7 +22,6 @@ export default function MarketingLayout({
         }}
       />
       <Navbar />
-      <CreatorWinTicker />
       <main>{children}</main>
       <Footer />
       <AnnouncementBanner />

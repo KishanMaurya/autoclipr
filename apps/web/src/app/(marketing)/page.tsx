@@ -21,11 +21,13 @@ import { PlatformMarquee } from "@/components/landing/platform-marquee";
 import { Stats } from "@/components/landing/stats";
 import { PlatformsShowcase } from "@/components/landing/platforms-showcase";
 import { CreatorsMarquee } from "@/components/landing/creators-marquee";
+import { CreatorWinTicker } from "@/components/layout/creator-win-ticker";
 
 export default function HomePage() {
   return (
     <>
       <HomePageJsonLd />
+      <CreatorWinTicker />
       <Hero />
       <CreatorsMarquee />
       <PlatformMarquee />
