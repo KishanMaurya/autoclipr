@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -79,6 +79,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState<string | null>(null); // holds the email address after verification sent
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const [otpTimerKey, setOtpTimerKey] = useState(0);
 
@@ -254,7 +255,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         full_name: mode === "register" ? name.trim() : undefined,
       });
     } else if (mode === "register") {
-      setInfo("Check your email to confirm your account, then sign in.");
+      setEmailSent(email.trim());
     }
 
     setLoading(false);
@@ -321,6 +322,46 @@ export function AuthForm({ mode }: { mode: Mode }) {
       setError(oauthError.message);
       setLoading(false);
     }
+  }
+
+  if (emailSent) {
+    return (
+      <div className="gradient-border w-full max-w-md shadow-glow">
+        <div className="flex flex-col items-center p-8 text-center">
+          {/* Animated icon */}
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/10 ring-1 ring-emerald-500/20">
+            <Mail className="h-9 w-9 text-emerald-400" />
+          </div>
+          <CheckCircle2 className="mb-3 h-6 w-6 text-emerald-400" />
+          <h2 className="text-2xl font-bold text-white">Check your inbox</h2>
+          <p className="mt-2 text-sm text-white/50">
+            We sent a confirmation link to
+          </p>
+          <p className="mt-1 font-semibold text-emerald-400">{emailSent}</p>
+          <p className="mt-3 text-sm text-white/40">
+            Click the link in the email to activate your account, then come back to sign in.
+          </p>
+          <div className="mt-6 w-full space-y-3">
+            <Link
+              href="/login"
+              className="block w-full rounded-xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-400 transition-colors"
+            >
+              Go to Sign in
+            </Link>
+            <button
+              type="button"
+              onClick={() => setEmailSent(null)}
+              className="block w-full rounded-xl border border-white/10 px-4 py-3 text-center text-sm text-white/50 hover:bg-white/[0.04] hover:text-white transition-colors"
+            >
+              Use a different email
+            </button>
+          </div>
+          <p className="mt-5 text-xs text-white/25">
+            Didn&apos;t receive it? Check your spam folder.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
