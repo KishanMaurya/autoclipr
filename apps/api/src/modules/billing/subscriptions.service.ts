@@ -70,6 +70,7 @@ export class SubscriptionsService {
 
     // Record transaction
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+    const internalTxId = `TRN${Date.now().toString().slice(-9).padStart(9, '0')}`;
     const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
     const amountPaid = planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
     try {
@@ -79,7 +80,7 @@ export class SubscriptionsService {
         plan_id: planId,
         amount: amountPaid,
         status: 'paid',
-        transaction_id: transactionId || null,
+        transaction_id: internalTxId,
         payment_date: new Date().toISOString(),
       });
     } catch (e: any) {
@@ -87,7 +88,7 @@ export class SubscriptionsService {
     }
 
     // Pass email directly so it works even when profile email is empty (OAuth users)
-    await this.sendSubscriptionEmails(userId, planId, transactionId, { payment_id: transactionId }, userEmail);
+    await this.sendSubscriptionEmails(userId, planId, internalTxId, { payment_id: internalTxId }, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
   }
 
@@ -207,7 +208,7 @@ export class SubscriptionsService {
       ? `₹${(data.amount / 100).toFixed(2)}`
       : planId === 'creator' ? '₹349.00' : planId === 'business' ? '₹1,749.00' : 'Free';
     const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
-    const transactionId = data.payment_id ?? subscriptionId;
+    const transactionId = `TRN${Date.now().toString().slice(-9).padStart(9, '0')}`;
 
     // 1. Subscription confirmation email
     await this.email.sendSubscriptionConfirmed(toEmail, {
