@@ -5,13 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveUserFullName } from "@/lib/user-avatar";
 import { UserMenu } from "./user-menu";
 import { FreeToolsDropdown } from "./free-tools-dropdown";
+import { ResourcesDropdown } from "./resources-dropdown";
 
 const linksLeft = [{ href: "/#features", label: "Features" }];
 const linksRight = [
   { href: "/#how-it-works", label: "How it Works" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/blog", label: "Blog" },
-  { href: "/faq", label: "FAQ" },
 ];
 
 export async function Navbar() {
@@ -52,6 +51,7 @@ export async function Navbar() {
               {l.label}
             </Link>
           ))}
+          <ResourcesDropdown />
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
