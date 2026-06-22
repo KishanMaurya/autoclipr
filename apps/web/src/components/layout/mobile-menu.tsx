@@ -51,7 +51,7 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
 
       {/* Full-screen overlay */}
       {open && (
-        <div className="fixed inset-0 z-[999] flex flex-col bg-[#0a0a18]">
+        <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#0a0a18]">
           {/* Top bar */}
           <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.06]">
             <Link href="/" onClick={close} className="flex items-center gap-2 font-bold">

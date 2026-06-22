@@ -98,12 +98,12 @@ export function Hero() {
           </Button>
         </MotionItem>
 
-        <MotionItem className="mt-14 flex justify-center">
-          <div className="inline-flex divide-x divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 backdrop-blur-sm">
+        <MotionItem className="mt-14 flex justify-center px-4">
+          <div className="inline-flex w-full max-w-xs divide-x divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 backdrop-blur-sm sm:w-auto sm:max-w-none">
             {stats.map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center px-8 py-5 sm:px-12">
-                <p className="text-2xl font-bold text-aurora sm:text-3xl">{stat.value}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-widest text-white/40">
+              <div key={stat.label} className="flex flex-1 flex-col items-center px-3 py-4 sm:flex-none sm:px-10 sm:py-5">
+                <p className="text-xl font-bold text-aurora sm:text-3xl">{stat.value}</p>
+                <p className="mt-1 text-center text-[9px] uppercase tracking-widest text-white/40 sm:text-[11px]">
                   {stat.label}
                 </p>
               </div>
