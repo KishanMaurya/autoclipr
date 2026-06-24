@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Zap, Bug, Shield, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import type { Release, ChangeType } from "./page";
+import type { Release, ChangeType } from "./data";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 

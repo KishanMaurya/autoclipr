@@ -87,11 +87,11 @@ function TutorialCard({ tutorial, index, onClick }: { tutorial: Tutorial; index:
     >
       {/* Thumbnail */}
       <div className="relative aspect-video w-full overflow-hidden bg-black">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`https://img.youtube.com/vi/${tutorial.youtubeId}/mqdefault.jpg`}
           alt={tutorial.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          // eslint-disable-next-line @next/next/no-img-element
         />
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/30 transition-opacity group-hover:bg-black/20" />
