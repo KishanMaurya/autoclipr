@@ -1,319 +1,124 @@
 import type { Metadata } from "next";
-import { motion } from "framer-motion";
-import { Scissors, TrendingUp, Users, Star, ArrowRight, Zap, Play } from "lucide-react";
-import Link from "next/link";
-import { FaqSection } from "./client";
+import { TrendingUp, Zap } from "lucide-react";
+import {
+  StoriesGrid,
+  StatsRow,
+  TestimonialsSection,
+  HowItWorksSection,
+  FaqSection,
+  CtaSection,
+} from "./client";
 
 export const metadata: Metadata = {
   title: "Success Stories — AutoClipr",
   description: "Real results from creators using AutoClipr to turn long-form videos into viral short-form content.",
 };
 
-const STORIES = [
-  {
-    name: "Alex Rivera",
-    channel: "TechBreakdowns",
-    avatar: "AR",
-    color: "from-blue-500 to-cyan-400",
-    title: "From 800 to 120K subscribers in 9 months",
-    result: "800 → 120K subscribers",
-    niche: "Tech Reviews",
-    quote:
-      "AutoClipr automatically cut my 40-minute deep-dives into Shorts that hit 2M+ views. I went from 800 to 120K subscribers without changing my filming schedule at all.",
-    metric: "150x",
-    metricLabel: "subscriber growth",
-    tags: ["Shorts", "Tech", "Automation"],
-  },
-  {
-    name: "Priya Sharma",
-    channel: "CookingWithPriya",
-    avatar: "PS",
-    color: "from-orange-500 to-rose-400",
-    title: "2.1M views added in 4 months using only Reels",
-    result: "12K → 89K subscribers",
-    niche: "Food & Cooking",
-    quote:
-      "I had no idea which parts of my cooking videos were 'viral-worthy'. AutoClipr's AI found them for me. My Reels now drive more subscribers than my main channel ever did.",
-    metric: "2.1M",
-    metricLabel: "new views",
-    tags: ["Reels", "Food", "Viral Moments"],
-  },
-  {
-    name: "Marcus Webb",
-    channel: "FitnessWithMarcus",
-    avatar: "MW",
-    color: "from-green-500 to-emerald-400",
-    title: "Side hustle channel went full-time in 6 months",
-    result: "3K → 55K subscribers",
-    niche: "Fitness",
-    quote:
-      "I was posting once a week manually clipping highlights. AutoClipr turned every workout video into 6–8 clips automatically. My posting frequency 10x'd overnight.",
-    metric: "10x",
-    metricLabel: "posting frequency",
-    tags: ["TikTok", "Fitness", "Consistency"],
-  },
-  {
-    name: "Sarah Chen",
-    channel: "TravelWithSarah",
-    avatar: "SC",
-    color: "from-purple-500 to-pink-400",
-    title: "Travel vlogs going viral on TikTok — finally",
-    result: "5K → 43K subscribers",
-    niche: "Travel",
-    quote:
-      "My long-form travel vlogs never performed on short-form. AutoClipr found the cinematic money shots and emotional moments I didn't even notice while editing. Game changer.",
-    metric: "8.6x",
-    metricLabel: "subscriber growth",
-    tags: ["TikTok", "Travel", "Cinematic"],
-  },
-  {
-    name: "Daniel Okafor",
-    channel: "FinanceForAll",
-    avatar: "DO",
-    color: "from-yellow-500 to-orange-400",
-    title: "Finance channel cracked the algorithm with Shorts",
-    result: "7K → 62K subscribers",
-    niche: "Finance",
-    quote:
-      "Finance content doesn't naturally go viral — but AutoClipr found the 60-second hooks in my hour-long breakdowns. Those Shorts now bring in 80% of my new subscribers.",
-    metric: "80%",
-    metricLabel: "subs from Shorts",
-    tags: ["Shorts", "Finance", "Education"],
-  },
-  {
-    name: "Emma Larsson",
-    channel: "SketchWithEmma",
-    avatar: "EL",
-    color: "from-teal-500 to-cyan-400",
-    title: "Art channel from obscurity to 1M+ views",
-    result: "900 → 28K subscribers",
-    niche: "Art & Creativity",
-    quote:
-      "Time-lapse art videos are perfect for Shorts but clipping them manually was exhausting. AutoClipr handles it automatically and even adds captions. My art finally found its audience.",
-    metric: "1M+",
-    metricLabel: "total new views",
-    tags: ["Shorts", "Art", "Time-lapse"],
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "AutoClipr saved me 10+ hours a week. I just upload and it handles everything.",
-    name: "Jake T.",
-    handle: "Gaming channel • 180K subs",
-    stars: 5,
-  },
-  {
-    quote: "The AI found a moment in my video I nearly cut. That clip hit 4M views on TikTok.",
-    name: "Lena M.",
-    handle: "Lifestyle channel • 95K subs",
-    stars: 5,
-  },
-  {
-    quote: "From 2K to 40K in 5 months. All from AutoClipr clips driving traffic to my channel.",
-    name: "Raj K.",
-    handle: "Education channel • 40K subs",
-    stars: 5,
-  },
-  {
-    quote: "Finally a tool that actually understands what makes a clip go viral, not just random cuts.",
-    name: "Monica B.",
-    handle: "Beauty channel • 210K subs",
-    stars: 5,
-  },
-];
-
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    icon: Play,
-    title: "Upload your video",
-    desc: "Paste a YouTube URL or upload any long-form video — AutoClipr accepts any format.",
-  },
-  {
-    step: "02",
-    icon: Scissors,
-    title: "AI detects viral moments",
-    desc: "Our model scans for hooks, emotional peaks, and high-engagement segments automatically.",
-  },
-  {
-    step: "03",
-    icon: TrendingUp,
-    title: "Post & grow",
-    desc: "Download ready-to-post clips with captions for TikTok, Reels & Shorts in under 2 minutes.",
-  },
-];
-
 export default function SuccessStoriesPage() {
   return (
     <div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative overflow-hidden px-4 pb-16 pt-16 sm:px-6 sm:pt-20">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-emerald-500/5 blur-3xl" />
+
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden px-4 pb-20 pt-16 text-center sm:px-6 sm:pt-24">
+        {/* Layered bg glows */}
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-[-10%] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/8 blur-[120px]" />
+          <div className="absolute left-[20%] top-[30%] h-64 w-64 rounded-full bg-violet-500/6 blur-[80px]" />
+          <div className="absolute right-[15%] top-[20%] h-48 w-48 rounded-full bg-blue-500/6 blur-[80px]" />
+          {/* Faint grid */}
+          <div
+            className="absolute inset-0 opacity-[0.015]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }}
+          />
         </div>
-        <div className="mx-auto max-w-3xl text-center">
+
+        <div className="mx-auto max-w-4xl">
           <span className="section-label mx-auto mb-6 inline-flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5" />
             Real results from real creators
           </span>
-          <h1 className="text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
+
+          <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl">
             Creator{" "}
-            <span className="gradient-text">Success Stories</span>
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+                Success Stories
+              </span>
+              {/* Underline glow */}
+              <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-gradient-to-r from-emerald-400/0 via-emerald-400/60 to-emerald-400/0" />
+            </span>
           </h1>
-          <p className="mt-5 text-lg text-white/50">
-            Creators using AutoClipr to turn long-form videos into viral short-form content — automatically.
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/45">
+            Creators using AutoClipr to turn long-form videos into viral short-form content — completely automatically.
           </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-8">
-            {[
-              { value: "10K+", label: "Clips generated" },
-              { value: "2 min", label: "Avg. processing" },
-              { value: "99%", label: "Satisfaction rate" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-extrabold text-aurora">{s.value}</p>
-                <p className="mt-1 text-xs uppercase tracking-widest text-white/40">{s.label}</p>
-              </div>
-            ))}
-          </div>
+
+          <StatsRow />
         </div>
       </section>
 
-      {/* Stories grid */}
-      <section className="px-4 pb-20 sm:px-6">
+      {/* ── Stories Grid ─────────────────────────────────────────────── */}
+      <section className="px-4 pb-24 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {STORIES.map((story) => (
-              <div
-                key={story.name}
-                className="group relative flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 p-6 transition-all hover:border-white/20 hover:bg-white/[0.03]"
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${story.color} text-base font-bold text-white shadow-lg`}>
-                    {story.avatar}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{story.niche}</p>
-                    <p className="mt-0.5 font-semibold text-white">{story.name}</p>
-                    <p className="text-sm text-white/50">@{story.channel}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-2xl font-extrabold text-aurora">{story.metric}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-white/40">{story.metricLabel}</p>
-                  </div>
-                </div>
-                <h3 className="text-base font-semibold leading-snug text-white">{story.title}</h3>
-                <blockquote className="border-l-2 border-emerald-500/40 pl-4 text-sm italic leading-relaxed text-white/60">
-                  "{story.quote}"
-                </blockquote>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-1.5">
-                    {story.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-white/50">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="ml-2 whitespace-nowrap text-xs font-medium text-emerald-400">{story.result}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <StoriesGrid />
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="border-y border-white/[0.06] bg-white/[0.01] px-4 py-16 sm:px-6">
+      {/* ── Testimonials ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden border-y border-white/[0.05] px-4 py-20 sm:px-6">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-white/[0.01] via-transparent to-transparent" />
         <div className="mx-auto max-w-6xl">
-          <p className="mb-10 text-center text-xs font-semibold uppercase tracking-widest text-white/30">
+          <p className="mb-10 text-center text-xs font-bold uppercase tracking-[0.2em] text-white/25">
             What creators are saying
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 p-5">
-                <div className="mb-3 flex gap-0.5">
-                  {Array.from({ length: t.stars }).map((_, j) => (
-                    <Star key={j} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed text-white/70">"{t.quote}"</p>
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/40">{t.handle}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TestimonialsSection />
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="px-4 py-20 sm:px-6">
+      {/* ── How It Works ─────────────────────────────────────────────── */}
+      <section className="px-4 py-24 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-12 text-center">
-            <span className="section-label mb-4 inline-flex items-center gap-2">
+          <div className="mb-14 text-center">
+            <span className="section-label mb-5 inline-flex items-center gap-2">
               <Zap className="h-3.5 w-3.5" />
               How it works
             </span>
-            <h2 className="text-3xl font-bold text-white">Go viral in 3 steps</h2>
+            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+              Go viral in{" "}
+              <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+                3 steps
+              </span>
+            </h2>
+            <p className="mt-3 text-white/40">No editing skills required. No complex setup.</p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-3">
-            {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="relative flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 p-6">
-                <span className="text-5xl font-black text-white/[0.04]">{item.step}</span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <item.icon className="h-5 w-5 text-emerald-400" />
-                </div>
-                <h3 className="font-semibold text-white">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-white/50">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          <HowItWorksSection />
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="border-t border-white/[0.06] px-4 py-20 sm:px-6">
+      {/* ── FAQ ──────────────────────────────────────────────────────── */}
+      <section className="border-t border-white/[0.05] px-4 py-24 sm:px-6">
         <div className="mx-auto max-w-2xl">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-bold text-white">Frequently asked questions</h2>
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-extrabold text-white">
+              Frequently asked{" "}
+              <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                questions
+              </span>
+            </h2>
           </div>
           <FaqSection />
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 pb-24 sm:px-6">
-        <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent p-12 text-center">
-          <div className="mb-4 flex justify-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow">
-              <Scissors className="h-7 w-7 text-white" />
-            </span>
-          </div>
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Ready to write your success story?
-          </h2>
-          <p className="mt-4 text-white/50">
-            Join thousands of creators turning long videos into viral clips — automatically. Free to start, no credit card required.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-brand px-6 py-3 text-sm font-semibold text-white shadow-glow transition-opacity hover:opacity-90"
-            >
-              Start free — 100 credits included
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/top-creators"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
-            >
-              <Users className="h-4 w-4" />
-              Top Creators
-            </Link>
-          </div>
-        </div>
+      {/* ── CTA ──────────────────────────────────────────────────────── */}
+      <section className="px-4 pb-28 sm:px-6">
+        <CtaSection />
       </section>
+
     </div>
   );
 }

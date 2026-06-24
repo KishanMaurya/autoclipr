@@ -65,6 +65,7 @@ export function ClipCard({
     <Card className="glass overflow-hidden">
       <div className="relative aspect-[9/16] w-full overflow-hidden bg-zinc-900">
         {clip.thumbnail_url && !thumbError ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={clip.thumbnail_url}
             alt={clip.title}

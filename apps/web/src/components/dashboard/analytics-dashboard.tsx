@@ -250,6 +250,7 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {pub.thumbnail_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={pub.thumbnail_url}
                               alt=""
