@@ -6,42 +6,10 @@ import { Button } from "@/components/ui/button";
 import { motion, Stagger, MotionItem } from "@/components/ui/motion";
 
 const CLIPS = [
-  {
-    score: 94,
-    title: "The moment that changed everything...",
-    duration: "0:45",
-    platform: "TikTok",
-    progress: 72,
-    bg: "from-violet-700 via-purple-600 to-pink-600",
-    lines: ["from-white/40 w-3/4", "from-white/25 w-1/2", "from-white/20 w-2/3"],
-  },
-  {
-    score: 88,
-    title: "Nobody talks about this hack",
-    duration: "0:30",
-    platform: "Reels",
-    progress: 85,
-    bg: "from-rose-600 via-orange-500 to-yellow-500",
-    lines: ["from-white/40 w-2/3", "from-white/25 w-3/4", "from-white/20 w-1/2"],
-  },
-  {
-    score: 91,
-    title: "Wait for it… 🔥",
-    duration: "0:58",
-    platform: "Shorts",
-    progress: 60,
-    bg: "from-cyan-600 via-blue-600 to-indigo-700",
-    lines: ["from-white/40 w-1/2", "from-white/25 w-2/3", "from-white/20 w-3/4"],
-  },
-  {
-    score: 79,
-    title: "POV: You finally get it",
-    duration: "0:22",
-    platform: "TikTok",
-    progress: 90,
-    bg: "from-emerald-600 via-teal-600 to-cyan-600",
-    lines: ["from-white/40 w-3/4", "from-white/25 w-1/2", "from-white/20 w-1/3"],
-  },
+  { id: "LmxTVsJfInQ", score: 94, platform: "TikTok", border: "from-violet-500 to-pink-500" },
+  { id: "mXTlAKm0VEo", score: 88, platform: "Reels",  border: "from-rose-500 to-orange-400" },
+  { id: "Ypbsei0ug7w", score: 91, platform: "Shorts", border: "from-cyan-500 to-blue-500"   },
+  { id: "aiQrLxzu9ug", score: 79, platform: "TikTok", border: "from-emerald-500 to-teal-400" },
 ];
 
 const stats = [
@@ -152,49 +120,38 @@ export function Hero() {
                 <div className="flex shrink-0 gap-2.5">
                   {CLIPS.map((clip, i) => (
                     <motion.div
-                      key={i}
-                      className="group relative h-36 w-20 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-xl sm:h-44 sm:w-24"
+                      key={clip.id}
+                      className="group relative h-44 w-24 overflow-hidden rounded-2xl bg-black shadow-xl sm:h-52 sm:w-28"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 + i * 0.12, duration: 0.5, ease: EASE }}
-                      whileHover={{ y: -8, scale: 1.05, transition: { duration: 0.25 } }}
+                      whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.25 } }}
                     >
-                      {/* Thumbnail background */}
-                      <div className={`absolute inset-0 bg-gradient-to-b ${clip.bg} opacity-90`} />
-
-                      {/* Fake content lines simulating video scene */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-2 opacity-30">
-                        {clip.lines.map((cls, j) => (
-                          <div key={j} className={`h-1 rounded-full bg-gradient-to-r ${cls} to-transparent`} />
-                        ))}
+                      {/* Gradient border ring */}
+                      <div className={`absolute inset-0 rounded-2xl bg-gradient-to-b ${clip.border} p-[1.5px]`}>
+                        <div className="h-full w-full rounded-2xl bg-black" />
                       </div>
 
-                      {/* Viral score badge top-left */}
-                      <div className="absolute left-1.5 top-1.5 flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
+                      {/* YouTube Short iframe */}
+                      <iframe
+                        src={`https://www.youtube.com/embed/${clip.id}?autoplay=1&mute=1&loop=1&playlist=${clip.id}&controls=0&modestbranding=1&rel=0&showinfo=0`}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                        className="absolute inset-0 h-full w-full scale-[1.35] rounded-2xl"
+                        style={{ border: "none", pointerEvents: "none" }}
+                      />
+
+                      {/* Score badge */}
+                      <div className="absolute left-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 backdrop-blur-sm">
                         <span className="text-[9px] font-bold text-emerald-400">{clip.score}</span>
-                        <span className="text-[7px] text-emerald-400/70">🔥</span>
+                        <span className="text-[8px]">🔥</span>
                       </div>
 
-                      {/* Duration top-right */}
-                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1 py-0.5 text-[8px] font-medium text-white/80 backdrop-blur-sm">
-                        {clip.duration}
-                      </div>
-
-                      {/* Bottom overlay: title + platform + progress */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-4">
-                        <p className="mb-1.5 line-clamp-2 text-[8px] font-semibold leading-tight text-white sm:text-[9px]">
-                          {clip.title}
-                        </p>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[7px] font-medium text-white/50">{clip.platform}</span>
-                        </div>
-                        <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/20">
-                          <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${clip.progress}%` }}
-                            transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: EASE }}
-                          />
+                      {/* Platform badge */}
+                      <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10 rounded-lg bg-black/70 px-1.5 py-1 backdrop-blur-sm">
+                        <span className="text-[9px] font-semibold text-white/80">{clip.platform}</span>
+                        <div className="mt-1 h-0.5 w-full overflow-hidden rounded-full bg-white/20">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${clip.border}`} style={{ width: `${clip.score}%` }} />
                         </div>
                       </div>
                     </motion.div>
