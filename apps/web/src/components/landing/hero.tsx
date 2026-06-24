@@ -45,9 +45,9 @@ const CLIPS = [
 ];
 
 const stats = [
-  { value: "10K+", label: "Clips generated" },
-  { value: "2min", label: "Avg. processing" },
-  { value: "99%", label: "Satisfaction" },
+  { value: "10K+", label: "Clips generated", icon: "🎬" },
+  { value: "2min", label: "Avg. processing", icon: "⚡" },
+  { value: "99%", label: "Satisfaction", icon: "🏆" },
 ];
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -99,14 +99,23 @@ export function Hero() {
         </MotionItem>
 
         <MotionItem className="mt-14 flex justify-center px-4">
-          <div className="inline-flex w-full max-w-xs divide-x divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 backdrop-blur-sm sm:w-auto sm:max-w-none">
-            {stats.map((stat) => (
-              <div key={stat.label} className="flex flex-1 flex-col items-center px-3 py-4 sm:flex-none sm:px-10 sm:py-5">
-                <p className="text-xl font-bold text-aurora sm:text-3xl">{stat.value}</p>
-                <p className="mt-1 text-center text-[9px] uppercase tracking-widest text-white/40 sm:text-[11px]">
+          <div className="inline-flex w-full max-w-sm gap-3 sm:w-auto sm:max-w-none sm:gap-4">
+            {stats.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.1, duration: 0.5, ease: EASE }}
+                className="group relative flex flex-1 flex-col items-center gap-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d18]/80 px-4 py-4 backdrop-blur-sm transition-colors hover:border-emerald-500/20 hover:bg-emerald-500/5 sm:px-8 sm:py-5"
+              >
+                {/* Subtle glow on hover */}
+                <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/0 to-emerald-500/0 transition-all duration-300 group-hover:from-emerald-500/5 group-hover:to-transparent" />
+                <span className="text-lg sm:text-xl">{stat.icon}</span>
+                <p className="text-xl font-extrabold text-aurora sm:text-3xl">{stat.value}</p>
+                <p className="text-center text-[9px] font-semibold uppercase tracking-widest text-white/40 sm:text-[10px]">
                   {stat.label}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </MotionItem>
