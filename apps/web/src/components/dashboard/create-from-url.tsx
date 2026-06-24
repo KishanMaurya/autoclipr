@@ -150,6 +150,7 @@ export function CreateFromUrl() {
     }, PIPELINE_POLL_MS);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipeline?.video_id, pollPipeline]);
 
   function toggleDuration(sec: number) {

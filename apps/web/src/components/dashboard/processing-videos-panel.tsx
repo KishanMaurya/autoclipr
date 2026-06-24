@@ -90,6 +90,7 @@ export function ProcessingVideosPanel({ videos: initialVideos }: ProcessingVideo
     if (shouldRefresh) {
       router.refresh();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videos, router]);
 
   async function handleDelete(video: Video) {
