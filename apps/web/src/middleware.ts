@@ -78,6 +78,10 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/register") &&
     user
   ) {
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    if (redirectParam && redirectParam.startsWith("/")) {
+      return NextResponse.redirect(new URL(redirectParam, request.url));
+    }
     const onboardingDone =
       request.cookies.get(ONBOARDING_COOKIE)?.value === "1";
     const dest = onboardingDone ? "/dashboard" : "/setup/platforms";
