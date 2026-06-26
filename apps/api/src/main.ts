@@ -1,5 +1,5 @@
 import './instrumentation';
-
+// v2
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setDefaultResultOrder } from 'node:dns';
