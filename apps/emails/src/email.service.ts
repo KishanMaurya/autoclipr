@@ -17,6 +17,7 @@ import { feedbackConfirmationTemplate, type FeedbackConfirmationVars } from './t
 import { contactConfirmationTemplate, type ContactConfirmationVars } from './templates/contact-confirmation';
 import { accountDeletedTemplate, type AccountDeletedVars } from './templates/account-deleted';
 import { platformConnectedTemplate, type PlatformConnectedVars } from './templates/platform-connected';
+import { affiliateApplicationTemplate } from './templates/affiliate-application';
 
 @Injectable()
 export class EmailService {
@@ -226,6 +227,15 @@ export class EmailService {
       userName: this.firstName(vars.userName),
       appUrl: this.config.appUrl,
       supportEmail: this.config.supportEmail,
+    });
+    await this.sendSafe({ to, subject, html, text, from: this.fromField() });
+  }
+
+  async sendAffiliateApplicationReceived(to: string, channelUrl: string): Promise<void> {
+    const { subject, html, text } = affiliateApplicationTemplate({
+      email: to,
+      channelUrl,
+      appUrl: this.config.appUrl,
     });
     await this.sendSafe({ to, subject, html, text, from: this.fromField() });
   }

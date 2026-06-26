@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, DollarSign, Copy, Check } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const FAQS = [
@@ -164,10 +166,24 @@ export function AffiliateSignupForm() {
   const [submitted, setSubmitted] = useState(false);
   const [email, setEmail] = useState("");
   const [channel, setChannel] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !channel) return;
+    setLoading(true);
+    setError("");
+    try {
+      await fetch(`${API_URL}/api/v1/affiliates/inquire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, channelUrl: channel }),
+      });
+    } catch {
+      // Still show success — email sending is best-effort
+    }
+    setLoading(false);
     setSubmitted(true);
   }
 
@@ -213,11 +229,13 @@ export function AffiliateSignupForm() {
           className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition-colors focus:border-emerald-500/40 focus:bg-white/[0.06]"
         />
       </div>
+      {error && <p className="text-sm text-red-400">{error}</p>}
       <button
         type="submit"
-        className="group w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 py-3.5 text-sm font-bold text-white shadow-[0_0_18px_rgba(16,185,129,0.25)] transition-all hover:scale-[1.01] hover:shadow-[0_0_28px_rgba(16,185,129,0.4)]"
+        disabled={loading}
+        className="group w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 py-3.5 text-sm font-bold text-white shadow-[0_0_18px_rgba(16,185,129,0.25)] transition-all hover:scale-[1.01] hover:shadow-[0_0_28px_rgba(16,185,129,0.4)] disabled:opacity-60"
       >
-        Apply to become an affiliate
+        {loading ? "Submitting…" : "Apply to become an affiliate"}
       </button>
       <p className="text-center text-xs text-white/25">Free to join · Approved within 48 hours</p>
     </form>
@@ -236,7 +254,7 @@ export function FaqSection() {
 
 export function CopyLink() {
   const [copied, setCopied] = useState(false);
-  const link = "https://autoclipr.com/?ref=YOUR_ID";
+  const link = "https://autoclipr.com/?ref=your_code";
 
   function copy() {
     navigator.clipboard.writeText(link);

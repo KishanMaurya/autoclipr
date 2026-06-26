@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { EmailService } from '@autoclipr/emails';
 import { AffiliatesRepository } from './affiliates.repository';
 
 // Plan prices in paise (INR)
@@ -19,7 +20,16 @@ function generateRefCode(userId: string): string {
 export class AffiliatesService {
   private readonly logger = new Logger(AffiliatesService.name);
 
-  constructor(private readonly repo: AffiliatesRepository) {}
+  constructor(
+    private readonly repo: AffiliatesRepository,
+    private readonly email: EmailService,
+  ) {}
+
+  /** Called from the public marketing page — sends confirmation email, no account created */
+  async sendInquiryConfirmation(email: string, channelUrl: string): Promise<void> {
+    await this.email.sendAffiliateApplicationReceived(email, channelUrl);
+    this.logger.log(`Affiliate inquiry confirmation sent to ${email}`);
+  }
 
   async apply(userId: string, email: string, channelUrl: string) {
     const existing = await this.repo.findByUserId(userId);

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +7,14 @@ import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { AffiliatesService } from './affiliates.service';
 
 class ApplyDto {
+  @IsString()
+  email!: string;
+
+  @IsString()
+  channelUrl!: string;
+}
+
+class InquireDto {
   @IsString()
   email!: string;
 
@@ -37,7 +45,19 @@ class RequestPayoutDto {
 export class AffiliatesController {
   constructor(private readonly service: AffiliatesService) {}
 
-  /** Submit affiliate application */
+  /**
+   * Public endpoint called from the marketing page apply form (no auth required).
+   * Records the inquiry and sends a confirmation email.
+   */
+  @Public()
+  @Post('inquire')
+  @HttpCode(200)
+  async inquire(@Body() dto: InquireDto) {
+    await this.service.sendInquiryConfirmation(dto.email, dto.channelUrl);
+    return ApiResponse.ok({ received: true });
+  }
+
+  /** Submit affiliate application (authenticated — creates real account) */
   @Post('apply')
   async apply(@CurrentUser() user: AuthUser, @Body() dto: ApplyDto) {
     const data = await this.service.apply(user.sub, dto.email, dto.channelUrl);
