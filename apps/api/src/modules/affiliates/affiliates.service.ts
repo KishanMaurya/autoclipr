@@ -37,6 +37,15 @@ export class AffiliatesService {
 
     const refCode = generateRefCode(userId);
     const affiliate = await this.repo.create(userId, refCode, email, channelUrl);
+
+    // Send instant approval email with their live referral link
+    try {
+      await this.email.sendAffiliateApproved(email, refCode, channelUrl);
+    } catch (e: any) {
+      this.logger.warn(`Failed to send affiliate approval email: ${e.message}`);
+    }
+
+    this.logger.log(`Affiliate auto-approved: userId=${userId} refCode=${refCode}`);
     return affiliate;
   }
 

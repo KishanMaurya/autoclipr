@@ -85,8 +85,9 @@ export class AffiliatesRepository {
         ref_code: refCode,
         email,
         channel_url: channelUrl,
-        status: 'pending',
+        status: 'active',        // auto-approved
         commission_rate: 30,
+        approved_at: new Date().toISOString(),
       })
       .select()
       .single();

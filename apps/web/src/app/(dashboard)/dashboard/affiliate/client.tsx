@@ -405,10 +405,16 @@ export function AffiliateApply({ token }: { token: string }) {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400">
           <Check className="h-7 w-7 text-white" />
         </div>
-        <h2 className="text-xl font-bold text-white">Application submitted!</h2>
+        <h2 className="text-xl font-bold text-white">You&apos;re approved! 🎉</h2>
         <p className="mt-2 text-sm text-white/50">
-          We review applications within 48 hours. Once approved, you&apos;ll receive your unique referral link and dashboard access.
+          Your affiliate account is live. Check your inbox — we&apos;ve sent your unique referral link to <span className="text-emerald-400">{email}</span>.
         </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-5 py-2.5 text-sm font-bold text-white"
+        >
+          View my affiliate dashboard →
+        </button>
       </motion.div>
     );
   }
