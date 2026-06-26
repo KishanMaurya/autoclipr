@@ -14,6 +14,7 @@ import {
   X,
   Youtube,
   Link2,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -25,6 +26,7 @@ const nav = [
   { href: "/clips", label: "Clips", icon: Film },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/billing", label: "Billing", icon: CreditCard },
+  { href: "/affiliate", label: "Earn & Refer", icon: DollarSign },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

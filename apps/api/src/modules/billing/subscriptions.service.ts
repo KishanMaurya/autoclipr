@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { UsersRepository } from '../users/users.repository';
+import { AffiliatesService } from '../affiliates/affiliates.service';
 import { DodoService } from './dodo.service';
 
 const PLAN_TIER: Record<string, string> = {
@@ -27,6 +28,7 @@ export class SubscriptionsService {
     private readonly config: ConfigService,
     private readonly email: EmailService,
     private readonly usersRepo: UsersRepository,
+    private readonly affiliates: AffiliatesService,
   ) {}
 
   async createCheckoutUrl(userId: string, email: string, planId: string, billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<string> {
@@ -98,6 +100,13 @@ export class SubscriptionsService {
       });
     } catch (e: any) {
       this.logger.warn(`Failed to record transaction: ${e.message}`);
+    }
+
+    // Award referral commission if this user was referred by an affiliate
+    try {
+      await this.affiliates.awardCommission(userId, planId, billingPeriod, internalTxId);
+    } catch (e: any) {
+      this.logger.warn(`Failed to award affiliate commission: ${e.message}`);
     }
 
     // Pass email directly so it works even when profile email is empty (OAuth users)
@@ -185,8 +194,14 @@ export class SubscriptionsService {
       this.logger.error(`Failed to update profile tier: ${profileError.message}`);
     }
 
-    // Send confirmation + invoice emails only on new activation
+    // Award referral commission on every activation (new signup or renewal)
     if (status === 'active') {
+      const billingPeriod: 'monthly' | 'yearly' = data.billing_period ?? 'monthly';
+      try {
+        await this.affiliates.awardCommission(userId, planId, billingPeriod, subscriptionId);
+      } catch (e: any) {
+        this.logger.warn(`Affiliate commission error: ${e.message}`);
+      }
       await this.sendSubscriptionEmails(userId, planId, subscriptionId, data);
     }
   }

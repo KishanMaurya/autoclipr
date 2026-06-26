@@ -8,11 +8,13 @@ const protectedPaths = [
   "/create",
   "/clips",
   "/billing",
+  "/affiliate",
   "/settings",
   "/setup",
 ];
 
 const ONBOARDING_COOKIE = "autoclipr_onboarding_complete";
+const REF_COOKIE = "autoclipr_ref";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -73,10 +75,25 @@ export async function middleware(request: NextRequest) {
     "/create",
     "/clips",
     "/billing",
+    "/affiliate",
     "/settings",
   ].some((p) => request.nextUrl.pathname.startsWith(p));
   if (user && isDashboardArea && !onboardingDone) {
     return NextResponse.redirect(new URL("/setup/platforms", request.url));
+  }
+
+  // Capture affiliate ref code from ?ref= param — store as 90-day cookie
+  const refParam = request.nextUrl.searchParams.get("ref");
+  if (refParam && /^[a-z0-9_-]{4,32}$/i.test(refParam)) {
+    const existing = request.cookies.get(REF_COOKIE)?.value;
+    if (!existing) {
+      supabaseResponse.cookies.set(REF_COOKIE, refParam, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 90, // 90 days
+        sameSite: "lax",
+        httpOnly: false, // readable by JS so the signup form can send it to the API
+      });
+    }
   }
 
   return supabaseResponse;
