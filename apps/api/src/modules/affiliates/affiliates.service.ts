@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EmailService } from '@autoclipr/emails';
+import { UsersRepository } from '../users/users.repository';
 import { AffiliatesRepository } from './affiliates.repository';
 
 // Plan prices in paise (INR)
@@ -23,6 +24,7 @@ export class AffiliatesService {
   constructor(
     private readonly repo: AffiliatesRepository,
     private readonly email: EmailService,
+    private readonly usersRepo: UsersRepository,
   ) {}
 
   /** Called from the public marketing page — sends confirmation email, no account created */
@@ -34,6 +36,9 @@ export class AffiliatesService {
   async apply(userId: string, email: string, channelUrl: string) {
     const existing = await this.repo.findByUserId(userId);
     if (existing) throw new ConflictException('You already have an affiliate application.');
+
+    // Ensure profiles row exists — FK constraint requires it (OAuth users may not have one yet)
+    await this.usersRepo.ensureProfile(userId, email);
 
     const refCode = generateRefCode(userId);
     const affiliate = await this.repo.create(userId, refCode, email, channelUrl);
