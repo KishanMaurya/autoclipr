@@ -252,9 +252,9 @@ export function FaqSection() {
   );
 }
 
-export function CopyLink() {
+export function CopyLink({ refCode }: { refCode?: string }) {
   const [copied, setCopied] = useState(false);
-  const link = "https://autoclipr.com/?ref=your_code";
+  const link = `https://autoclipr.com/?ref=${refCode ?? "your_code"}`;
 
   function copy() {
     navigator.clipboard.writeText(link);

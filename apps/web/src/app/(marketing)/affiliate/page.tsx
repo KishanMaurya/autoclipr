@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DollarSign, Users, RefreshCw, BarChart3, Gift, Headphones, Star, TrendingUp, Zap, Shield } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { apiFetch } from "@/lib/api";
 import {
   EarningsCalculator,
   CommissionTiers,
@@ -35,7 +37,25 @@ const SOCIAL_PROOF = [
   { name: "Dev P.",  handle: "@devbuilds",    earning: "$3,200/mo", quote: "I run a newsletter for video creators. AutoClipr converts insanely well — best affiliate program I promote.", avatar: "DP" },
 ];
 
-export default function AffiliatePage() {
+export default async function AffiliatePage() {
+  // Try to get the logged-in user's ref code to show on the page
+  let userRefCode: string | undefined;
+  try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      const res = await apiFetch<{ affiliate: { ref_code: string } }>("/api/v1/affiliates/me", {
+        token: session.access_token,
+        cache: "no-store",
+      });
+      if (res.success && res.data?.affiliate?.ref_code) {
+        userRefCode = res.data.affiliate.ref_code;
+      }
+    }
+  } catch {
+    // Not logged in or no affiliate account — show placeholder
+  }
+
   return (
     <div className="min-h-screen">
 
@@ -255,7 +275,7 @@ export default function AffiliatePage() {
 
               <div className="mt-8">
                 <p className="mb-2 text-xs font-semibold text-white/30">Your referral link will look like</p>
-                <CopyLink />
+                <CopyLink refCode={userRefCode} />
               </div>
             </div>
 
