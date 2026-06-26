@@ -26,7 +26,7 @@ const nav = [
   { href: "/clips", label: "Clips", icon: Film },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/billing", label: "Billing", icon: CreditCard },
-  { href: "/affiliate", label: "Earn & Refer", icon: DollarSign },
+  { href: "/dashboard/affiliate", label: "Earn & Refer", icon: DollarSign },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

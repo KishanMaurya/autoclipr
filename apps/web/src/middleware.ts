@@ -8,7 +8,7 @@ const protectedPaths = [
   "/create",
   "/clips",
   "/billing",
-  "/affiliate",
+  "/dashboard/affiliate",
   "/settings",
   "/setup",
 ];
@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
     "/create",
     "/clips",
     "/billing",
-    "/affiliate",
+    "/dashboard/affiliate",
     "/settings",
   ].some((p) => request.nextUrl.pathname.startsWith(p));
   if (user && isDashboardArea && !onboardingDone) {
