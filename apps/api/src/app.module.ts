@@ -20,6 +20,7 @@ import { PlatformsModule } from './modules/platforms/platforms.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { AffiliatesModule } from './modules/affiliates/affiliates.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { EmailModule } from '@autoclipr/emails';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
@@ -53,6 +54,7 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
     AnalyticsModule,
     FeedbackModule,
     AffiliatesModule,
+    AdminModule,
   ],
   providers: [
     RedisHealthService,
