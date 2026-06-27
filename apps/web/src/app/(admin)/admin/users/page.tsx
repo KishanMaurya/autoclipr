@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { Users, TrendingUp, CreditCard, UserCheck } from "lucide-react";
 import { UserGrowthChart, FreePaidPieChart } from "@/components/admin/charts";
 
 export const metadata: Metadata = { title: "Users" };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;
 
 async function fetchStats() {
   const supabase = await createClient();
@@ -90,7 +90,7 @@ export default async function UsersPage() {
             <tbody>
               {users.recent.map((u: { id: string; email: string; full_name: string; subscription_tier: string; credits: number; created_at: string }) => (
                 <tr key={u.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
-                  <td className="py-2.5 pr-4 font-medium text-white">{u.full_name || "—"}</td>
+                  <td className="py-2.5 pr-4 font-medium text-white">{u.full_name || "â€”"}</td>
                   <td className="py-2.5 pr-4 text-white/50">{u.email}</td>
                   <td className="py-2.5 pr-4">
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
@@ -110,3 +110,4 @@ export default async function UsersPage() {
     </div>
   );
 }
+

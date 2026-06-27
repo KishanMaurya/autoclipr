@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import {
   Users, DollarSign, Video, Scissors, Bot, CreditCard, TrendingUp,
@@ -10,7 +10,7 @@ import {
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;
 
 type AdminStats = Awaited<ReturnType<typeof fetchStats>>;
 
@@ -373,3 +373,4 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
+
