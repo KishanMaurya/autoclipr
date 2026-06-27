@@ -29,9 +29,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
-      {/* Page content — filter inverts the entire content area for light mode */}
+      {/* Page content — bg-[#06030f] gets inverted to near-white in light mode */}
       <div
-        className="min-h-screen px-4 py-6 sm:px-6 lg:px-8"
+        className="min-h-screen bg-[#06030f] px-4 py-6 sm:px-6 lg:px-8"
         style={light ? { filter: "invert(1) hue-rotate(180deg)" } : {}}
       >
         {children}
