@@ -17,11 +17,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
-  console.log("[admin-layout] ADMIN_EMAILS:", process.env.ADMIN_EMAILS);
-  console.log("[admin-layout] user email:", session.user.email);
-  console.log("[admin-layout] adminEmails list:", adminEmails);
-  console.log("[admin-layout] match:", adminEmails.includes((session.user.email ?? "").toLowerCase()));
-
   if (!adminEmails.includes((session.user.email ?? "").toLowerCase())) {
     redirect("/dashboard");
   }
