@@ -200,7 +200,10 @@ export function VideoSlicer() {
 
       setProgressMsg("Preparing download…");
       const data = await ffmpeg.readFile(outName);
-      const blob = new Blob([data], { type: file.type || "video/mp4" });
+      const uint8 = data instanceof Uint8Array
+        ? new Uint8Array(data.buffer as ArrayBuffer)
+        : new TextEncoder().encode(data as string);
+      const blob = new Blob([uint8], { type: file.type || "video/mp4" });
       const url = URL.createObjectURL(blob);
       const baseName = file.name.replace(/\.[^.]+$/, "");
       setOutputUrl(url);
