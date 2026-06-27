@@ -5,11 +5,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Required for ffmpeg.wasm SharedArrayBuffer
-        source: "/tools/video-slicer",
+        // Required for ffmpeg.wasm SharedArrayBuffer on all routes
+        // (chunks served from /_next/static/ also need these headers)
+        source: "/(.*)",
         headers: [
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+          // credentialless allows cross-origin assets (images/fonts) without
+          // requiring them to set CORP headers — safer than require-corp globally
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
     ];
