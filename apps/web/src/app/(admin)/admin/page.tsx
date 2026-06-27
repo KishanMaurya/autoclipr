@@ -334,8 +334,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Recent Transactions */}
-      <Section title="Recent Transactions">
-        <Card>
+      <Card title="Recent Transactions">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -361,8 +360,7 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </Card>
-      </Section>
+      </Card>
     </div>
   );
 }
