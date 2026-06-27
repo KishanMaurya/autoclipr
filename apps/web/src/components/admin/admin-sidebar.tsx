@@ -100,7 +100,7 @@ export function AdminSidebar() {
         <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5 scrollbar-none">
+        <nav className="scrollbar-none flex-1 overflow-y-auto py-4 px-3 space-y-5" style={{ scrollbarWidth: "none" }}>
           {NAV.map((group) => (
             <div key={group.label}>
               <p className="mb-1.5 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-white/20">

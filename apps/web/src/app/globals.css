@@ -212,4 +212,9 @@
   .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
+
+  /* Hide scrollbar for admin sidebar */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
