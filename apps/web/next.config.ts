@@ -2,6 +2,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  async headers() {
+    return [
+      {
+        // Required for ffmpeg.wasm SharedArrayBuffer
+        source: "/tools/video-slicer",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       // Google often requests /favicon.ico directly — serve the current brand icon.
