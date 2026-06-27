@@ -15,6 +15,15 @@ export class AdminRepository {
 
   // ─── Users ───────────────────────────────────────────────────────────────
 
+  async getOnlineUsers() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count } = await this.db
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('last_seen_at', fiveMinutesAgo);
+    return count ?? 0;
+  }
+
   async getUserCounts() {
     const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
     const [r1, r2, r3] = await Promise.all([

@@ -128,6 +128,10 @@ export class UsersService {
     };
   }
 
+  async heartbeat(userId: string): Promise<void> {
+    await this.usersRepo.heartbeat(userId);
+  }
+
   private assertAvatarUrlAllowed(url: string) {
     const supabaseUrl = (this.config.get<string>('supabaseUrl') ?? '').replace(/\/$/, '');
     const bucket = this.storage.avatarsBucket();

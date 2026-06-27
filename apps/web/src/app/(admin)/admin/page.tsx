@@ -7,6 +7,7 @@ import {
 import {
   UserGrowthChart, RevenueBarChart, FreePaidPieChart, FunnelChart,
 } from "@/components/admin/charts";
+import { OnlineUsersCard } from "@/components/admin/online-users-card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -26,6 +27,7 @@ async function fetchStats() {
   });
   if (!res.ok) return null;
   const json = await res.json();
+  json.data._token = token;
   return json.data as {
     users: {
       total: number; paid: number; free: number; conversionRate: string; newToday: number;
@@ -129,7 +131,7 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const { users, revenue, subscriptions, videos, clips, ai, affiliates, countries, funnel, system } = stats;
+  const { users, revenue, subscriptions, videos, clips, ai, affiliates, countries, funnel, system, _token } = stats as typeof stats & { _token: string };
 
   return (
     <div className="space-y-6 pb-12">
@@ -145,12 +147,13 @@ export default async function AdminDashboardPage() {
       {/* KPI — Users */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">Users</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           <KpiCard icon={Users}      label="Total Users"    value={users.total.toLocaleString()}           sub={`+${users.newToday} today`}             iconBg="#3C50E0" trend="up" />
           <KpiCard icon={CreditCard} label="Paid Users"     value={users.paid.toLocaleString()}            sub={`${users.conversionRate}% conversion`}  iconBg="#10B981" />
           <KpiCard icon={Users}      label="Free Users"     value={users.free.toLocaleString()}                                                         iconBg="#3B82F6" />
           <KpiCard icon={TrendingUp} label="Conversion"     value={`${users.conversionRate}%`}                                                          iconBg="#8B5CF6" />
           <KpiCard icon={Activity}   label="Active Subs"    value={subscriptions.active.toLocaleString()}                                               iconBg="#F59E0B" />
+          <OnlineUsersCard token={_token} apiBase={API} initialCount={(users as { online?: number }).online ?? 0} />
         </div>
       </div>
 

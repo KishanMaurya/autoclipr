@@ -157,6 +157,14 @@ export class UsersRepository {
     return data;
   }
 
+  async heartbeat(userId: string): Promise<void> {
+    await this.supabase
+      .getClient()
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', userId);
+  }
+
   async markWelcomeSent(userId: string): Promise<void> {
     await this.supabase
       .getClient()

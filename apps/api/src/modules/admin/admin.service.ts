@@ -24,6 +24,7 @@ export class AdminService {
       clipStats,
       affiliateStats,
       creditStats,
+      onlineUsers,
     ] = await Promise.all([
       this.repo.getUserCounts(),
       this.repo.getUserGrowthByMonth(),
@@ -35,6 +36,7 @@ export class AdminService {
       this.repo.getClipStats(),
       this.repo.getAffiliateStats(),
       this.repo.getCreditUsageStats(),
+      this.repo.getOnlineUsers(),
     ]);
 
     const freeUsers = userCounts.total - userCounts.paid;
@@ -104,6 +106,7 @@ export class AdminService {
         free: freeUsers,
         conversionRate,
         newToday: userCounts.today,
+        online: onlineUsers,
         growth: userGrowth,
         recent: recentUsers,
       },

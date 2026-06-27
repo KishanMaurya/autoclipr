@@ -3,6 +3,7 @@ import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import { PageBackground } from "@/components/ui/page-background";
 import { ReferralTracker } from "@/components/affiliates/referral-tracker";
+import { Heartbeat } from "@/components/heartbeat";
 
 export async function DashboardShell({
   children,
@@ -20,6 +21,7 @@ export async function DashboardShell({
   return (
     <div className="relative min-h-screen">
       <ReferralTracker token={token} />
+      <Heartbeat token={token} />
       <PageBackground variant="dashboard" />
       <Navbar />
       <DashboardSidebar credits={credits} />

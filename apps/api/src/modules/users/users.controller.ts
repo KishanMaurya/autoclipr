@@ -24,6 +24,12 @@ export class UsersController {
     return ApiResponse.ok(profile);
   }
 
+  @Post('me/heartbeat')
+  async heartbeat(@CurrentUser() user: AuthUser) {
+    await this.usersService.heartbeat(user.sub);
+    return ApiResponse.ok({ ok: true });
+  }
+
   @Post('me/avatar/upload')
   async initAvatarUpload(
     @CurrentUser() user: AuthUser,
