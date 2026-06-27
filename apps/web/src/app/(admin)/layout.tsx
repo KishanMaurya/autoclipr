@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export const metadata: Metadata = {
@@ -23,11 +22,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-[#06030f] text-white">
-      <AdminSidebar />
-      <div className="lg:pl-60">
-        <AdminShell>{children}</AdminShell>
-      </div>
+    <div className="min-h-screen bg-[#1A222C]">
+      <AdminShell userEmail={session.user.email ?? ""}>
+        {children}
+      </AdminShell>
     </div>
   );
 }

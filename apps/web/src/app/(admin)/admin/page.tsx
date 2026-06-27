@@ -56,48 +56,39 @@ function fmtInr(rupees: number) {
 }
 
 function KpiCard({
-  icon: Icon, label, value, sub, color = "indigo", trend,
+  icon: Icon, label, value, sub, iconBg = "#3C50E0", trend,
 }: {
   icon: React.ElementType; label: string; value: string; sub?: string;
-  color?: "indigo" | "emerald" | "amber" | "rose" | "blue" | "violet"; trend?: "up" | "down";
+  iconBg?: string; trend?: "up" | "down";
 }) {
-  const colors = {
-    indigo: "bg-indigo-500/10 text-indigo-400",
-    emerald: "bg-emerald-500/10 text-emerald-400",
-    amber:  "bg-amber-500/10 text-amber-400",
-    rose:   "bg-rose-500/10 text-rose-400",
-    blue:   "bg-blue-500/10 text-blue-400",
-    violet: "bg-violet-500/10 text-violet-400",
-  };
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 hover:bg-white/[0.04] transition-colors">
-      <div className="flex items-start justify-between">
-        <div className={`rounded-lg p-2 ${colors[color]}`}>
-          <Icon className="h-4 w-4" />
+    <div className="rounded-xl border border-white/[0.07] bg-[#24303F] p-5 hover:border-white/[0.12] transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="rounded-xl p-3" style={{ background: iconBg + "22" }}>
+          <Icon className="h-5 w-5" style={{ color: iconBg }} />
         </div>
-        {trend === "up" && <ArrowUpRight className="h-4 w-4 text-emerald-400" />}
-        {trend === "down" && <ArrowDownRight className="h-4 w-4 text-rose-400" />}
+        {trend === "up" && (
+          <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">
+            <ArrowUpRight className="h-3 w-3" /> Up
+          </span>
+        )}
+        {trend === "down" && (
+          <span className="flex items-center gap-0.5 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-400">
+            <ArrowDownRight className="h-3 w-3" /> Down
+          </span>
+        )}
       </div>
-      <p className="mt-3 text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-white/45 mt-0.5">{label}</p>
-      {sub && <p className="text-[11px] text-white/25 mt-1">{sub}</p>}
+      <p className="mt-4 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-[13px] font-medium text-white/50">{label}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-white/25">{sub}</p>}
     </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/25">{title}</h2>
-      {children}
-    </section>
   );
 }
 
 function Card({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-white/[0.06] bg-white/[0.025] p-5 ${className}`}>
-      {title && <h3 className="mb-4 text-sm font-semibold text-white/70">{title}</h3>}
+    <div className={`rounded-xl border border-white/[0.07] bg-[#24303F] p-5 ${className}`}>
+      {title && <h3 className="mb-4 text-[15px] font-semibold text-white">{title}</h3>}
       {children}
     </div>
   );
@@ -141,55 +132,61 @@ export default async function AdminDashboardPage() {
   const { users, revenue, subscriptions, videos, clips, ai, affiliates, countries, funnel, system } = stats;
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Executive Dashboard</h1>
-        <p className="mt-1 text-sm text-white/35">Real-time overview &middot; {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold text-white">Executive Dashboard</h1>
+          <p className="mt-0.5 text-sm text-white/40">Real-time overview &middot; {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}</p>
+        </div>
       </div>
 
       {/* KPI Row 1 — Users */}
-      <Section title="Users">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={Users}     label="Total Users"    value={users.total.toLocaleString()} sub={`+${users.newToday} today`} color="indigo" trend="up" />
-          <KpiCard icon={CreditCard} label="Paid Users"    value={users.paid.toLocaleString()}  sub={`${users.conversionRate}% conversion`} color="emerald" />
-          <KpiCard icon={Users}     label="Free Users"     value={users.free.toLocaleString()}  color="blue" />
-          <KpiCard icon={TrendingUp} label="Conversion"   value={`${users.conversionRate}%`}   color="violet" />
-          <KpiCard icon={Activity}  label="Active Subs"   value={subscriptions.active.toLocaleString()} color="amber" />
+      {/* KPI — Users */}
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">Users</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <KpiCard icon={Users}      label="Total Users"    value={users.total.toLocaleString()}           sub={`+${users.newToday} today`}             iconBg="#3C50E0" trend="up" />
+          <KpiCard icon={CreditCard} label="Paid Users"     value={users.paid.toLocaleString()}            sub={`${users.conversionRate}% conversion`}  iconBg="#10B981" />
+          <KpiCard icon={Users}      label="Free Users"     value={users.free.toLocaleString()}                                                         iconBg="#3B82F6" />
+          <KpiCard icon={TrendingUp} label="Conversion"     value={`${users.conversionRate}%`}                                                          iconBg="#8B5CF6" />
+          <KpiCard icon={Activity}   label="Active Subs"    value={subscriptions.active.toLocaleString()}                                               iconBg="#F59E0B" />
         </div>
-      </Section>
+      </div>
 
-      {/* KPI Row 2 — Revenue */}
-      <Section title="Revenue">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <KpiCard icon={DollarSign} label="MRR"           value={fmtInr(revenue.mrrRupees)}  color="emerald" trend="up" />
-          <KpiCard icon={DollarSign} label="ARR"           value={fmtInr(revenue.arrRupees)}  color="emerald" />
-          <KpiCard icon={DollarSign} label="Total Revenue" value={fmtInr(revenue.totalRupees)} sub={`${revenue.transactionCount} txns`} color="indigo" />
-          <KpiCard icon={TrendingUp} label="ARPU"          value={fmtInr(revenue.arpuRupees)} sub="per paid user" color="violet" />
-          <KpiCard icon={CreditCard} label="Churn Rate"    value={`${subscriptions.churnRate}%`} sub="monthly" color="rose" trend="down" />
+      {/* KPI — Revenue */}
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">Revenue</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <KpiCard icon={DollarSign} label="MRR"           value={fmtInr(revenue.mrrRupees)}               iconBg="#10B981" trend="up" />
+          <KpiCard icon={DollarSign} label="ARR"           value={fmtInr(revenue.arrRupees)}               iconBg="#10B981" />
+          <KpiCard icon={DollarSign} label="Total Revenue" value={fmtInr(revenue.totalRupees)}  sub={`${revenue.transactionCount} txns`} iconBg="#3C50E0" />
+          <KpiCard icon={TrendingUp} label="ARPU"          value={fmtInr(revenue.arpuRupees)}  sub="per paid user" iconBg="#8B5CF6" />
+          <KpiCard icon={CreditCard} label="Churn Rate"    value={`${subscriptions.churnRate}%`} sub="monthly"    iconBg="#EF4444" trend="down" />
         </div>
-      </Section>
+      </div>
 
-      {/* KPI Row 3 — Content */}
-      <Section title="Content & AI">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <KpiCard icon={Video}    label="Videos"       value={videos.total.toLocaleString()} sub={`+${videos.today} today`} color="blue" />
-          <KpiCard icon={Scissors} label="Clips"        value={clips.total.toLocaleString()}  sub={`+${clips.today} today`} color="violet" />
-          <KpiCard icon={Server}   label="Storage"      value={videos.storageFormatted}        color="amber" />
-          <KpiCard icon={Bot}      label="Hooks Gen."   value={ai.hooksGenerated.toLocaleString()} color="indigo" />
-          <KpiCard icon={Bot}      label="Captions Gen." value={ai.captionsGenerated.toLocaleString()} color="violet" />
-          <KpiCard icon={Bot}      label="Credits Used" value={ai.creditsConsumed.toLocaleString()} color="rose" />
+      {/* KPI — Content & AI */}
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">Content &amp; AI</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <KpiCard icon={Video}    label="Videos"        value={videos.total.toLocaleString()} sub={`+${videos.today} today`}  iconBg="#3B82F6" />
+          <KpiCard icon={Scissors} label="Clips"         value={clips.total.toLocaleString()}  sub={`+${clips.today} today`}  iconBg="#8B5CF6" />
+          <KpiCard icon={Server}   label="Storage"       value={videos.storageFormatted}                                      iconBg="#F59E0B" />
+          <KpiCard icon={Bot}      label="Hooks Gen."    value={ai.hooksGenerated.toLocaleString()}                           iconBg="#3C50E0" />
+          <KpiCard icon={Bot}      label="Captions"      value={ai.captionsGenerated.toLocaleString()}                        iconBg="#8B5CF6" />
+          <KpiCard icon={Bot}      label="Credits Used"  value={ai.creditsConsumed.toLocaleString()}                          iconBg="#EF4444" />
         </div>
-      </Section>
+      </div>
 
       {/* Charts row */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="User Growth (6 months)" className="lg:col-span-2">
+        <Card title="User Growth" className="lg:col-span-2">
           <UserGrowthChart data={users.growth} />
         </Card>
         <Card title="Free vs Paid">
           <FreePaidPieChart free={users.free} paid={users.paid} />
-          <div className="mt-2 flex justify-around">
+          <div className="mt-3 flex justify-around border-t border-white/[0.06] pt-3">
             <Stat label="Paid" value={`${users.conversionRate}%`} accent />
             <Stat label="Free" value={`${(100 - parseFloat(users.conversionRate)).toFixed(1)}%`} />
           </div>
@@ -209,21 +206,17 @@ export default async function AdminDashboardPage() {
               <Stat label="Renewal"   value={`${subscriptions.renewalRate}%`}   accent />
               <Stat label="Refund"    value={`${subscriptions.refundRate}%`}    />
             </div>
-            <div className="border-t border-white/[0.06] pt-4 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-white/40">Churn rate</span>
-                <span className={subscriptions.churnRate < 5 ? "text-emerald-400" : "text-rose-400"}>
-                  {subscriptions.churnRate}%
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-white/40">Renewal rate</span>
-                <span className="text-emerald-400">{subscriptions.renewalRate}%</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-white/40">Refund rate</span>
-                <span className="text-white/60">{subscriptions.refundRate}%</span>
-              </div>
+            <div className="border-t border-white/[0.06] pt-3 space-y-2">
+              {[
+                { label: "Churn rate",   val: `${subscriptions.churnRate}%`,   ok: subscriptions.churnRate < 5 },
+                { label: "Renewal rate", val: `${subscriptions.renewalRate}%`, ok: true },
+                { label: "Refund rate",  val: `${subscriptions.refundRate}%`,  ok: subscriptions.refundRate < 2 },
+              ].map((r) => (
+                <div key={r.label} className="flex justify-between text-[13px]">
+                  <span className="text-white/40">{r.label}</span>
+                  <span className={r.ok ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>{r.val}</span>
+                </div>
+              ))}
             </div>
           </div>
         </Card>
