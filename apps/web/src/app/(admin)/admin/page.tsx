@@ -145,7 +145,7 @@ export default async function AdminDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Executive Dashboard</h1>
-        <p className="mt-1 text-sm text-white/35">Real-time overview · {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}</p>
+        <p className="mt-1 text-sm text-white/35">Real-time overview &middot; {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}</p>
       </div>
 
       {/* KPI Row 1 — Users */}

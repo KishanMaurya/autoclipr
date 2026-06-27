@@ -34,7 +34,7 @@ export default async function CountriesPage() {
     <div className="space-y-8 pb-12">
       <div>
         <h1 className="text-2xl font-bold text-white">Country Analytics</h1>
-        <p className="mt-1 text-sm text-white/35">User distribution and revenue by geography · estimated</p>
+        <p className="mt-1 text-sm text-white/35">User distribution and revenue by geography &middot; estimated</p>
       </div>
 
       <div className="rounded-xl border border-amber-500/10 bg-amber-500/[0.04] px-4 py-3">
