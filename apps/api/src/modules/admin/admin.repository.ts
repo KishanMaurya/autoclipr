@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 
-function parseAmountPaise(amount: string): number {
-  // "₹4,188.00" → 418800, "Free" → 0
+function parseAmountPaise(amount: string | null | undefined): number {
   if (!amount || amount === 'Free') return 0;
   const num = parseFloat(amount.replace(/[₹$,\s]/g, ''));
   return isNaN(num) ? 0 : Math.round(num * 100);
@@ -17,14 +16,15 @@ export class AdminRepository {
   // ─── Users ───────────────────────────────────────────────────────────────
 
   async getUserCounts() {
-    const [{ count: total }, { count: paid }, { count: today }] = await Promise.all([
+    const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+    const [r1, r2, r3] = await Promise.all([
       this.db.from('profiles').select('*', { count: 'exact', head: true }),
       this.db.from('profiles').select('*', { count: 'exact', head: true })
         .not('subscription_tier', 'in', '("free","starter")'),
       this.db.from('profiles').select('*', { count: 'exact', head: true })
-        .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+        .gte('created_at', today),
     ]);
-    return { total: total ?? 0, paid: paid ?? 0, today: today ?? 0 };
+    return { total: r1.count ?? 0, paid: r2.count ?? 0, today: r3.count ?? 0 };
   }
 
   async getUserGrowthByMonth() {
@@ -38,12 +38,13 @@ export class AdminRepository {
       .order('created_at');
 
     const months: Record<string, { month: string; total: number; paid: number }> = {};
-    (data ?? []).forEach((u) => {
-      const m = new Date(u.created_at).toLocaleString('default', { month: 'short', year: '2-digit' });
+    for (const u of data ?? []) {
+      const m = new Date(u.created_at as string).toLocaleString('default', { month: 'short', year: '2-digit' });
       if (!months[m]) months[m] = { month: m, total: 0, paid: 0 };
       months[m].total++;
-      if (!['free', 'starter'].includes(u.subscription_tier ?? '')) months[m].paid++;
-    });
+      const tier = u.subscription_tier as string | null;
+      if (tier && !['free', 'starter'].includes(tier)) months[m].paid++;
+    }
     return Object.values(months);
   }
 
@@ -65,25 +66,24 @@ export class AdminRepository {
       .eq('status', 'paid');
 
     const transactions = data ?? [];
-    const totalPaise = transactions.reduce((s, t) => s + parseAmountPaise(t.amount), 0);
+    const totalPaise = transactions.reduce((s, t) => s + parseAmountPaise(t.amount as string | null), 0);
 
-    // Monthly transactions (last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const monthly = transactions
-      .filter((t) => t.payment_date >= thirtyDaysAgo)
-      .reduce((s, t) => s + parseAmountPaise(t.amount), 0);
+      .filter((t) => (t.payment_date as string | null) != null && (t.payment_date as string) >= thirtyDaysAgo)
+      .reduce((s, t) => s + parseAmountPaise(t.amount as string | null), 0);
 
-    // Revenue by month (last 6)
     const byMonth: Record<string, number> = {};
     transactions.forEach((t) => {
-      const m = new Date(t.payment_date).toLocaleString('default', { month: 'short', year: '2-digit' });
-      byMonth[m] = (byMonth[m] ?? 0) + parseAmountPaise(t.amount);
+      if (!t.payment_date) return;
+      const m = new Date(t.payment_date as string).toLocaleString('default', { month: 'short', year: '2-digit' });
+      byMonth[m] = (byMonth[m] ?? 0) + parseAmountPaise(t.amount as string | null);
     });
 
-    // Revenue by plan
     const byPlan: Record<string, number> = {};
     transactions.forEach((t) => {
-      byPlan[t.plan_id] = (byPlan[t.plan_id] ?? 0) + parseAmountPaise(t.amount);
+      const plan = (t.plan_id as string | null) ?? 'unknown';
+      byPlan[plan] = (byPlan[plan] ?? 0) + parseAmountPaise(t.amount as string | null);
     });
 
     return { totalPaise, monthlyPaise: monthly, byMonth, byPlan, transactionCount: transactions.length };
@@ -105,12 +105,19 @@ export class AdminRepository {
       .from('user_subscriptions')
       .select('status, plan_id');
 
-    const active = (subs ?? []).filter((s) => s.status === 'active');
-    const monthly = active.filter((s) => s.plan_id?.includes('monthly') || true).length; // approximate
+    const all = subs ?? [];
+    const active = all.filter((s) => s.status === 'active');
     const byPlan: Record<string, number> = {};
-    active.forEach((s) => { byPlan[s.plan_id ?? 'unknown'] = (byPlan[s.plan_id ?? 'unknown'] ?? 0) + 1; });
+    active.forEach((s) => {
+      const plan = (s.plan_id as string | null) ?? 'unknown';
+      byPlan[plan] = (byPlan[plan] ?? 0) + 1;
+    });
 
-    return { active: active.length, cancelled: (subs ?? []).filter((s) => s.status === 'cancelled').length, byPlan };
+    return {
+      active: active.length,
+      cancelled: all.filter((s) => s.status === 'cancelled').length,
+      byPlan,
+    };
   }
 
   // ─── Videos & Clips ──────────────────────────────────────────────────────
@@ -118,27 +125,27 @@ export class AdminRepository {
   async getVideoStats() {
     const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
 
-    const [{ count: total }, { count: todayCount }, { data: sizeData }] = await Promise.all([
+    const [r1, r2, sizeRes] = await Promise.all([
       this.db.from('videos').select('*', { count: 'exact', head: true }),
       this.db.from('videos').select('*', { count: 'exact', head: true }).gte('created_at', today),
       this.db.from('videos').select('file_size_bytes, duration_seconds').not('file_size_bytes', 'is', null),
     ]);
 
-    const totalBytes = (sizeData ?? []).reduce((s, v) => s + (v.file_size_bytes ?? 0), 0);
-    const avgDuration = (sizeData ?? []).reduce((s, v) => s + (v.duration_seconds ?? 0), 0) / Math.max(1, (sizeData ?? []).length);
+    const sizeData = sizeRes.data ?? [];
+    const totalBytes = sizeData.reduce((s, v) => s + ((v.file_size_bytes as number | null) ?? 0), 0);
+    const totalDuration = sizeData.reduce((s, v) => s + ((v.duration_seconds as number | null) ?? 0), 0);
+    const avgDuration = sizeData.length > 0 ? Math.round(totalDuration / sizeData.length) : 0;
 
-    return { total: total ?? 0, today: todayCount ?? 0, totalBytes, avgDurationSecs: Math.round(avgDuration) };
+    return { total: r1.count ?? 0, today: r2.count ?? 0, totalBytes, avgDurationSecs: avgDuration };
   }
 
   async getClipStats() {
     const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
-
-    const [{ count: total }, { count: todayCount }] = await Promise.all([
+    const [r1, r2] = await Promise.all([
       this.db.from('clips').select('*', { count: 'exact', head: true }),
       this.db.from('clips').select('*', { count: 'exact', head: true }).gte('created_at', today),
     ]);
-
-    return { total: total ?? 0, today: todayCount ?? 0 };
+    return { total: r1.count ?? 0, today: r2.count ?? 0 };
   }
 
   // ─── Affiliates ──────────────────────────────────────────────────────────
@@ -151,30 +158,15 @@ export class AdminRepository {
 
     const all = affiliates ?? [];
     const active = all.filter((a) => a.status === 'active');
-    const totalReferrals = all.reduce((s, a) => s + (a.total_referrals ?? 0), 0);
-    const totalRevenuePaise = all.reduce((s, a) => s + (a.total_earnings_paise ?? 0), 0);
+    const totalReferrals = all.reduce((s, a) => s + ((a.total_referrals as number | null) ?? 0), 0);
+    const totalRevenuePaise = all.reduce((s, a) => s + ((a.total_earnings_paise as number | null) ?? 0), 0);
     const top = all.slice(0, 5).map((a) => ({
-      email: a.email ?? a.ref_code,
-      conversions: a.total_conversions ?? 0,
-      earningsPaise: a.total_earnings_paise ?? 0,
+      email: (a.email as string | null) ?? (a.ref_code as string | null) ?? '',
+      conversions: (a.total_conversions as number | null) ?? 0,
+      earningsPaise: (a.total_earnings_paise as number | null) ?? 0,
     }));
 
     return { total: all.length, active: active.length, totalReferrals, totalRevenuePaise, top };
-  }
-
-  // ─── Top Creators ────────────────────────────────────────────────────────
-
-  async getTopCreators(limit = 10) {
-    const { data } = await this.db
-      .from('profiles')
-      .select(`
-        id, email, full_name, avatar_url, subscription_tier,
-        videos:videos(count),
-        clips:clips(count)
-      `)
-      .not('subscription_tier', 'in', '("free","starter")')
-      .limit(limit);
-    return data ?? [];
   }
 
   // ─── Credit usage ────────────────────────────────────────────────────────
@@ -183,9 +175,9 @@ export class AdminRepository {
     const { data } = await this.db
       .from('credit_transactions')
       .select('amount, created_at')
-      .lt('amount', 0); // debits only
+      .lt('amount', 0);
 
-    const totalUsed = (data ?? []).reduce((s, t) => s + Math.abs(t.amount ?? 0), 0);
+    const totalUsed = (data ?? []).reduce((s, t) => s + Math.abs((t.amount as number | null) ?? 0), 0);
     return { totalCreditsUsed: totalUsed, totalTransactions: (data ?? []).length };
   }
 }
