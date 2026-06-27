@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { AdminGuard } from '../../common/guards/admin.guard';
 import { AdminController } from './admin.controller';
 import { AdminRepository } from './admin.repository';
 import { AdminService } from './admin.service';
@@ -7,6 +8,6 @@ import { AdminService } from './admin.service';
 @Module({
   imports: [DatabaseModule],
   controllers: [AdminController],
-  providers: [AdminRepository, AdminService],
+  providers: [AdminRepository, AdminService, AdminGuard],
 })
 export class AdminModule {}
