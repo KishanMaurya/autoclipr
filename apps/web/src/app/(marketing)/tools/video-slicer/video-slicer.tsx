@@ -181,7 +181,7 @@ export function VideoSlicer() {
       };
 
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const ffmpeg = new FFmpeg(); // Worker is created here — patch intercepts it
+      const ffmpeg = new FFmpeg();
       (window as any).Worker = OriginalWorker; // restore immediately after
 
       const { fetchFile } = await import("@ffmpeg/util");
