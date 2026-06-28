@@ -176,7 +176,8 @@ export function VideoSlicer() {
       });
 
       setProgressMsg("Loading FFmpeg engine…");
-      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+      // jsDelivr has proper CORS headers and is more reliable than unpkg for large WASM files
+      const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
       await ffmpeg.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
         wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
@@ -212,8 +213,9 @@ export function VideoSlicer() {
       setProgress(100);
       setProgressMsg("Done!");
     } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Processing failed. Try a different browser.");
+      console.error("[VideoSlicer]", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Processing failed. Try a different browser.");
       setStage("error");
     }
   };
