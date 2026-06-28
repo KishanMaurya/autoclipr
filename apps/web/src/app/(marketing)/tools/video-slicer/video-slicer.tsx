@@ -90,7 +90,7 @@ function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, 
   const isGif = format === "gif"; const hasVideo = !audioOnly; const hasAudio = !muteAudio && !isGif && videoHasAudio;
   const needsFilters = speed !== 1 || fadeIn || fadeOut || resolution !== "original" || isGif || audioOnly || muteAudio || format !== "mp4" || crop !== "original" || rotate !== "none";
   if (!needsFilters && segments.length === 1)
-    return { outName, args: ["-i", inName, "-ss", f3(segments[0].start), "-to", f3(segments[0].end), "-c", "copy", "-avoid_negative_ts", "make_zero", outName] };
+    return { outName, args: ["-y", "-i", inName, "-ss", f3(segments[0].start), "-to", f3(segments[0].end), "-c", "copy", "-avoid_negative_ts", "make_zero", outName] };
 
   const totalDuration = segments.reduce((sum, s) => sum + (s.end - s.start) / speed, 0);
   const parts: string[] = [];
@@ -136,7 +136,7 @@ function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, 
     if (fadeOut) postA.push(`afade=t=out:st=${f3(totalDuration - fadeDuration)}:d=${fadeDuration}`);
     if (postA.length > 0) { parts.push(`${aLabel}${postA.join(",")}[aout]`); aLabel = "[aout]"; }
   }
-  const args: string[] = ["-i", inName, "-filter_complex", parts.join(";")];
+  const args: string[] = ["-y", "-i", inName, "-filter_complex", parts.join(";")];
   if (hasVideo) args.push("-map", vLabel);
   if (hasAudio) args.push("-map", aLabel);
   const crfMap: Record<Quality, string> = { high: "18", medium: "23", compressed: "28" };
@@ -355,7 +355,11 @@ export function VideoSlicer() {
       (window as any).Worker = OriginalWorker;
       const { fetchFile } = await import("@ffmpeg/util");
       ffmpeg.on("progress", ({ progress: p }) => { setProgress(Math.round(p * 100)); setProgressMsg(`Processing… ${Math.round(p * 100)}%`); });
-      ffmpeg.on("log", ({ message }) => { if (message.includes("time=")) setProgressMsg(`Encoding… ${message.split("time=")[1]?.split(" ")[0] ?? ""}`); });
+      const ffmpegLogs: string[] = [];
+      ffmpeg.on("log", ({ message }) => {
+        ffmpegLogs.push(message);
+        if (message.includes("time=")) setProgressMsg(`Encoding… ${message.split("time=")[1]?.split(" ")[0] ?? ""}`);
+      });
       setProgressMsg("Loading FFmpeg engine…");
       const origin = window.location.origin;
       await ffmpeg.load({ coreURL: `${origin}/ffmpeg/ffmpeg-core-umd.js`, wasmURL: `${origin}/ffmpeg/ffmpeg-core-umd.wasm` });
@@ -365,19 +369,28 @@ export function VideoSlicer() {
       setProgressMsg("Processing video…");
       const sorted = [...segments].sort((a, b) => a.start - b.start);
       let { args, outName } = buildFFmpegArgs(inName, sorted, opts, videoHasAudio);
+
+      // Remove stale output file so FFmpeg never sees an existing file even with -y
+      try { await ffmpeg.deleteFile(outName); } catch { /* file may not exist yet, that's fine */ }
+
       let ret = await ffmpeg.exec(args);
 
-      // If FFmpeg failed and we tried to include audio, retry without it
-      // (common cause: video file has no audio track despite browser reporting it does)
+      // If FFmpeg failed and audio was included, retry without it.
+      // Handles videos whose audio track is unreadable or not reported by the browser.
       if (ret !== 0 && videoHasAudio && !opts.muteAudio && !opts.audioOnly && opts.format !== "gif") {
         setProgressMsg("Retrying without audio track…");
+        ffmpegLogs.length = 0;
         const retry = buildFFmpegArgs(inName, sorted, { ...opts, muteAudio: true }, false);
         args = retry.args; outName = retry.outName;
+        try { await ffmpeg.deleteFile(outName); } catch { /* ok */ }
         ret = await ffmpeg.exec(args);
       }
 
       if (ret !== 0) {
-        throw new Error(`FFmpeg failed (exit ${ret}). Try a different format or quality setting.`);
+        // Surface the last few FFmpeg log lines to help diagnose
+        const tail = ffmpegLogs.filter(Boolean).slice(-6).join("\n");
+        console.error("[VideoSlicer] FFmpeg log tail:\n", tail);
+        throw new Error(`FFmpeg failed (exit ${ret}). ${tail ? `Details: ${ffmpegLogs.filter(l => /error|invalid|unable|no such/i.test(l)).slice(-2).join(" | ")}` : "Try a different format or quality setting."}`);
       }
 
       setProgressMsg("Preparing download…");
