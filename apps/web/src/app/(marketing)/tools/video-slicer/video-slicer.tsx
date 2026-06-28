@@ -56,14 +56,30 @@ function buildAtempoChain(speed: number): string {
   return parts.join(",");
 }
 
-function getCropFilter(crop: CropAspect): string | null {
-  // 16:9: if video is wider than 16:9 → crop width; else → crop height
-  if (crop === "16:9") return "crop=if(gt(iw*9,ih*16),ih*16/9,iw):if(gt(iw*9,ih*16),ih,iw*9/16)";
-  // 9:16: if video is more portrait than 9:16 (lt) → crop height; else → crop width
-  if (crop === "9:16") return "crop=if(lt(iw*16,ih*9),iw,ih*9/16):if(lt(iw*16,ih*9),iw*16/9,ih)";
-  // 1:1: take the smaller dimension as both w and h
-  if (crop === "1:1")  return "crop=if(gt(iw,ih),ih,iw):if(gt(iw,ih),ih,iw)";
+// Compute crop dimensions in JS (avoids commas inside FFmpeg filter expressions,
+// which the filter_complex parser misreads as filter-chain separators).
+function computeCropDims(iw: number, ih: number, crop: CropAspect): { w: number; h: number } | null {
+  if (crop === "original" || iw === 0 || ih === 0) return null;
+  const even = (n: number) => Math.max(2, Math.floor(n / 2) * 2);
+  if (crop === "16:9") {
+    return iw * 9 > ih * 16
+      ? { w: even(ih * 16 / 9), h: ih }      // wider than 16:9 → crop width
+      : { w: iw, h: even(iw * 9 / 16) };     // taller than 16:9 → crop height
+  }
+  if (crop === "9:16") {
+    return iw * 16 < ih * 9
+      ? { w: iw, h: even(iw * 16 / 9) }      // more portrait than 9:16 → crop height
+      : { w: even(ih * 9 / 16), h: ih };      // wider → crop width
+  }
+  if (crop === "1:1") {
+    const s = Math.min(iw, ih); return { w: s, h: s };
+  }
   return null;
+}
+
+function getCropFilter(iw: number, ih: number, crop: CropAspect): string | null {
+  const d = computeCropDims(iw, ih, crop);
+  return d ? `crop=${d.w}:${d.h}` : null;
 }
 
 function getRotateFilter(rotate: RotateFlip): string | null {
@@ -86,7 +102,7 @@ function getScaleFilter(resolution: Resolution, crop: CropAspect): string | null
   return `scale=-2:${ss}`;
 }
 
-function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, videoHasAudio = true): { args: string[]; outName: string } {
+function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, videoHasAudio = true, videoW = 0, videoH = 0): { args: string[]; outName: string } {
   const { format, quality, resolution, speed, fadeIn, fadeOut, fadeDuration, muteAudio, audioOnly, crop, rotate } = opts;
   const f3 = (n: number) => n.toFixed(3);
   const outName = `output.${format}`;
@@ -126,7 +142,7 @@ function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, 
   if (hasVideo) {
     const postV: string[] = [];
     const rotF = getRotateFilter(rotate); if (rotF) postV.push(rotF);
-    const cropF = getCropFilter(crop);    if (cropF) postV.push(cropF);
+    const cropF = getCropFilter(videoW, videoH, crop); if (cropF) postV.push(cropF);
     if (isGif) { postV.push("fps=10,scale=480:-1:flags=lanczos"); }
     else { const sf = getScaleFilter(resolution, crop); if (sf) postV.push(sf); }
     if (fadeIn)  postV.push(`fade=t=in:st=0:d=${fadeDuration}`);
@@ -227,6 +243,7 @@ export function VideoSlicer() {
   const [hoverX, setHoverX]             = useState(0);
   const [showOpts, setShowOpts]         = useState(false);
   const [videoHasAudio, setVideoHasAudio] = useState(true);
+  const [videoDims, setVideoDims] = useState({ w: 0, h: 0 });
 
   const [opts, setOpts] = useState<ExportOpts>({
     format: "mp4", quality: "medium", resolution: "original", speed: 1,
@@ -252,6 +269,7 @@ export function VideoSlicer() {
     const v = videoRef.current; if (!v) return;
     const d = v.duration ?? 0; setDuration(d);
     const id = uid(); setSegments([{ id, start: 0, end: d }]); setActiveId(id);
+    setVideoDims({ w: v.videoWidth, h: v.videoHeight });
     // Detect whether the video file has an audio track
     const tracks = (v as any).audioTracks;
     setVideoHasAudio(!tracks || tracks.length > 0);
@@ -371,7 +389,7 @@ export function VideoSlicer() {
       await ffmpeg.writeFile(inName, await fetchFile(file));
       setProgressMsg("Processing video…");
       const sorted = [...segments].sort((a, b) => a.start - b.start);
-      let { args, outName } = buildFFmpegArgs(inName, sorted, opts, videoHasAudio);
+      let { args, outName } = buildFFmpegArgs(inName, sorted, opts, videoHasAudio, videoDims.w, videoDims.h);
 
       // Remove stale output file (even with -y some wasm builds still choke on existing files)
       try { await ffmpeg.deleteFile(outName); } catch { /* file may not exist yet */ }
@@ -383,9 +401,6 @@ export function VideoSlicer() {
       if (ret !== 0 && usedCopyFastPath) {
         setProgressMsg("Retrying with re-encode…");
         ffmpegLogs.length = 0;
-        // Force filter_complex path by injecting a no-op option that bypasses the fast path
-        const retry = buildFFmpegArgs(inName, sorted, { ...opts, fadeIn: false, fadeOut: false, speed: 1, rotate: "none", crop: "original", resolution: "original", muteAudio: false, audioOnly: false, format: opts.format === "mp4" ? "mp4" : opts.format, quality: opts.quality }, videoHasAudio);
-        // Directly build a re-encode command (simple, no filter_complex needed)
         const reArgs = ["-y", "-i", inName,
           "-ss", (sorted[0].start).toFixed(3), "-to", (sorted[0].end).toFixed(3),
           "-c:v", "libx264", "-crf", "23", "-preset", "fast", "-pix_fmt", "yuv420p",
@@ -398,7 +413,7 @@ export function VideoSlicer() {
       if (ret !== 0 && videoHasAudio && !opts.muteAudio && !opts.audioOnly && opts.format !== "gif") {
         setProgressMsg("Retrying without audio track…");
         ffmpegLogs.length = 0;
-        const retry = buildFFmpegArgs(inName, sorted, { ...opts, muteAudio: true }, false);
+        const retry = buildFFmpegArgs(inName, sorted, { ...opts, muteAudio: true }, false, videoDims.w, videoDims.h);
         args = retry.args; outName = retry.outName;
         try { await ffmpeg.deleteFile(outName); } catch { /* ok */ }
         ret = await ffmpeg.exec(args);
