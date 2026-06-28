@@ -2,28 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      // @ffmpeg/ffmpeg's bundled worker does import(coreURL) at runtime.
-      // Webpack converts that to __webpack_require__(url) which can't handle
-      // absolute URLs. This tells webpack to emit native import(url) instead.
-      const existingExternals = Array.isArray(config.externals)
-        ? config.externals
-        : config.externals
-        ? [config.externals]
-        : [];
-      config.externals = [
-        ...existingExternals,
-        ({ request }: { request?: string }, callback: Function) => {
-          if (request && /^https?:\/\//.test(request)) {
-            return callback(null, `promise import(${JSON.stringify(request)})`);
-          }
-          callback();
-        },
-      ];
-    }
-    return config;
-  },
   async headers() {
     return [
       {

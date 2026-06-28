@@ -162,8 +162,13 @@ export function VideoSlicer() {
     setError("");
 
     try {
-      // Dynamic import so ffmpeg.wasm only loads when needed
-      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+      // webpackIgnore: load @ffmpeg/ffmpeg as native ESM from CDN so webpack
+      // never processes it. This means its internal import(coreURL) calls are
+      // handled by the browser natively and can resolve absolute URLs.
+      const { FFmpeg } = await import(
+        /* webpackIgnore: true */
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js"
+      );
       const { fetchFile } = await import("@ffmpeg/util");
 
       const ffmpeg = new FFmpeg();
