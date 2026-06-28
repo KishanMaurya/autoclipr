@@ -165,11 +165,10 @@ export function VideoSlicer() {
       // webpackIgnore: load @ffmpeg/ffmpeg as native ESM from CDN so webpack
       // never processes it. This means its internal import(coreURL) calls are
       // handled by the browser natively and can resolve absolute URLs.
-      // @ts-ignore — CDN URL import, webpackIgnore prevents bundling
-      const { FFmpeg } = await import(
-        /* webpackIgnore: true */
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js"
-      );
+      // Typed as `any` so TS skips module resolution; webpackIgnore keeps it as
+      // a native browser import so its internal import(coreURL) isn't bundled.
+      const ffmpegEsmUrl: any = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
+      const { FFmpeg } = await import(/* webpackIgnore: true */ ffmpegEsmUrl);
       const { fetchFile } = await import("@ffmpeg/util");
 
       const ffmpeg = new FFmpeg();
