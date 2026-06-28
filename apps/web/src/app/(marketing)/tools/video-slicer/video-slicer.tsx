@@ -83,11 +83,11 @@ function getScaleFilter(resolution: Resolution, crop: CropAspect): string | null
   return `scale=-2:${ss}`;
 }
 
-function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts): { args: string[]; outName: string } {
+function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, videoHasAudio = true): { args: string[]; outName: string } {
   const { format, quality, resolution, speed, fadeIn, fadeOut, fadeDuration, muteAudio, audioOnly, crop, rotate } = opts;
   const f3 = (n: number) => n.toFixed(3);
   const outName = `output.${format}`;
-  const isGif = format === "gif"; const hasVideo = !audioOnly; const hasAudio = !muteAudio && !isGif;
+  const isGif = format === "gif"; const hasVideo = !audioOnly; const hasAudio = !muteAudio && !isGif && videoHasAudio;
   const needsFilters = speed !== 1 || fadeIn || fadeOut || resolution !== "original" || isGif || audioOnly || muteAudio || format !== "mp4" || crop !== "original" || rotate !== "none";
   if (!needsFilters && segments.length === 1)
     return { outName, args: ["-i", inName, "-ss", f3(segments[0].start), "-to", f3(segments[0].end), "-c", "copy", "-avoid_negative_ts", "make_zero", outName] };
@@ -223,6 +223,7 @@ export function VideoSlicer() {
   const [hoverTime, setHoverTime]       = useState<number | null>(null);
   const [hoverX, setHoverX]             = useState(0);
   const [showOpts, setShowOpts]         = useState(false);
+  const [videoHasAudio, setVideoHasAudio] = useState(true);
 
   const [opts, setOpts] = useState<ExportOpts>({
     format: "mp4", quality: "medium", resolution: "original", speed: 1,
@@ -239,13 +240,18 @@ export function VideoSlicer() {
   // ── Load ──
   const loadFile = useCallback((f: File) => {
     setFile(f); setStage("ready"); setOutputUrl(""); setError(""); setThumbs([]);
+    setVideoHasAudio(true); // reset; onLoadedMetadata will refine this
     setVideoUrl(URL.createObjectURL(f));
   }, []);
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) loadFile(f); };
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f?.type.startsWith("video/")) loadFile(f); };
   const onLoadedMetadata = () => {
-    const d = videoRef.current?.duration ?? 0; setDuration(d);
+    const v = videoRef.current; if (!v) return;
+    const d = v.duration ?? 0; setDuration(d);
     const id = uid(); setSegments([{ id, start: 0, end: d }]); setActiveId(id);
+    // Detect whether the video file has an audio track
+    const tracks = (v as any).audioTracks;
+    setVideoHasAudio(!tracks || tracks.length > 0);
   };
 
   // ── Thumbnails ──
@@ -357,8 +363,23 @@ export function VideoSlicer() {
       const ext = file.name.split(".").pop() ?? "mp4"; const inName = `input.${ext}`;
       await ffmpeg.writeFile(inName, await fetchFile(file));
       setProgressMsg("Processing video…");
-      const { args, outName } = buildFFmpegArgs(inName, [...segments].sort((a, b) => a.start - b.start), opts);
-      await ffmpeg.exec(args);
+      const sorted = [...segments].sort((a, b) => a.start - b.start);
+      let { args, outName } = buildFFmpegArgs(inName, sorted, opts, videoHasAudio);
+      let ret = await ffmpeg.exec(args);
+
+      // If FFmpeg failed and we tried to include audio, retry without it
+      // (common cause: video file has no audio track despite browser reporting it does)
+      if (ret !== 0 && videoHasAudio && !opts.muteAudio && !opts.audioOnly && opts.format !== "gif") {
+        setProgressMsg("Retrying without audio track…");
+        const retry = buildFFmpegArgs(inName, sorted, { ...opts, muteAudio: true }, false);
+        args = retry.args; outName = retry.outName;
+        ret = await ffmpeg.exec(args);
+      }
+
+      if (ret !== 0) {
+        throw new Error(`FFmpeg failed (exit ${ret}). Try a different format or quality setting.`);
+      }
+
       setProgressMsg("Preparing download…");
       const data = await ffmpeg.readFile(outName);
       const uint8 = data instanceof Uint8Array ? new Uint8Array(data.buffer as ArrayBuffer) : new TextEncoder().encode(data as string);
