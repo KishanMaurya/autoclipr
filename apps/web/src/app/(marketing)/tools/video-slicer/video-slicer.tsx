@@ -164,7 +164,7 @@ export function VideoSlicer() {
     try {
       // Dynamic import so ffmpeg.wasm only loads when needed
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+      const { fetchFile } = await import("@ffmpeg/util");
 
       const ffmpeg = new FFmpeg();
       ffmpeg.on("progress", ({ progress: p }) => {
@@ -176,11 +176,11 @@ export function VideoSlicer() {
       });
 
       setProgressMsg("Loading FFmpeg engine…");
-      // jsDelivr has proper CORS headers and is more reliable than unpkg for large WASM files
-      const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
+      // Self-hosted in /public/ffmpeg — same origin avoids blob URL + webpack module issues
+      const origin = window.location.origin;
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        coreURL: `${origin}/ffmpeg/ffmpeg-core.js`,
+        wasmURL: `${origin}/ffmpeg/ffmpeg-core.wasm`,
       });
 
       setProgressMsg("Reading file…");
@@ -215,6 +215,14 @@ export function VideoSlicer() {
     } catch (err) {
       console.error("[VideoSlicer]", err);
       const msg = err instanceof Error ? err.message : String(err);
+      // Report to New Relic if available (browser agent injected by Next.js layout)
+      if (typeof window !== "undefined" && (window as any).newrelic) {
+        (window as any).newrelic.noticeError(err instanceof Error ? err : new Error(msg), {
+          component: "VideoSlicer",
+          fileType: file?.type ?? "unknown",
+          fileSize: file?.size ?? 0,
+        });
+      }
       setError(msg || "Processing failed. Try a different browser.");
       setStage("error");
     }
