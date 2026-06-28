@@ -57,9 +57,12 @@ function buildAtempoChain(speed: number): string {
 }
 
 function getCropFilter(crop: CropAspect): string | null {
+  // 16:9: if video is wider than 16:9 → crop width; else → crop height
   if (crop === "16:9") return "crop=if(gt(iw*9,ih*16),ih*16/9,iw):if(gt(iw*9,ih*16),ih,iw*9/16)";
-  if (crop === "9:16") return "crop=if(gt(iw*16,ih*9),iw*16/9,iw):if(gt(iw*16,ih*9),ih,iw*16/9)";
-  if (crop === "1:1")  return "crop=min(iw,ih):min(iw,ih)";
+  // 9:16: if video is more portrait than 9:16 (lt) → crop height; else → crop width
+  if (crop === "9:16") return "crop=if(lt(iw*16,ih*9),iw,ih*9/16):if(lt(iw*16,ih*9),iw*16/9,ih)";
+  // 1:1: take the smaller dimension as both w and h
+  if (crop === "1:1")  return "crop=if(gt(iw,ih),ih,iw):if(gt(iw,ih),ih,iw)";
   return null;
 }
 
@@ -143,7 +146,7 @@ function buildFFmpegArgs(inName: string, segments: Segment[], opts: ExportOpts, 
   const webmCrfMap: Record<Quality, string> = { high: "15", medium: "33", compressed: "45" };
   if (isGif) {/* no extra codec */}
   else if (audioOnly) { args.push("-c:a", "aac", "-b:a", "192k"); }
-  else if (format === "mp4") { args.push("-c:v", "libx264", "-crf", crfMap[quality], "-preset", "fast"); if (hasAudio) args.push("-c:a", "aac", "-b:a", "128k"); }
+  else if (format === "mp4") { args.push("-c:v", "libx264", "-crf", crfMap[quality], "-preset", "fast", "-pix_fmt", "yuv420p"); if (hasAudio) args.push("-c:a", "aac", "-b:a", "128k"); }
   else if (format === "webm") { args.push("-c:v", "libvpx-vp9", "-crf", webmCrfMap[quality], "-b:v", "0"); if (hasAudio) args.push("-c:a", "libopus", "-b:a", "128k"); }
   if (!hasAudio) args.push("-an");
   args.push(outName);
@@ -370,13 +373,28 @@ export function VideoSlicer() {
       const sorted = [...segments].sort((a, b) => a.start - b.start);
       let { args, outName } = buildFFmpegArgs(inName, sorted, opts, videoHasAudio);
 
-      // Remove stale output file so FFmpeg never sees an existing file even with -y
-      try { await ffmpeg.deleteFile(outName); } catch { /* file may not exist yet, that's fine */ }
+      // Remove stale output file (even with -y some wasm builds still choke on existing files)
+      try { await ffmpeg.deleteFile(outName); } catch { /* file may not exist yet */ }
 
       let ret = await ffmpeg.exec(args);
 
-      // If FFmpeg failed and audio was included, retry without it.
-      // Handles videos whose audio track is unreadable or not reported by the browser.
+      // Retry 1: fast-path used -c copy but it failed (incompatible container/codec) → force re-encode
+      const usedCopyFastPath = args.includes("-c") && args[args.indexOf("-c") + 1] === "copy";
+      if (ret !== 0 && usedCopyFastPath) {
+        setProgressMsg("Retrying with re-encode…");
+        ffmpegLogs.length = 0;
+        // Force filter_complex path by injecting a no-op option that bypasses the fast path
+        const retry = buildFFmpegArgs(inName, sorted, { ...opts, fadeIn: false, fadeOut: false, speed: 1, rotate: "none", crop: "original", resolution: "original", muteAudio: false, audioOnly: false, format: opts.format === "mp4" ? "mp4" : opts.format, quality: opts.quality }, videoHasAudio);
+        // Directly build a re-encode command (simple, no filter_complex needed)
+        const reArgs = ["-y", "-i", inName,
+          "-ss", (sorted[0].start).toFixed(3), "-to", (sorted[0].end).toFixed(3),
+          "-c:v", "libx264", "-crf", "23", "-preset", "fast", "-pix_fmt", "yuv420p",
+          "-c:a", "aac", "-b:a", "128k", outName];
+        try { await ffmpeg.deleteFile(outName); } catch { /* ok */ }
+        ret = await ffmpeg.exec(reArgs);
+      }
+
+      // Retry 2: if audio caused the failure, strip it
       if (ret !== 0 && videoHasAudio && !opts.muteAudio && !opts.audioOnly && opts.format !== "gif") {
         setProgressMsg("Retrying without audio track…");
         ffmpegLogs.length = 0;
@@ -387,10 +405,13 @@ export function VideoSlicer() {
       }
 
       if (ret !== 0) {
-        // Surface the last few FFmpeg log lines to help diagnose
-        const tail = ffmpegLogs.filter(Boolean).slice(-6).join("\n");
-        console.error("[VideoSlicer] FFmpeg log tail:\n", tail);
-        throw new Error(`FFmpeg failed (exit ${ret}). ${tail ? `Details: ${ffmpegLogs.filter(l => /error|invalid|unable|no such/i.test(l)).slice(-2).join(" | ")}` : "Try a different format or quality setting."}`);
+        const errLines = ffmpegLogs.filter(l => /error|invalid|unable|no such/i.test(l)).slice(-3);
+        console.error("[VideoSlicer] FFmpeg failed. Log tail:\n", ffmpegLogs.slice(-10).join("\n"));
+        throw new Error(
+          errLines.length
+            ? `Processing failed: ${errLines.join(" | ")}`
+            : "Processing failed. Try a different format or quality setting."
+        );
       }
 
       setProgressMsg("Preparing download…");
