@@ -173,7 +173,8 @@ export function VideoSlicer() {
         constructor(url: string | URL, opts?: WorkerOptions) {
           const s = url.toString();
           if (s.includes("ffmpeg") || s.includes("worker")) {
-            super(`${window.location.origin}/ffmpeg/worker.js`, { ...opts, type: "module" });
+            // Classic worker — importScripts(coreURL) works and webpack can't intercept it
+            super(`${window.location.origin}/ffmpeg/ffmpeg-worker.js`);
           } else {
             super(url, opts);
           }
