@@ -165,13 +165,27 @@ export function VideoSlicer() {
       // webpackIgnore: load @ffmpeg/ffmpeg as native ESM from CDN so webpack
       // never processes it. This means its internal import(coreURL) calls are
       // handled by the browser natively and can resolve absolute URLs.
-      // Typed as `any` so TS skips module resolution; webpackIgnore keeps it as
-      // a native browser import so its internal import(coreURL) isn't bundled.
-      const ffmpegEsmUrl: any = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
-      const { FFmpeg } = await import(/* webpackIgnore: true */ ffmpegEsmUrl);
+      // Monkey-patch Worker to redirect ffmpeg's internal worker to our
+      // self-hosted copy — COEP blocks cross-origin workers but same-origin
+      // blob/path workers are fine. We restore the original after construction.
+      const OriginalWorker = window.Worker;
+      (window as any).Worker = class extends OriginalWorker {
+        constructor(url: string | URL, opts?: WorkerOptions) {
+          const s = url.toString();
+          if (s.includes("ffmpeg") || s.includes("worker")) {
+            super(`${window.location.origin}/ffmpeg/worker.js`, { ...opts, type: "module" });
+          } else {
+            super(url, opts);
+          }
+        }
+      };
+
+      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+      const ffmpeg = new FFmpeg(); // Worker is created here — patch intercepts it
+      (window as any).Worker = OriginalWorker; // restore immediately after
+
       const { fetchFile } = await import("@ffmpeg/util");
 
-      const ffmpeg = new FFmpeg();
       ffmpeg.on("progress", ({ progress: p }) => {
         setProgress(Math.round(p * 100));
         setProgressMsg(`Processing… ${Math.round(p * 100)}%`);
