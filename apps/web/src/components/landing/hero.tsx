@@ -133,10 +133,13 @@ export function Hero() {
                       </div>
 
                       {/* YouTube Short iframe */}
+                      {/* credentialless attr needed for COEP credentialless policy */}
                       <iframe
                         src={`https://www.youtube.com/embed/${clip.id}?autoplay=1&mute=1&loop=1&playlist=${clip.id}&controls=0&modestbranding=1&rel=0&showinfo=0`}
                         allow="autoplay; encrypted-media"
                         allowFullScreen
+                        // @ts-expect-error credentialless is a newer attr not yet in React types
+                        credentialless=""
                         className="absolute inset-0 h-full w-full scale-[1.35] rounded-2xl"
                         style={{ border: "none", pointerEvents: "none" }}
                       />

@@ -48,6 +48,8 @@ function VideoModal({ tutorial, onClose }: { tutorial: Tutorial; onClose: () => 
               src={`https://www.youtube.com/embed/${tutorial.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
               allow="autoplay; fullscreen; encrypted-media"
               allowFullScreen
+              // @ts-expect-error credentialless is a newer attr not yet in React types
+              credentialless=""
               className="h-full w-full"
               style={{ border: "none" }}
             />
