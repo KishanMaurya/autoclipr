@@ -199,8 +199,8 @@ export function VideoSlicer() {
       // Self-hosted in /public/ffmpeg — same origin avoids blob URL + webpack module issues
       const origin = window.location.origin;
       await ffmpeg.load({
-        coreURL: `${origin}/ffmpeg/ffmpeg-core.js`,
-        wasmURL: `${origin}/ffmpeg/ffmpeg-core.wasm`,
+        coreURL: `${origin}/ffmpeg/ffmpeg-core-umd.js`,
+        wasmURL: `${origin}/ffmpeg/ffmpeg-core-umd.wasm`,
       });
 
       setProgressMsg("Reading file…");
