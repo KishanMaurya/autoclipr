@@ -8,6 +8,14 @@ import { createClient } from "@/lib/supabase/client";
 export function AnnouncementBanner() {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setLoggedIn(true);
+    });
+  }, []);
 
   async function handleGoogleSignIn() {
     const supabase = createClient();
@@ -34,7 +42,7 @@ export function AnnouncementBanner() {
     return () => window.removeEventListener("scroll", check);
   }, []);
 
-  if (dismissed) return null;
+  if (dismissed || loggedIn) return null;
 
   return (
     <div
