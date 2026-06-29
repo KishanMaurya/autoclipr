@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Upload, Download, FileVideo, Zap, ShieldCheck, Globe,
   RefreshCw, ChevronDown, CheckCircle, AlertCircle, Loader2,
-  Settings2, Music, Image, Film, Volume2, VolumeX, Play,
+  Settings2, Music, ImageIcon, Film, Volume2, VolumeX, Play,
   ArrowRight, X, Info,
 } from "lucide-react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
@@ -166,7 +166,7 @@ function fmtTime(s: number) {
 
 function categoryIcon(cat: FormatOption["category"]) {
   if (cat === "audio") return <Music className="h-3.5 w-3.5" />;
-  if (cat === "image") return <Image className="h-3.5 w-3.5" />;
+  if (cat === "image") return <ImageIcon className="h-3.5 w-3.5" />;
   return <Film className="h-3.5 w-3.5" />;
 }
 
@@ -638,7 +638,8 @@ export function FormatConverter() {
                 {(isVideoOut || isImageOut) && !isAudioOut && (
                   <div className="overflow-hidden rounded-xl border border-white/[0.06]">
                     {isImageOut
-                      ? <img src={outputUrl} alt="output" className="w-full" />
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      ? <img src={outputUrl} alt="Converted GIF preview" className="w-full" />
                       : <video src={outputUrl} controls className="w-full max-h-72 bg-black" />
                     }
                   </div>

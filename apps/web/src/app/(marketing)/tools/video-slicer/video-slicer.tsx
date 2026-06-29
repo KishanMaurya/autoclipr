@@ -586,6 +586,7 @@ export function VideoSlicer() {
                       style={{ left: hoverX, bottom: "calc(100% + 8px)", transform: "translateX(-50%)" }}
                     >
                       <div className="overflow-hidden rounded-lg ring-1 ring-white/20 shadow-2xl shadow-black/80">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={hoverThumb.url} className="h-[54px] w-24 object-cover" alt="" />
                       </div>
                       <span className="rounded-md bg-black/90 px-2 py-0.5 font-mono text-[10px] font-semibold text-white/80 shadow-lg">
@@ -606,6 +607,7 @@ export function VideoSlicer() {
                     {thumbs.length > 0 && (
                       <div className="absolute inset-0 flex pointer-events-none">
                         {thumbs.map((th, i) => (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img key={i} src={th.url} className="h-full flex-1 object-cover opacity-[0.32]" alt="" draggable={false} />
                         ))}
                         {/* vignette overlay */}
