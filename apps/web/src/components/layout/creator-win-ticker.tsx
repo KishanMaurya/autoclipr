@@ -38,7 +38,7 @@ export function CreatorWinTicker() {
   return (
     <div className="flex justify-center py-12">
       <Link
-        href="/register"
+        href="/top-creators"
         className="group flex items-center gap-0 rounded-full border border-white/[0.08] bg-[#0d0d18]/80 px-1 py-1 pr-3 text-xs backdrop-blur-sm transition hover:border-white/20"
       >
         {/* Trophy badge */}
