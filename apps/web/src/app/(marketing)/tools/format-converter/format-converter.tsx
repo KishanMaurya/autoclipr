@@ -288,7 +288,7 @@ export function FormatConverter() {
       }
 
       const data = await ff.readFile(outName) as Uint8Array;
-      const blob = new Blob([data], { type: FORMATS.find(f => f.ext === opts.outputFormat)?.mime ?? "video/mp4" });
+      const blob = new Blob([data.buffer as ArrayBuffer], { type: FORMATS.find(f => f.ext === opts.outputFormat)?.mime ?? "video/mp4" });
       setOutputUrl(URL.createObjectURL(blob));
       setOutputSize(blob.size);
       setConvertTime(Math.round((Date.now() - startRef.current) / 1000));
