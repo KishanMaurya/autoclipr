@@ -21,8 +21,9 @@ export class DodoService {
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('DODO_API_KEY') ?? '';
-    const isTest = !apiKey.startsWith('live_');
-    this.client = new DodoPayments({ bearerToken: apiKey, environment: isTest ? 'test_mode' : 'live_mode' });
+    const isLive = this.config.get<string>('DODO_LIVE_MODE') === 'true';
+    this.client = new DodoPayments({ bearerToken: apiKey, environment: isLive ? 'live_mode' : 'test_mode' });
+    this.logger.log(`Dodo Payments running in ${isLive ? 'LIVE' : 'TEST'} mode`);
   }
 
   async createCheckoutUrl(opts: {
