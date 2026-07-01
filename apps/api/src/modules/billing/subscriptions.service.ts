@@ -45,6 +45,7 @@ export class SubscriptionsService {
 
   // Called on payment success redirect as a reliable fallback to webhooks
   async activatePlanForUser(userId: string, planId: string, userEmail = '', transactionId = '', billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<void> {
+    this.logger.log(`activatePlanForUser: userId=${userId} email=${userEmail} plan=${planId} billing=${billingPeriod} txId=${transactionId}`);
     const tier = PLAN_TIER[planId];
     if (!tier) throw new Error(`Unknown plan: ${planId}`);
 
@@ -66,7 +67,7 @@ export class SubscriptionsService {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
-    await this.supabase.getClient()
+    const { error: profileErr } = await this.supabase.getClient()
       .from('profiles')
       .update({
         subscription_tier: tier,
@@ -74,6 +75,8 @@ export class SubscriptionsService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
+    if (profileErr) this.logger.error(`Profile update failed: ${profileErr.message}`);
+    else this.logger.log(`Profile updated: userId=${userId} tier=${tier} credits=${PLAN_CREDITS[planId]}`);
 
     // Compute amount based on plan + billing period
     const PLAN_AMOUNTS: Record<string, { monthly: string; yearly: string }> = {
@@ -202,7 +205,8 @@ export class SubscriptionsService {
       } catch (e: any) {
         this.logger.warn(`Affiliate commission error: ${e.message}`);
       }
-      await this.sendSubscriptionEmails(userId, planId, subscriptionId, data);
+      const webhookEmail: string = data.customer?.email ?? '';
+      await this.sendSubscriptionEmails(userId, planId, subscriptionId, data, webhookEmail);
     }
   }
 

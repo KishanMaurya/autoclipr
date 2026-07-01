@@ -129,6 +129,7 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: ActivatePlanDto,
   ) {
+    this.subscriptions['logger']?.log(`[activate] userId=${user.sub} email=${user.email} planId=${dto.planId} billingPeriod=${dto.billingPeriod} txId=${dto.transactionId}`);
     await this.subscriptions.activatePlanForUser(user.sub, dto.planId, user.email, dto.transactionId, dto.billingPeriod ?? 'yearly');
     return ApiResponse.ok({ activated: true });
   }
