@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   Scissors, FileVideo, Maximize2, FileArchive, ImageIcon,
   Music, Film, Info, Captions, Type, ArrowRight, Zap,
-  ShieldCheck, Globe,
+  ShieldCheck, Globe, Crop,
 } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 
@@ -262,6 +262,37 @@ export default function ToolsPage() {
           </div>
         </Link>
 
+        {/* ── Aspect Ratio Converter hero (third featured) ── */}
+        <Link
+          href={TOOLS[2].href}
+          className="group relative mb-6 flex items-center gap-6 overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent p-7 transition-all duration-300 hover:border-orange-500/30 hover:shadow-[0_0_60px_-15px_rgba(249,115,22,0.2)] sm:p-8"
+        >
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl transition-all duration-500 group-hover:bg-orange-500/20" />
+
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/20 transition-all group-hover:scale-110 group-hover:bg-orange-500/30">
+            <Crop className="h-8 w-8" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <p className="text-xl font-bold text-white">{TOOLS[2].label}</p>
+              <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-orange-400">
+                New
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-white/50">{TOOLS[2].desc}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["16:9", "9:16", "1:1", "4:5", "21:9", "Custom", "Crop · Pad · Stretch"].map(t => (
+                <span key={t} className="rounded-md bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/40 border border-white/[0.06]">{t}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden shrink-0 sm:flex items-center gap-1.5 text-sm font-semibold text-orange-400 group-hover:gap-3 transition-all">
+            Open tool <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+
         {/* ── Section label ── */}
         <div className="mb-4 flex items-center gap-3">
           <div className="h-px flex-1 bg-white/[0.05]" />
@@ -271,7 +302,7 @@ export default function ToolsPage() {
 
         {/* ── Tool grid ── */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {TOOLS.slice(2).map((tool) => {
+          {TOOLS.slice(3).map((tool) => {
             const Icon = tool.icon;
             return (
               <Link
