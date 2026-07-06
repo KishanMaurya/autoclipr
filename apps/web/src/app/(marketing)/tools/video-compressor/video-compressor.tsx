@@ -71,7 +71,7 @@ const PRESETS = [
   { label: "WhatsApp",    crf: 36, desc: "Under 16 MB for WhatsApp" },
 ];
 
-const RESOLUTIONS: { label: string; value: string; w?: number; h?: number }[] = [
+const RESOLUTIONS: { label: string; value: CompressOpts["resolution"]; w?: number; h?: number }[] = [
   { label: "Original",  value: "original" },
   { label: "1080p",     value: "1080p", w: 1920, h: 1080 },
   { label: "720p",      value: "720p",  w: 1280, h: 720  },
