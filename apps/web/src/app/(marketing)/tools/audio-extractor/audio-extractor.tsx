@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Upload, Download, FileVideo, Zap, ShieldCheck, Globe,
   Loader2, AlertCircle, X, Settings2, ChevronDown, Music,
-  Volume2, Mic, FileAudio, Waveform, RefreshCw, Info,
+  Volume2, Mic, FileAudio, AudioLines, RefreshCw, Info,
   Scissors, VolumeX, Check, Copy,
 } from "lucide-react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
@@ -623,7 +623,7 @@ export function AudioExtractor() {
           {[
             { icon: <Volume2   className="h-5 w-5 text-cyan-400"    />, title: "Volume Normalize",  body: "Loudness-normalize your audio to broadcast standard -16 LUFS in one click." },
             { icon: <Scissors  className="h-5 w-5 text-teal-400"    />, title: "Trim & Fade",       body: "Set in/out points before extraction. Add fade-in / fade-out smoothly." },
-            { icon: <Waveform  className="h-5 w-5 text-emerald-400" />, title: "Lossless Support",  body: "Extract as WAV or FLAC for perfect quality — ideal for music production and editing." },
+            { icon: <AudioLines  className="h-5 w-5 text-emerald-400" />, title: "Lossless Support",  body: "Extract as WAV or FLAC for perfect quality — ideal for music production and editing." },
           ].map(c => (
             <div key={c.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04]">

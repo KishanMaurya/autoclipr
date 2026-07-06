@@ -179,42 +179,40 @@ export function ThumbnailExtractor() {
     return ff;
   }, []);
 
-  // ── File pick ──
-  const pickFile = async (f: File) => {
+  // ── File pick (shared logic) ──
+  const handleFile = useCallback((f: File) => {
     setFile(f);
     setFrames([]); setSelectedIds(new Set()); setError("");
-
     const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
-
     if (NON_NATIVE.has(ext)) {
       setConvertMsg(`Converting ${ext.toUpperCase()} for browser playback…`);
-      try {
-        const ff = await loadFFmpeg();
-        const inName  = `input.${ext}`;
-        const outName = "playable.mp4";
-        await ff.writeFile(inName, await fetchFile(f));
-        const ret = await ff.exec(["-y", "-i", inName, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-c:a", "aac", "-movflags", "+faststart", outName]);
-        if (ret !== 0) throw new Error("Could not convert this file for browser playback.");
-        const data = await ff.readFile(outName) as Uint8Array;
-        const blob = new Blob([data.buffer as ArrayBuffer], { type: "video/mp4" });
-        setVideoUrl(URL.createObjectURL(blob));
-        try { await ff.deleteFile(inName); await ff.deleteFile(outName); } catch { /* ok */ }
-      } catch (e: any) {
-        setError(e?.message ?? "Could not open this video format.");
-        setStage("error"); setConvertMsg(""); return;
-      }
-      setConvertMsg("");
+      loadFFmpeg().then(async ff => {
+        try {
+          const inName = `input.${ext}`; const outName = "playable.mp4";
+          await ff.writeFile(inName, await fetchFile(f));
+          const ret = await ff.exec(["-y", "-i", inName, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-c:a", "aac", "-movflags", "+faststart", outName]);
+          if (ret !== 0) throw new Error("Could not convert this file for browser playback.");
+          const data = await ff.readFile(outName) as Uint8Array;
+          const blob = new Blob([data.buffer as ArrayBuffer], { type: "video/mp4" });
+          setVideoUrl(URL.createObjectURL(blob));
+          try { await ff.deleteFile(inName); await ff.deleteFile(outName); } catch { /* ok */ }
+          setConvertMsg(""); setStage("ready");
+        } catch (e: any) {
+          setError(e?.message ?? "Could not open this video format.");
+          setStage("error"); setConvertMsg("");
+        }
+      });
     } else {
       setVideoUrl(URL.createObjectURL(f));
+      setStage("ready");
     }
-
-    setStage("ready");
-  };
+  }, [loadFFmpeg]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragging(false);
-    const f = e.dataTransfer.files[0]; if (f) pickFile(f);
-  }, []);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  }, [handleFile]);
 
   const onMeta = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const v = e.currentTarget;
@@ -428,7 +426,7 @@ export function ThumbnailExtractor() {
               </>
             )}
             <input ref={fileRef} type="file" accept={ACCEPT} className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) pickFile(f); }} />
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           </div>
         )}
 
