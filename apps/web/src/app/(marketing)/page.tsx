@@ -22,6 +22,7 @@ import { Stats } from "@/components/landing/stats";
 import { PlatformsShowcase } from "@/components/landing/platforms-showcase";
 import { CreatorsMarquee } from "@/components/landing/creators-marquee";
 import { CreatorWinTicker } from "@/components/layout/creator-win-ticker";
+import { FreeTools } from "@/components/landing/free-tools";
 
 export default function HomePage() {
   return (
@@ -35,6 +36,7 @@ export default function HomePage() {
       <Stats />
       <Features />
       <HowItWorks />
+      <FreeTools />
       <PlatformsShowcase />
       <Comparison />
       <Testimonials />
