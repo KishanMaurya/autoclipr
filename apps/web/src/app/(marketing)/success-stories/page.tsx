@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { TrendingUp, Zap } from "lucide-react";
 import {
   StoriesGrid,
@@ -9,10 +10,17 @@ import {
   CtaSection,
 } from "./client";
 
-export const metadata: Metadata = {
-  title: "Success Stories — AutoClipr",
-  description: "Real results from creators using AutoClipr to turn long-form videos into viral short-form content.",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Success Stories — Real Creator Results with AutoClipr",
+  description:
+    "Real results from creators using AutoClipr to turn long-form YouTube videos into viral TikToks, Reels, and Shorts. See subscriber growth, views, and earnings.",
+  path: "/success-stories",
+  keywords: [
+    "autoclipr success stories", "creator results", "youtube shorts success",
+    "tiktok growth", "video repurposing results", "content creator case studies",
+    "short form video growth",
+  ],
+});
 
 export default function SuccessStoriesPage() {
   return (

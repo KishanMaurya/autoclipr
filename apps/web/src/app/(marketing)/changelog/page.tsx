@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Rocket, Star, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ChangelogClient } from "./client";
 import { RELEASES } from "./data";
 
-export const metadata: Metadata = {
-  title: "Changelog — AutoClipr",
-  description: "What's new in AutoClipr — latest features, improvements, and bug fixes.",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Changelog — Latest Features & Updates",
+  description:
+    "See what's new in AutoClipr — new AI features, video tool improvements, caption updates, and bug fixes. Updated regularly.",
+  path: "/changelog",
+  keywords: [
+    "autoclipr changelog", "autoclipr updates", "new features", "release notes",
+    "ai video clipping updates", "product changelog",
+  ],
+});
 
 export default function ChangelogPage() {
   return (

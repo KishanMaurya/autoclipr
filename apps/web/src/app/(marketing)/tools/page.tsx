@@ -6,11 +6,18 @@ import {
   ShieldCheck, Globe, Crop,
 } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Free Video Tools",
-  description: "Free online video tools — slicer, compressor, format converter, audio extractor, caption generator and more.",
+  title: "Free Online Video Tools — No Upload, 100% Private",
+  description:
+    "Free browser-based video tools powered by FFmpeg. Video slicer, compressor, format converter, audio extractor, caption generator, GIF maker, thumbnail extractor and more. No upload required.",
   path: "/tools",
+  keywords: [
+    "free video tools", "online video editor", "browser video tools",
+    "no upload video tools", "ffmpeg online", "free video converter",
+    "free video compressor", "caption generator", "gif maker", "audio extractor",
+  ],
 });
 
 const TOOLS = [
@@ -154,6 +161,27 @@ const STATS = [
 
 export default function ToolsPage() {
   return (
+    <>
+    <JsonLd data={{
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Free Online Video Tools by AutoClipr",
+      description: "Browser-based video tools — no upload, 100% private, powered by FFmpeg.",
+      url: "https://autoclipr.com/tools",
+      numberOfItems: 10,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Video Slicer",           url: "https://autoclipr.com/tools/video-slicer" },
+        { "@type": "ListItem", position: 2, name: "Format Converter",       url: "https://autoclipr.com/tools/format-converter" },
+        { "@type": "ListItem", position: 3, name: "Aspect Ratio Converter", url: "https://autoclipr.com/tools/aspect-ratio-converter" },
+        { "@type": "ListItem", position: 4, name: "Audio Extractor",        url: "https://autoclipr.com/tools/audio-extractor" },
+        { "@type": "ListItem", position: 5, name: "Caption Generator",      url: "https://autoclipr.com/tools/caption-generator" },
+        { "@type": "ListItem", position: 6, name: "Caption Templates",      url: "https://autoclipr.com/tools/caption-templates" },
+        { "@type": "ListItem", position: 7, name: "Video Compressor",       url: "https://autoclipr.com/tools/video-compressor" },
+        { "@type": "ListItem", position: 8, name: "Thumbnail Extractor",    url: "https://autoclipr.com/tools/thumbnail-extractor" },
+        { "@type": "ListItem", position: 9, name: "Video Metadata Viewer",  url: "https://autoclipr.com/tools/video-metadata" },
+        { "@type": "ListItem", position: 10, name: "GIF Generator",         url: "https://autoclipr.com/tools/gif-generator" },
+      ],
+    }} />
     <div className="relative min-h-screen bg-[#07080f]">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -353,5 +381,6 @@ export default function ToolsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

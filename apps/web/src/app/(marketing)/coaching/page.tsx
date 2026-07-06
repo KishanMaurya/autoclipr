@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Construction, ArrowLeft } from "lucide-react";
 
-export const metadata: Metadata = { title: "Coaching — AutoClipr" };
+export const metadata: Metadata = pageMetadata({
+  title: "1-on-1 Creator Coaching — Grow Faster with AutoClipr",
+  description:
+    "Get personalised 1-on-1 coaching to grow your YouTube, TikTok, and Reels channels faster. Expert guidance on short-form content strategy, editing, and monetisation. Coming soon.",
+  path: "/coaching",
+  keywords: [
+    "creator coaching", "youtube coaching", "tiktok growth coaching",
+    "short form video coaching", "content creator mentorship", "youtube shorts coach",
+  ],
+});
 
 export default function CoachingPage() {
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { DollarSign, Users, RefreshCw, BarChart3, Gift, Headphones, Star, TrendingUp, Zap, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { apiFetch } from "@/lib/api";
@@ -10,10 +11,16 @@ import {
   CopyLink,
 } from "./client";
 
-export const metadata: Metadata = {
-  title: "Affiliate Program — AutoClipr",
-  description: "Earn 30% recurring commission for every creator you refer to AutoClipr. No cap on earnings.",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Affiliate Program — Earn 30% Recurring Commission",
+  description:
+    "Earn 30–40% recurring commission for every creator you refer to AutoClipr. 90-day cookie, real-time dashboard, no cap on earnings. Join free.",
+  path: "/affiliate",
+  keywords: [
+    "autoclipr affiliate", "video tool affiliate program", "recurring commission affiliate",
+    "creator affiliate program", "saas affiliate", "refer and earn", "affiliate marketing",
+  ],
+});
 
 const PERKS = [
   { icon: DollarSign, title: "30–40% recurring", desc: "Earn commission every month for as long as your referral stays subscribed.", color: "from-emerald-500 to-teal-400" },

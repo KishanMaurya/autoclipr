@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL, OG_IMAGE_PATH } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Video, Calendar, Globe, BadgeCheck, TrendingUp, Eye, Users, DollarSign } from "lucide-react";
@@ -19,7 +20,32 @@ type Props = { params: Promise<{ channel: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { channel } = await params;
   const name = decodeURIComponent(channel).replace(/-/g, " ");
-  return { title: `${name} — YouTube Stats · AutoClipr` };
+  const title = `${name} — YouTube Subscribers, Views & Earnings`;
+  const description = `Live YouTube stats for ${name}: subscriber count, total views, estimated earnings, top videos and growth charts. Updated daily.`;
+  const url = `${SITE_URL}/top-creators/${channel}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    keywords: [
+      `${name} youtube stats`, `${name} subscribers`, `${name} earnings`,
+      "youtube channel stats", "top youtube creators", "youtube analytics",
+    ],
+    openGraph: {
+      type: "website",
+      url,
+      title: `${title} | AutoClipr`,
+      description,
+      siteName: "AutoClipr",
+      images: [{ url: OG_IMAGE_PATH, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | AutoClipr`,
+      description,
+      images: [OG_IMAGE_PATH],
+    },
+  };
 }
 
 export default async function ChannelPage({ params }: Props) {
