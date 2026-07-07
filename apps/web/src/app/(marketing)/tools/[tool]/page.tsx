@@ -1,17 +1,45 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Construction, ArrowLeft } from "lucide-react";
+import { PRIVATE_ROBOTS } from "@/lib/seo";
+
+// All tools that now have their own dedicated pages — redirect any catch-all hit to them
+const LIVE_TOOLS: Record<string, string> = {
+  "video-slicer":            "/tools/video-slicer",
+  "format-converter":        "/tools/format-converter",
+  "aspect-ratio-converter":  "/tools/aspect-ratio-converter",
+  "audio-extractor":         "/tools/audio-extractor",
+  "caption-generator":       "/tools/caption-generator",
+  "caption-templates":       "/tools/caption-templates",
+  "video-compressor":        "/tools/video-compressor",
+  "thumbnail-extractor":     "/tools/thumbnail-extractor",
+  "video-metadata":          "/tools/video-metadata",
+  "gif-generator":           "/tools/gif-generator",
+};
 
 type Props = { params: Promise<{ tool: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tool } = await params;
+  // If it's a live tool, this page will redirect — metadata doesn't matter
+  if (LIVE_TOOLS[tool]) return {};
   const name = tool.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  return { title: `${name} — Free Tool` };
+  return {
+    title: `${name} — Coming Soon | AutoClipr`,
+    description: `${name} is coming soon to AutoClipr. Check back shortly.`,
+    // noindex: catch-all "coming soon" pages are thin content — don't index them
+    robots: PRIVATE_ROBOTS,
+  };
 }
 
 export default async function ToolPage({ params }: Props) {
   const { tool } = await params;
+
+  // Permanent redirect to the dedicated page if it now exists
+  const livePath = LIVE_TOOLS[tool];
+  if (livePath) redirect(livePath);
+
   const name = tool.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
   return (

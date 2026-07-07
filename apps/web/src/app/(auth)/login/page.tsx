@@ -4,7 +4,9 @@ import { ArrowLeft, Scissors } from "lucide-react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { PageBackground } from "@/components/ui/page-background";
 
-export const metadata = { title: "Log in" };
+import type { Metadata } from "next";
+import { PRIVATE_ROBOTS } from "@/lib/seo";
+export const metadata: Metadata = { title: "Log in — AutoClipr", robots: PRIVATE_ROBOTS };
 
 export default function LoginPage() {
   return (

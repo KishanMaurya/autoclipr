@@ -6,7 +6,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
+        allow: "/",
         disallow: [
+          "/admin",          // admin panel — auth-gated, never index
           "/dashboard",
           "/create",
           "/upload",
@@ -16,7 +18,9 @@ export default function robots(): MetadataRoute.Robots {
           "/settings",
           "/billing",
           "/setup",
-          "/auth",
+          "/login",          // utility auth pages — noindex via metadata too
+          "/register",
+          "/auth",           // supabase auth callbacks
           "/api",
         ],
       },
