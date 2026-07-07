@@ -4,10 +4,16 @@ import { HomePageJsonLd } from "@/components/seo/json-ld";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "AI Video Clipping for Viral Shorts",
+  title: "Auto Clip Videos — AI Clipper for Viral Shorts",
   description:
-    "Paste a YouTube link or upload a video. AutoClipr finds viral moments, adds captions, and exports TikTok, Reels, and Shorts — in minutes.",
+    "AutoClipr is your AI auto clipper. Paste a YouTube link or upload a video — it finds viral moments, adds captions, and exports TikTok, Reels, and Shorts in minutes. Free to start.",
   path: "/",
+  keywords: [
+    "auto clip", "auto clipper", "autoclip", "automatic video clipping",
+    "ai video clipper", "auto clips generator", "automatic clipping",
+    "clipper ai", "youtube to shorts", "viral clip maker",
+    "tiktok clip generator", "instagram reels maker",
+  ],
 });
 import { Features } from "@/components/landing/features";
 import { UrlToShorts } from "@/components/landing/url-to-shorts";

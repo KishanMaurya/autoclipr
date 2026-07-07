@@ -96,6 +96,53 @@ export function LandingPageJsonLd({ page }: { page: LandingPage }) {
   return <JsonLd data={faq ? [webPage, faq] : webPage} />;
 }
 
+type ToolFaq = { q: string; a: string };
+
+type ToolJsonLdProps = {
+  name: string;
+  description: string;
+  path: string;
+  faqs: ToolFaq[];
+};
+
+export function ToolJsonLd({ name, description, path, faqs }: ToolJsonLdProps) {
+  const url = `${SITE_URL}${path}`;
+
+  const webApp = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name,
+    description,
+    url,
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Web",
+    browserRequirements: "Requires a modern browser with WebAssembly support",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    creator: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    featureList: description,
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
+  return <JsonLd data={[webApp, faqSchema]} />;
+}
+
 export function BlogPostJsonLd({ post, url }: { post: BlogPost; url: string }) {
   const article = {
     "@context": "https://schema.org",
