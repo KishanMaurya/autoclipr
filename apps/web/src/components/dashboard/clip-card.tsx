@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Flame, Scissors, Share2, Trash2 } from "lucide-react";
+import { Download, Flame, Play, Scissors, Share2, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export function ClipCard({
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const durationSec =
     clip.duration_seconds ??
@@ -107,6 +108,20 @@ export function ClipCard({
             {viralScore}/100
           </span>
         )}
+
+        {/* Play button — only when clip is ready and has a playable URL */}
+        {canDownload && (
+          <button
+            type="button"
+            aria-label={`Play ${clip.title}`}
+            onClick={() => setPreviewOpen(true)}
+            className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 hover:opacity-100"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm ring-2 ring-white/30 transition hover:scale-105 hover:bg-black/75">
+              <Play className="h-6 w-6 translate-x-0.5 fill-white text-white" />
+            </span>
+          </button>
+        )}
       </div>
 
       <CardContent className="space-y-3 p-4">
@@ -160,6 +175,39 @@ export function ClipCard({
         )}
       </CardContent>
       <PostClipModal clip={clip} open={postOpen} onClose={() => setPostOpen(false)} />
+
+      {/* Video preview modal */}
+      {previewOpen && clip.download_url && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          onClick={() => setPreviewOpen(false)}
+        >
+          <div
+            className="relative flex max-h-[90vh] w-full max-w-xs flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close preview"
+              onClick={() => setPreviewOpen(false)}
+              className="absolute -right-2 -top-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={clip.download_url}
+              controls
+              autoPlay
+              playsInline
+              className="max-h-[85vh] w-full rounded-2xl bg-black"
+            />
+            <p className="mt-3 truncate text-center text-sm font-medium text-white/80">
+              {clip.title}
+            </p>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
