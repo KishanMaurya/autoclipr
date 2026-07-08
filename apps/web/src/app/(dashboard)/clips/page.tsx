@@ -3,6 +3,7 @@ import { apiFetch, type Clip, type Video } from "@/lib/api";
 import { ClipsList } from "@/components/dashboard/clips-list";
 import { ProcessingVideosPanel } from "@/components/dashboard/processing-videos-panel";
 import { ReadyVideosGrid } from "@/components/dashboard/ready-videos-grid";
+import { ReloadButton } from "@/components/dashboard/reload-button";
 import { Card } from "@/components/ui/card";
 import { Scissors } from "lucide-react";
 
@@ -35,11 +36,14 @@ export default async function ClipsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">My Clips</h1>
-        <p className="text-muted-foreground">
-          AI-generated shorts from your uploaded videos
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold sm:text-3xl">My Clips</h1>
+          <p className="text-muted-foreground">
+            AI-generated shorts from your uploaded videos
+          </p>
+        </div>
+        <ReloadButton hasProcessing={processingVideos.length > 0} />
       </div>
 
       {processingVideos.length > 0 && (
