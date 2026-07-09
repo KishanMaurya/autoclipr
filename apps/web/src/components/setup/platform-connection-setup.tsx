@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Link2, CheckCircle2 } from "lucide-react";
+import { Link2, CheckCircle2, Ban } from "lucide-react";
+import { useTikTokAvailability } from "@/hooks/use-tiktok-availability";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
@@ -98,6 +99,7 @@ const platforms: Platform[] = [
 export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial" | "dashboard" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tikTokAvailability = useTikTokAvailability();
   const [connected, setConnected] = useState<string[]>([]);
   const [platformRows, setPlatformRows] = useState<PlatformConnection[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -316,30 +318,37 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
                   Authorize YouTube posting
                 </Button>
               )}
-              <Button
-                className={cn(
-                  "mt-6 h-11 w-full rounded-full font-semibold",
-                  platform.available && !isConnected && "bg-gradient-brand text-white hover:opacity-90",
-                  !platform.available &&
-                    "cursor-not-allowed bg-zinc-800 text-muted-foreground opacity-70 hover:opacity-70"
-                )}
-                variant={isConnected ? "outline" : platform.available ? "default" : "secondary"}
-                disabled={!platform.available || isLoading}
-                onClick={() => handleConnectClick(platform)}
-              >
-                {isLoading ? (
-                  "Connecting…"
-                ) : !platform.available ? (
-                  "Currently Unavailable"
-                ) : isConnected ? (
-                  "Disconnect"
-                ) : (
-                  <>
-                    <Link2 className="mr-2 h-4 w-4" />
-                    Connect
-                  </>
-                )}
-              </Button>
+              {platform.id === "tiktok" && tikTokAvailability === "banned" ? (
+                <div className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-950/30 text-sm font-medium text-red-400">
+                  <Ban className="h-4 w-4" />
+                  Unavailable in your region
+                </div>
+              ) : (
+                <Button
+                  className={cn(
+                    "mt-6 h-11 w-full rounded-full font-semibold",
+                    platform.available && !isConnected && "bg-gradient-brand text-white hover:opacity-90",
+                    !platform.available &&
+                      "cursor-not-allowed bg-zinc-800 text-muted-foreground opacity-70 hover:opacity-70"
+                  )}
+                  variant={isConnected ? "outline" : platform.available ? "default" : "secondary"}
+                  disabled={!platform.available || isLoading || (platform.id === "tiktok" && tikTokAvailability === "loading")}
+                  onClick={() => handleConnectClick(platform)}
+                >
+                  {isLoading ? (
+                    "Connecting…"
+                  ) : !platform.available ? (
+                    "Coming Soon"
+                  ) : isConnected ? (
+                    "Disconnect"
+                  ) : (
+                    <>
+                      <Link2 className="mr-2 h-4 w-4" />
+                      Connect
+                    </>
+                  )}
+                </Button>
+              )}
             </article>
           );
         })}

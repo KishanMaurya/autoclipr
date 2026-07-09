@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check, Loader2, Send, X } from "lucide-react";
+import { Ban, Check, Loader2, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiFetch, type Clip, type PlatformConnection } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth-token";
+import { useTikTokAvailability } from "@/hooks/use-tiktok-availability";
 
 type PostClipModalProps = {
   clip: Clip;
@@ -59,6 +60,7 @@ const PLATFORM_META: Record<string, { label: string; sublabel: string; icon: Rea
 };
 
 export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalProps) {
+  const tikTokAvailability = useTikTokAvailability();
   const [platforms, setPlatforms] = useState<PlatformConnection[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,8 +186,10 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
               <ul className="space-y-2">
                 {platforms.map((platform) => {
                   const meta = PLATFORM_META[platform.platform];
+                  const isTikTok = platform.platform === "tiktok";
+                  const tikTokBanned = isTikTok && tikTokAvailability === "banned";
                   const checked = selected.includes(platform.platform);
-                  const disabled = platform.platform === "tiktok";
+                  const disabled = isTikTok;
                   const needsAuth = platform.platform === "youtube" && !platform.can_post;
 
                   return (
@@ -218,16 +222,23 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                             {meta?.label ?? platform.platform_label}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {disabled
-                              ? "Coming soon"
-                              : needsAuth
-                                ? "Needs authorization"
-                                : (platform.account_name ?? "Connected")}
+                            {tikTokBanned
+                              ? "Not available in your country"
+                              : disabled
+                                ? "Coming soon"
+                                : needsAuth
+                                  ? "Needs authorization"
+                                  : (platform.account_name ?? "Connected")}
                           </p>
                         </div>
 
                         {/* Status badge / check */}
-                        {disabled ? (
+                        {tikTokBanned ? (
+                          <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
+                            <Ban className="h-2.5 w-2.5" />
+                            Banned
+                          </span>
+                        ) : disabled ? (
                           <span className="rounded-full bg-white/8 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Soon
                           </span>
