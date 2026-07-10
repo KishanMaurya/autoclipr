@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiResponse } from '../../common/api-response';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
@@ -12,6 +12,12 @@ export class AdminController {
   @Get('stats')
   async stats() {
     const data = await this.service.getExecutiveDashboard();
+    return ApiResponse.ok(data);
+  }
+
+  @Get('errors')
+  async errors(@Query('limit') limit?: string) {
+    const data = await this.service.getErrors(limit ? parseInt(limit, 10) : 50);
     return ApiResponse.ok(data);
   }
 }

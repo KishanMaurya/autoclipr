@@ -178,6 +178,117 @@ export class AdminRepository {
     return { total: all.length, active: active.length, totalReferrals, totalRevenuePaise, top };
   }
 
+  // ─── Errors ──────────────────────────────────────────────────────────────
+
+  async getRecentErrors(limit = 50) {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [jobsRes, pubsRes, failedVideosRes] = await Promise.all([
+      // Failed processing jobs with error messages
+      this.db
+        .from('processing_jobs')
+        .select('id, job_type, error_message, attempts, created_at, updated_at')
+        .eq('status', 'failed')
+        .not('error_message', 'is', null)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(limit),
+
+      // Failed clip publications
+      this.db
+        .from('clip_publications')
+        .select('id, platform, error_message, created_at, updated_at')
+        .eq('status', 'failed')
+        .not('error_message', 'is', null)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(limit),
+
+      // Videos stuck in failed state
+      this.db
+        .from('videos')
+        .select('id, title, status, created_at, updated_at')
+        .eq('status', 'failed')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(limit),
+    ]);
+
+    type ErrorEntry = {
+      id: string;
+      level: 'error' | 'warning' | 'info';
+      message: string;
+      service: string;
+      count: number;
+      lastSeen: string;
+    };
+
+    const entries: ErrorEntry[] = [];
+
+    // Group repeated processing job errors by message
+    const jobErrors = new Map<string, { count: number; lastSeen: string; id: string; service: string }>();
+    for (const j of jobsRes.data ?? []) {
+      const msg = (j.error_message as string) ?? 'Unknown error';
+      const service = (j.job_type as string) ?? 'worker';
+      const key = `${service}::${msg}`;
+      const existing = jobErrors.get(key);
+      const ts = (j.updated_at as string) ?? (j.created_at as string);
+      if (!existing || ts > existing.lastSeen) {
+        jobErrors.set(key, { count: (existing?.count ?? 0) + 1, lastSeen: ts, id: j.id as string, service });
+      } else {
+        existing.count++;
+      }
+    }
+    for (const [key, v] of jobErrors) {
+      const msg = key.split('::').slice(1).join('::');
+      entries.push({ id: v.id, level: 'error', message: msg, service: v.service, count: v.count, lastSeen: v.lastSeen });
+    }
+
+    // Group publication errors by message+platform
+    const pubErrors = new Map<string, { count: number; lastSeen: string; id: string; platform: string }>();
+    for (const p of pubsRes.data ?? []) {
+      const msg = (p.error_message as string) ?? 'Publish failed';
+      const platform = (p.platform as string) ?? 'platform';
+      const key = `${platform}::${msg}`;
+      const existing = pubErrors.get(key);
+      const ts = (p.updated_at as string) ?? (p.created_at as string);
+      if (!existing || ts > existing.lastSeen) {
+        pubErrors.set(key, { count: (existing?.count ?? 0) + 1, lastSeen: ts, id: p.id as string, platform });
+      } else {
+        existing.count++;
+      }
+    }
+    for (const [key, v] of pubErrors) {
+      const msg = key.split('::').slice(1).join('::');
+      entries.push({ id: v.id, level: 'warning', message: `[${v.platform}] ${msg}`, service: 'publishing', count: v.count, lastSeen: v.lastSeen });
+    }
+
+    // Failed videos (no error_message column, just count)
+    const failedVideos = failedVideosRes.data ?? [];
+    if (failedVideos.length > 0) {
+      entries.push({
+        id: 'failed-videos',
+        level: 'warning',
+        message: `${failedVideos.length} video(s) stuck in failed status`,
+        service: 'video-processor',
+        count: failedVideos.length,
+        lastSeen: (failedVideos[0]?.updated_at as string) ?? (failedVideos[0]?.created_at as string) ?? new Date().toISOString(),
+      });
+    }
+
+    // Sort by lastSeen desc
+    entries.sort((a, b) => (a.lastSeen > b.lastSeen ? -1 : 1));
+
+    return {
+      entries: entries.slice(0, limit),
+      summary: {
+        errors: entries.filter((e) => e.level === 'error').length,
+        warnings: entries.filter((e) => e.level === 'warning').length,
+        total: entries.length,
+      },
+    };
+  }
+
   // ─── Credit usage ────────────────────────────────────────────────────────
 
   async getCreditUsageStats() {

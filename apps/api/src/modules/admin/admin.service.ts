@@ -12,6 +12,10 @@ function fmtBytes(bytes: number) {
 export class AdminService {
   constructor(private readonly repo: AdminRepository) {}
 
+  async getErrors(limit = 50) {
+    return this.repo.getRecentErrors(limit);
+  }
+
   async getExecutiveDashboard() {
     const [
       userCounts,
