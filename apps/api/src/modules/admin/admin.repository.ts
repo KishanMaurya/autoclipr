@@ -178,6 +178,178 @@ export class AdminRepository {
     return { total: all.length, active: active.length, totalReferrals, totalRevenuePaise, top };
   }
 
+  // ─── Audit Logs ──────────────────────────────────────────────────────────
+
+  async getAuditLogs(limit = 100, days = 30) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const [signupsRes, videosRes, billingRes, pubsRes, channelsRes, connectionsRes, failedJobsRes] =
+      await Promise.all([
+        // New user signups
+        this.db
+          .from('profiles')
+          .select('id, email, full_name, subscription_tier, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // Video uploads
+        this.db
+          .from('videos')
+          .select('id, user_id, title, status, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // Billing / payment events
+        this.db
+          .from('billing_transactions')
+          .select('id, user_id, plan_id, amount, status, payment_date, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // Clip publications
+        this.db
+          .from('clip_publications')
+          .select('id, user_id, platform, status, error_message, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // YouTube channels connected
+        this.db
+          .from('youtube_channels')
+          .select('id, user_id, channel_name, channel_url, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // Platform connections (YouTube OAuth, Instagram, etc.)
+        this.db
+          .from('platform_connections')
+          .select('id, user_id, platform, account_name, auth_status, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        // Failed processing jobs
+        this.db
+          .from('processing_jobs')
+          .select('id, user_id, job_type, status, error_message, created_at')
+          .eq('status', 'failed')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+      ]);
+
+    type AuditEntry = {
+      id: string;
+      ts: string;
+      actor: string;
+      action: string;
+      detail: string;
+      category: 'user' | 'video' | 'billing' | 'publish' | 'channel' | 'error';
+      severity: 'info' | 'success' | 'warning' | 'error';
+    };
+
+    const entries: AuditEntry[] = [];
+
+    for (const s of signupsRes.data ?? []) {
+      entries.push({
+        id: `signup-${s.id}`,
+        ts: s.created_at as string,
+        actor: (s.email as string) ?? 'Unknown',
+        action: 'User signed up',
+        detail: `${(s.full_name as string) ?? 'No name'} · tier: ${(s.subscription_tier as string) ?? 'free'}`,
+        category: 'user',
+        severity: 'info',
+      });
+    }
+
+    for (const v of videosRes.data ?? []) {
+      const status = v.status as string;
+      entries.push({
+        id: `video-${v.id}`,
+        ts: v.created_at as string,
+        actor: v.user_id as string,
+        action: `Video ${status === 'failed' ? 'failed' : 'uploaded'}`,
+        detail: (v.title as string) ?? 'Untitled',
+        category: 'video',
+        severity: status === 'failed' ? 'error' : 'info',
+      });
+    }
+
+    for (const b of billingRes.data ?? []) {
+      entries.push({
+        id: `billing-${b.id}`,
+        ts: (b.payment_date as string) ?? (b.created_at as string),
+        actor: b.user_id as string,
+        action: 'Payment received',
+        detail: `${b.amount} · plan: ${b.plan_id}`,
+        category: 'billing',
+        severity: 'success',
+      });
+    }
+
+    for (const p of pubsRes.data ?? []) {
+      const status = p.status as string;
+      entries.push({
+        id: `pub-${p.id}`,
+        ts: p.created_at as string,
+        actor: p.user_id as string,
+        action: `Clip ${status === 'posted' ? 'published' : status === 'failed' ? 'publish failed' : 'queued for publish'}`,
+        detail: `Platform: ${p.platform}${p.error_message ? ` · ${p.error_message}` : ''}`,
+        category: 'publish',
+        severity: status === 'failed' ? 'error' : status === 'posted' ? 'success' : 'info',
+      });
+    }
+
+    for (const c of channelsRes.data ?? []) {
+      entries.push({
+        id: `channel-${c.id}`,
+        ts: c.created_at as string,
+        actor: c.user_id as string,
+        action: 'YouTube channel connected',
+        detail: (c.channel_name as string) ?? (c.channel_url as string),
+        category: 'channel',
+        severity: 'info',
+      });
+    }
+
+    for (const conn of connectionsRes.data ?? []) {
+      entries.push({
+        id: `conn-${conn.id}`,
+        ts: conn.created_at as string,
+        actor: conn.user_id as string,
+        action: `${conn.platform} account connected`,
+        detail: (conn.account_name as string) ?? `auth: ${conn.auth_status}`,
+        category: 'channel',
+        severity: 'info',
+      });
+    }
+
+    for (const j of failedJobsRes.data ?? []) {
+      entries.push({
+        id: `job-${j.id}`,
+        ts: j.created_at as string,
+        actor: j.user_id as string,
+        action: `Job failed: ${j.job_type}`,
+        detail: (j.error_message as string) ?? 'No error message',
+        category: 'error',
+        severity: 'error',
+      });
+    }
+
+    // Sort by timestamp descending and cap
+    entries.sort((a, b) => (a.ts > b.ts ? -1 : 1));
+
+    return {
+      entries: entries.slice(0, limit),
+      total: entries.length,
+    };
+  }
+
   // ─── Analytics ───────────────────────────────────────────────────────────
 
   async getAnalytics(days = 30) {

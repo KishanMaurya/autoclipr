@@ -15,6 +15,15 @@ export class AdminController {
     return ApiResponse.ok(data);
   }
 
+  @Get('audit-logs')
+  async auditLogs(@Query('limit') limit?: string, @Query('days') days?: string) {
+    const data = await this.service.getAuditLogs(
+      limit ? parseInt(limit, 10) : 100,
+      days  ? parseInt(days, 10)  : 30,
+    );
+    return ApiResponse.ok(data);
+  }
+
   @Get('analytics')
   async analytics(@Query('days') days?: string) {
     const data = await this.service.getAnalytics(days ? parseInt(days, 10) : 30);

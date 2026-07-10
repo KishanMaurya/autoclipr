@@ -12,6 +12,10 @@ function fmtBytes(bytes: number) {
 export class AdminService {
   constructor(private readonly repo: AdminRepository) {}
 
+  async getAuditLogs(limit = 100, days = 30) {
+    return this.repo.getAuditLogs(limit, days);
+  }
+
   async getAnalytics(days = 30) {
     return this.repo.getAnalytics(days);
   }
