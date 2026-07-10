@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Ban, Check, Loader2, Send, X } from "lucide-react";
+import { Ban, Check, Loader2, Pencil, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiFetch, type Clip, type PlatformConnection } from "@/lib/api";
@@ -66,6 +66,8 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editableTitle, setEditableTitle] = useState(clip.title ?? "");
+  const [editingTitle, setEditingTitle] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -123,7 +125,10 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
         {
           method: "POST",
           token,
-          body: JSON.stringify({ platforms: selected }),
+          body: JSON.stringify({
+            platforms: selected,
+            ...(editableTitle.trim() !== clip.title ? { title: editableTitle.trim() } : {}),
+          }),
         },
       );
 
@@ -149,19 +154,50 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
     >
       <div className="glass w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
-          <div className="min-w-0">
+        <div className="border-b border-white/8 px-5 py-4">
+          <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">Publish clip</h2>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{clip.title}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="ml-3 flex-shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="ml-3 flex-shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
+
+          {/* Editable title */}
+          <div className="mt-2">
+            {editingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={editableTitle}
+                  onChange={(e) => setEditableTitle(e.target.value)}
+                  onBlur={() => setEditingTitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Escape") setEditingTitle(false);
+                  }}
+                  maxLength={150}
+                  className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/8 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-emerald-500/60 focus:outline-none"
+                  placeholder="Enter clip title…"
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingTitle(true)}
+                className="group flex w-full items-center gap-1.5 text-left"
+                title="Click to edit title"
+              >
+                <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  {editableTitle || clip.title}
+                </p>
+                <Pencil className="h-3 w-3 flex-shrink-0 text-white/20 transition group-hover:text-white/50" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Body */}

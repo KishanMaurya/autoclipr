@@ -199,6 +199,7 @@ export class ClipsService {
       payload: {
         clip_id: clipId,
         platforms: dto.platforms,
+        ...(dto.title ? { title: dto.title.trim() } : {}),
       },
     });
 

@@ -31,6 +31,7 @@ export class PublishService {
   async run(data: Record<string, unknown>, jobId?: string): Promise<void> {
     const clipId = data.clip_id as string;
     const platforms = (data.platforms as PlatformId[]) ?? [];
+    const titleOverride = data.title as string | undefined;
 
     this.monitoring.logAction('start', 'PublishService.run', {
       clipId,
@@ -71,7 +72,7 @@ export class PublishService {
             platform,
             userId: clip.user_id as string,
             clipId,
-            title: clip.title as string,
+            title: (titleOverride || (clip.title as string)),
             localClipPath,
           });
 

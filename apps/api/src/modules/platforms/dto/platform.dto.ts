@@ -18,4 +18,8 @@ export class PublishClipDto {
   @ArrayMinSize(1)
   @IsIn(SUPPORTED_PLATFORMS, { each: true })
   platforms!: PlatformId[];
+
+  @IsOptional()
+  @IsString()
+  title?: string;
 }
