@@ -2,6 +2,7 @@
 
 import {
   AreaChart, Area, BarChart, Bar,
+  LineChart, Line,
   PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -107,5 +108,72 @@ export function FunnelChart({ data }: { data: { stage: string; value: number }[]
         </div>
       ))}
     </div>
+  );
+}
+
+const TOOLTIP_STYLE = {
+  background: "#0d0d1a",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 8,
+  color: "#fff",
+  fontSize: 12,
+};
+
+/** Multi-series daily activity line chart */
+export function DailyActivityChart({
+  data,
+  series,
+}: {
+  data: Record<string, unknown>[];
+  series: { key: string; label: string; color: string }[];
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+        <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+        <YAxis tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} width={30} allowDecimals={false} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "rgba(255,255,255,0.08)" }} />
+        <Legend formatter={(v) => <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>{v}</span>} />
+        {series.map((s) => (
+          <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} name={s.label} />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Horizontal bar chart for categorical distribution */
+export function DistributionBarChart({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(120, data.length * 40)}>
+      <BarChart data={data} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+        <XAxis type="number" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <YAxis type="category" dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Small donut for status breakdown */
+export function StatusDonut({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <PieChart>
+        <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+          {data.map((_, i) => (
+            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip contentStyle={TOOLTIP_STYLE} />
+        <Legend formatter={(v) => <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>{v}</span>} />
+      </PieChart>
+    </ResponsiveContainer>
   );
 }

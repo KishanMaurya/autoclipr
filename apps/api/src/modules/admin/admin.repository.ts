@@ -178,6 +178,104 @@ export class AdminRepository {
     return { total: all.length, active: active.length, totalReferrals, totalRevenuePaise, top };
   }
 
+  // ─── Analytics ───────────────────────────────────────────────────────────
+
+  async getAnalytics(days = 30) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const [signupsRes, videosRes, clipsRes, jobsRes, pubsRes] = await Promise.all([
+      this.db.from('profiles').select('created_at').gte('created_at', since).order('created_at'),
+      this.db.from('videos').select('created_at, status').gte('created_at', since).order('created_at'),
+      this.db.from('clips').select('created_at, status, ai_score').gte('created_at', since).order('created_at'),
+      this.db.from('processing_jobs').select('created_at, status, job_type').gte('created_at', since),
+      this.db.from('clip_publications').select('created_at, status, platform').gte('created_at', since),
+    ]);
+
+    // Build daily buckets
+    function bucketByDay<T extends { created_at: string }>(
+      rows: T[],
+      key: (r: T) => number = () => 1,
+    ): { date: string; value: number }[] {
+      const map = new Map<string, number>();
+      for (const r of rows) {
+        const d = (r.created_at as string).slice(0, 10);
+        map.set(d, (map.get(d) ?? 0) + key(r));
+      }
+      // Fill all days in range
+      const result: { date: string; value: number }[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        result.push({ date: d.slice(5), value: map.get(d) ?? 0 }); // MM-DD
+      }
+      return result;
+    }
+
+    const signupsByDay = bucketByDay(signupsRes.data ?? []);
+    const videosByDay  = bucketByDay(videosRes.data ?? []);
+    const clipsByDay   = bucketByDay(clipsRes.data ?? []);
+
+    // Clip status distribution
+    const clipStatusMap: Record<string, number> = {};
+    for (const c of clipsRes.data ?? []) {
+      const s = (c.status as string) ?? 'unknown';
+      clipStatusMap[s] = (clipStatusMap[s] ?? 0) + 1;
+    }
+
+    // Video status distribution
+    const videoStatusMap: Record<string, number> = {};
+    for (const v of videosRes.data ?? []) {
+      const s = (v.status as string) ?? 'unknown';
+      videoStatusMap[s] = (videoStatusMap[s] ?? 0) + 1;
+    }
+
+    // Processing job breakdown by type
+    const jobTypeMap: Record<string, number> = {};
+    const jobStatusMap: Record<string, number> = {};
+    for (const j of jobsRes.data ?? []) {
+      const t = (j.job_type as string) ?? 'unknown';
+      const s = (j.status as string) ?? 'unknown';
+      jobTypeMap[t] = (jobTypeMap[t] ?? 0) + 1;
+      jobStatusMap[s] = (jobStatusMap[s] ?? 0) + 1;
+    }
+
+    // Publications by platform + status
+    const pubPlatformMap: Record<string, number> = {};
+    const pubStatusMap: Record<string, number> = {};
+    for (const p of pubsRes.data ?? []) {
+      const platform = (p.platform as string) ?? 'unknown';
+      const status   = (p.status as string) ?? 'unknown';
+      pubPlatformMap[platform] = (pubPlatformMap[platform] ?? 0) + 1;
+      pubStatusMap[status]     = (pubStatusMap[status] ?? 0) + 1;
+    }
+
+    // Avg viral score of completed clips
+    const scoredClips = (clipsRes.data ?? []).filter((c) => (c.ai_score as number | null) != null);
+    const avgScore = scoredClips.length > 0
+      ? +(scoredClips.reduce((s, c) => s + ((c.ai_score as number) ?? 0), 0) / scoredClips.length * 100).toFixed(1)
+      : null;
+
+    return {
+      days,
+      signupsByDay,
+      videosByDay,
+      clipsByDay,
+      clipStatus: Object.entries(clipStatusMap).map(([name, value]) => ({ name, value })),
+      videoStatus: Object.entries(videoStatusMap).map(([name, value]) => ({ name, value })),
+      jobTypes: Object.entries(jobTypeMap).map(([name, value]) => ({ name, value })),
+      jobStatus: Object.entries(jobStatusMap).map(([name, value]) => ({ name, value })),
+      publications: Object.entries(pubPlatformMap).map(([name, value]) => ({ name, value })),
+      pubStatus: Object.entries(pubStatusMap).map(([name, value]) => ({ name, value })),
+      avgViralScore: avgScore,
+      totals: {
+        signups: signupsRes.data?.length ?? 0,
+        videos:  videosRes.data?.length ?? 0,
+        clips:   clipsRes.data?.length ?? 0,
+        jobs:    jobsRes.data?.length ?? 0,
+        pubs:    pubsRes.data?.length ?? 0,
+      },
+    };
+  }
+
   // ─── Top Creators (connected user channels) ──────────────────────────────
 
   async getTopCreators(limit = 50) {

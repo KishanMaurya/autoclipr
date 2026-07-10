@@ -15,6 +15,12 @@ export class AdminController {
     return ApiResponse.ok(data);
   }
 
+  @Get('analytics')
+  async analytics(@Query('days') days?: string) {
+    const data = await this.service.getAnalytics(days ? parseInt(days, 10) : 30);
+    return ApiResponse.ok(data);
+  }
+
   @Get('top-creators')
   async topCreators(@Query('limit') limit?: string) {
     const data = await this.service.getTopCreators(limit ? parseInt(limit, 10) : 50);
