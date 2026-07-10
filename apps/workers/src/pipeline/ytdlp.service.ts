@@ -96,7 +96,7 @@ export class YtdlpService implements OnModuleInit {
       args.push('--cookies', this.cookiesFile);
     }
 
-    const proxy = this.config.get<string>('ytdlpProxy');
+    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
     if (proxy) {
       args.push('--proxy', proxy);
     }
@@ -206,7 +206,7 @@ export class YtdlpService implements OnModuleInit {
     if (this.cookiesFile) {
       args.push('--cookies', this.cookiesFile);
     }
-    const proxy = this.config.get<string>('ytdlpProxy');
+    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
     if (proxy) {
       args.push('--proxy', proxy);
     }
@@ -217,6 +217,9 @@ export class YtdlpService implements OnModuleInit {
   }
 
   private isRetryableYoutubeError(message: string): boolean {
+    // Proxy errors are never retryable — every variant will fail the same way
+    if (/unsupported proxy type|proxy.*failed|cannot connect.*proxy/i.test(message)) return false;
+
     return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check|requested format is not available|format is not available/i.test(
       message,
     );
@@ -226,6 +229,12 @@ export class YtdlpService implements OnModuleInit {
     const raw = err instanceof Error ? err.message : String(err);
     const normalized = raw.replace(/^(yt-dlp failed:\s*)+/i, '').trim();
 
+    if (/unsupported proxy type|unsupported url scheme.*websocket/i.test(normalized)) {
+      const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+      return proxy
+        ? `Proxy connection failed (${proxy.replace(/:\/\/[^@]+@/, '://***@')}). Check that the proxy is online and the credentials are correct in YTDLP_PROXY.`
+        : 'No proxy configured. YouTube is blocking downloads from this server\'s IP. Set YTDLP_PROXY in Railway environment variables (e.g. http://user:pass@host:port).';
+    }
     if (/sign in to confirm|not a bot|bot check/i.test(normalized)) {
       return (
         'YouTube blocked the download from our cloud server (bot check). ' +
