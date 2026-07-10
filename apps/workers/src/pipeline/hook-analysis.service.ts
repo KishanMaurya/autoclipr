@@ -89,6 +89,8 @@ Rules:
 - Prefer strong hooks, emotional peaks, actionable tips, controversy, story payoffs.
 - end_ms - start_ms should match one of the target durations (±2s).
 - Clips must not overlap heavily.
+- "title" MUST be 6-12 words, written as a punchy TikTok/Reels caption that makes someone stop scrolling. Use the actual content of the clip — reference what is said or shown. Avoid vague labels like "Finale", "Dance Break", "Key Moment". Good examples: "She Reveals The Secret Nobody Talks About", "This One Move Changed Everything For Me", "Why Everyone Gets This Wrong (And How To Fix It)". Bad examples: "Finale", "Motivational Peak", "Key Insight".
+- "hook_text" is the opening sentence or quote from the clip (max 120 chars).
 
 Transcript:
 ${segmentLines}`;
@@ -134,9 +136,10 @@ ${segmentLines}`;
       const score = Math.min(96, 74 + i * 3);
       const startLabel = this.formatTimestamp(start_ms);
       const text = seg?.text?.trim();
-      const title = text && !text.match(/^segment at \d/i)
-        ? text.slice(0, 60)
-        : `Clip ${i + 1} · ${startLabel}`;
+      // Use actual spoken text as title; ensure it's descriptive enough
+      const title = text && text.split(' ').length >= 4 && !text.match(/^segment at \d/i)
+        ? text.slice(0, 80)
+        : `Watch This Moment at ${startLabel} — Clip ${i + 1}`;
       moments.push({
         start_ms: Math.max(0, start_ms),
         end_ms: Math.max(start_ms + 5000, end_ms),
@@ -189,7 +192,7 @@ ${segmentLines}`;
       out.push({
         start_ms,
         end_ms,
-        title: (m.title || `Clip ${i + 1}`).slice(0, 120),
+        title: (m.title?.trim() || `Clip ${i + 1}`).slice(0, 150),
         hook_text: (m.hook_text || m.title || '').slice(0, 200),
         viral_score,
         metrics: {
