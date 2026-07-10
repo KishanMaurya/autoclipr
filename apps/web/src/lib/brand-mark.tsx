@@ -1,16 +1,26 @@
 /** Shared brand mark for favicons, OG images, and JSON-LD (ImageResponse / next/og). */
 
-export const BRAND_GRADIENT =
-  "linear-gradient(135deg, #064e3b 0%, #047857 45%, #059669 100%)";
+export const BRAND_COLOR = "#3CC252";
 
 type BrandMarkProps = {
   size: number;
   radius: number;
 };
 
-/** Lucide-style scissors on brand gradient — matches navbar / sidebar logo. */
+/** Play-button logo on bright green — matches navbar / sidebar logo. */
 export function BrandMark({ size, radius }: BrandMarkProps) {
-  const iconSize = Math.round(size * 0.58);
+  const pad = Math.round(size * 0.18);
+  const inner = size - pad * 2;
+
+  // Play triangle points (within inner square)
+  const ax = Math.round(pad + inner * 0.24);
+  const ay = Math.round(pad + inner * 0.16);
+  const bx = ax;
+  const by = Math.round(pad + inner * 0.84);
+  const cx = Math.round(pad + inner * 0.84);
+  const cy = Math.round(pad + inner * 0.50);
+
+  const sw = Math.round(size * 0.085);
 
   return (
     <div
@@ -20,25 +30,23 @@ export function BrandMark({ size, radius }: BrandMarkProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: BRAND_GRADIENT,
+        background: BRAND_COLOR,
         borderRadius: radius,
       }}
     >
       <svg
-        width={iconSize}
-        height={iconSize}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <circle cx="6" cy="6" r="3" />
-        <circle cx="6" cy="18" r="3" />
-        <line x1="20" y1="4" x2="8.12" y2="15.88" />
-        <line x1="14.47" y1="14.48" x2="20" y2="20" />
-        <line x1="8.12" y1="8.12" x2="12" y2="12" />
+        <polygon
+          points={`${ax},${ay} ${bx},${by} ${cx},${cy}`}
+          fill="white"
+          stroke="black"
+          strokeWidth={sw}
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );

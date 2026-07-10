@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Scissors } from "lucide-react";
+import { LogoIcon } from "@/components/ui/logo-icon";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { resolveUserFullName } from "@/lib/user-avatar";
@@ -26,8 +26,8 @@ export async function Navbar() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2.5 font-bold">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-brand shadow-glow transition-transform group-hover:scale-105 sm:h-9 sm:w-9">
-            <Scissors className="h-4 w-4 text-white" />
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252] shadow-glow transition-transform group-hover:scale-105 sm:h-9 sm:w-9">
+            <LogoIcon size={20} />
           </span>
           <span className="text-base sm:text-lg">
             AutoClipr<span className="gradient-text">.ai</span>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Scissors, Twitter, Youtube, Instagram, Linkedin } from "lucide-react";
+import { Twitter, Youtube, Instagram, Linkedin } from "lucide-react";
+import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
 
 const navColumns = [
@@ -65,8 +66,8 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-1">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-lg shadow-emerald-900/40">
-                <Scissors className="h-4 w-4 text-white" />
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252] shadow-lg shadow-emerald-900/40">
+                <LogoIcon size={22} />
               </span>
               <span className="text-lg font-bold text-white">
                 Auto<span className="text-emerald-400">Clipr</span>

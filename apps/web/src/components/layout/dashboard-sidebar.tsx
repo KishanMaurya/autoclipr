@@ -9,7 +9,6 @@ import {
   BarChart3,
   CreditCard,
   Settings,
-  Scissors,
   Menu,
   X,
   Youtube,
@@ -17,6 +16,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LogoIcon } from "@/components/ui/logo-icon";
 import { useState } from "react";
 
 const nav = [
@@ -61,8 +61,8 @@ export function DashboardSidebar({ credits }: { credits: number }) {
         )}
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-white/[0.06] px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand shadow-glow">
-            <Scissors className="h-4 w-4 text-white" />
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[#3CC252] shadow-glow">
+            <LogoIcon size={20} />
           </span>
           <span className="font-bold">AutoClipr</span>
         </div>

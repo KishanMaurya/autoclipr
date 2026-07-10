@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowLeft, Scissors } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { LogoIcon } from "@/components/ui/logo-icon";
 import { AuthForm } from "@/components/auth/auth-form";
 import { PageBackground } from "@/components/ui/page-background";
 
@@ -20,8 +21,8 @@ export default function RegisterPage() {
         Back to home
       </Link>
       <div className="mb-8 flex items-center gap-2.5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand shadow-glow">
-          <Scissors className="h-5 w-5 text-white" />
+        <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252] shadow-glow">
+          <LogoIcon size={24} />
         </span>
         <span className="text-xl font-bold">
           AutoClipr<span className="gradient-text">.ai</span>

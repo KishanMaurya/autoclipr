@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Scissors, ChevronDown, X, Menu } from "lucide-react";
+import { ChevronDown, X, Menu } from "lucide-react";
+import { LogoIcon } from "@/components/ui/logo-icon";
 
 const FREE_TOOLS = [
   { href: "/tools/video-trimmer", label: "Video Trimmer" },
@@ -47,8 +48,8 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
           {/* Top bar */}
           <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.06]">
             <Link href="/" onClick={close} className="flex items-center gap-2 font-bold">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500">
-                <Scissors className="h-4 w-4 text-white" />
+              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252]">
+                <LogoIcon size={20} />
               </span>
               <span className="text-white text-sm">AutoClipr<span className="text-emerald-400">.ai</span></span>
             </Link>
