@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiFetch, type Clip, type PlatformConnection } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth-token";
-import { useTikTokAvailability } from "@/hooks/use-tiktok-availability";
+import { usePlatformAvailability } from "@/hooks/use-platform-availability";
 
 type PostClipModalProps = {
   clip: Clip;
@@ -60,7 +60,7 @@ const PLATFORM_META: Record<string, { label: string; sublabel: string; icon: Rea
 };
 
 export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalProps) {
-  const tikTokAvailability = useTikTokAvailability();
+  const { banned: bannedPlatforms } = usePlatformAvailability();
   const [platforms, setPlatforms] = useState<PlatformConnection[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,9 +187,9 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                 {platforms.map((platform) => {
                   const meta = PLATFORM_META[platform.platform];
                   const isTikTok = platform.platform === "tiktok";
-                  const tikTokBanned = isTikTok && tikTokAvailability === "banned";
+                  const isBanned = bannedPlatforms.has(platform.platform);
                   const checked = selected.includes(platform.platform);
-                  const disabled = isTikTok;
+                  const disabled = isTikTok || isBanned;
                   const needsAuth = platform.platform === "youtube" && !platform.can_post;
 
                   return (
@@ -222,9 +222,9 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                             {meta?.label ?? platform.platform_label}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {tikTokBanned
+                            {isBanned
                               ? "Not available in your country"
-                              : disabled
+                              : isTikTok
                                 ? "Coming soon"
                                 : needsAuth
                                   ? "Needs authorization"
@@ -233,12 +233,12 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                         </div>
 
                         {/* Status badge / check */}
-                        {tikTokBanned ? (
+                        {isBanned ? (
                           <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
                             <Ban className="h-2.5 w-2.5" />
                             Banned
                           </span>
-                        ) : disabled ? (
+                        ) : isTikTok ? (
                           <span className="rounded-full bg-white/8 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Soon
                           </span>
