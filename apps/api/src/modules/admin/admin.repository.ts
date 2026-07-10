@@ -178,6 +178,81 @@ export class AdminRepository {
     return { total: all.length, active: active.length, totalReferrals, totalRevenuePaise, top };
   }
 
+  // ─── Top Creators (connected user channels) ──────────────────────────────
+
+  async getTopCreators(limit = 50) {
+    // Fetch connected channels with user email
+    const { data: channels } = await this.db
+      .from('youtube_channels')
+      .select('id, user_id, channel_name, channel_url, thumbnail_url, is_trial_channel, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!channels || channels.length === 0) return [];
+
+    const userIds = [...new Set((channels as { user_id: string }[]).map((c) => c.user_id))];
+
+    // Fetch profiles (email + tier) for those users
+    const { data: profiles } = await this.db
+      .from('profiles')
+      .select('id, email, subscription_tier, credits')
+      .in('id', userIds);
+
+    // Count videos per user
+    const { data: videoCounts } = await this.db
+      .from('videos')
+      .select('user_id')
+      .in('user_id', userIds);
+
+    // Count clips per user
+    const { data: clipCounts } = await this.db
+      .from('clips')
+      .select('user_id')
+      .in('user_id', userIds);
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
+    const videoMap = new Map<string, number>();
+    const clipMap = new Map<string, number>();
+
+    for (const v of videoCounts ?? []) {
+      const uid = v.user_id as string;
+      videoMap.set(uid, (videoMap.get(uid) ?? 0) + 1);
+    }
+    for (const c of clipCounts ?? []) {
+      const uid = c.user_id as string;
+      clipMap.set(uid, (clipMap.get(uid) ?? 0) + 1);
+    }
+
+    const result = (channels as {
+      id: string;
+      user_id: string;
+      channel_name: string;
+      channel_url: string;
+      thumbnail_url: string | null;
+      is_trial_channel: boolean;
+      created_at: string;
+    }[]).map((ch) => {
+      const profile = profileMap.get(ch.user_id);
+      return {
+        id: ch.id,
+        channelName: ch.channel_name,
+        channelUrl: ch.channel_url,
+        thumbnailUrl: ch.thumbnail_url,
+        isTrial: ch.is_trial_channel,
+        connectedAt: ch.created_at,
+        userEmail: (profile?.email as string | null) ?? null,
+        tier: (profile?.subscription_tier as string | null) ?? 'free',
+        credits: (profile?.credits as number | null) ?? 0,
+        videoCount: videoMap.get(ch.user_id) ?? 0,
+        clipCount: clipMap.get(ch.user_id) ?? 0,
+      };
+    });
+
+    // Sort by clip count desc
+    result.sort((a, b) => b.clipCount - a.clipCount);
+    return result.slice(0, limit);
+  }
+
   // ─── Errors ──────────────────────────────────────────────────────────────
 
   async getRecentErrors(limit = 50) {

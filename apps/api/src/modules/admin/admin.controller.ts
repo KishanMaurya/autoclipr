@@ -15,6 +15,12 @@ export class AdminController {
     return ApiResponse.ok(data);
   }
 
+  @Get('top-creators')
+  async topCreators(@Query('limit') limit?: string) {
+    const data = await this.service.getTopCreators(limit ? parseInt(limit, 10) : 50);
+    return ApiResponse.ok(data);
+  }
+
   @Get('errors')
   async errors(@Query('limit') limit?: string) {
     const data = await this.service.getErrors(limit ? parseInt(limit, 10) : 50);
