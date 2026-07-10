@@ -128,8 +128,24 @@ export const PRIVACY_POLICY: LegalDocumentContent = {
       ],
     },
     {
+      id: "google-api",
+      title: "12. Google API & YouTube Data API disclosure",
+      paragraphs: [
+        "AutoClipr's use of information received from Google APIs (including the YouTube Data API v3) will adhere to the Google API Services User Data Policy, including the Limited Use requirements.",
+      ],
+      list: [
+        "Scopes requested: AutoClipr requests access to your YouTube account solely to publish short clips on your behalf (scope: https://www.googleapis.com/auth/youtube.upload). We do not request access to read your private data, subscriptions, comments, or any content beyond what is needed to upload.",
+        "What we access: only your YouTube channel identity (to confirm the correct channel) and the ability to upload videos you explicitly instruct us to publish.",
+        "What we do NOT do: we do not read, store, or analyse your YouTube watch history, subscriptions, private playlists, comments, or any other YouTube data beyond channel identity and upload confirmation.",
+        "How we store tokens: OAuth tokens are encrypted at rest in our database (Supabase, row-level security enabled) and transmitted only over HTTPS. Tokens are used exclusively to perform uploads you initiate.",
+        "Token revocation: you can disconnect your YouTube account at any time from Settings → Platforms. When disconnected, we immediately delete the associated OAuth tokens from our system. You can also revoke access directly in your Google Account at https://myaccount.google.com/permissions.",
+        "No token sharing: we never share, sell, or transfer your YouTube OAuth tokens or channel data to any third party except YouTube's own API endpoints during the upload operation.",
+        "Data minimisation: we store only the minimum data required — channel ID, channel name, and the upload status of each clip. We do not build profiles of your YouTube audience or content.",
+      ],
+    },
+    {
       id: "contact",
-      title: "12. Contact us",
+      title: "13. Contact us",
       paragraphs: [
         `For privacy questions or requests, email ${CONTACT_EMAIL} or use the feedback form at ${SITE_URL}/feedback.`,
       ],
