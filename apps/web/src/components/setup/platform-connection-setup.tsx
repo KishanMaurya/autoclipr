@@ -132,8 +132,9 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
     async function handleOAuthReturn() {
       const oauthStatus = searchParams.get("status");
       const platform = searchParams.get("platform");
-      if (oauthStatus === "success" && platform === "youtube") {
-        setStatusMessage("YouTube posting authorized. You can now post clips as Shorts.");
+      if (oauthStatus === "success" && platform) {
+        const label = platform === "youtube" ? "YouTube Shorts" : platform === "instagram" ? "Instagram Reels" : platform;
+        setStatusMessage(`${label} authorized. You can now post clips directly.`);
         const supabase = createClient();
         const {
           data: { session },
@@ -149,7 +150,7 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
         }
       } else if (oauthStatus === "error") {
         setStatusMessage(
-          "YouTube authorization failed. Check redirect URI and GOOGLE_CLIENT_ID/SECRET in .env, then try again.",
+          "Authorization failed. Check your app credentials in .env, then try again.",
         );
       }
     }
@@ -189,7 +190,7 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
         setConnectedPlatforms([...connected, pendingPlatform.id]);
         setPlatformRows((prev) => [...prev.filter((p) => p.platform !== pendingPlatform.id), res.data!]);
 
-        if (pendingPlatform.id === "youtube" && res.data.oauth_url) {
+        if ((pendingPlatform.id === "youtube" || pendingPlatform.id === "instagram") && res.data.oauth_url) {
           window.location.href = res.data.oauth_url;
           return;
         }
@@ -225,6 +226,21 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
       return next;
     });
     setPlatformRows((prev) => prev.filter((p) => p.platform !== id));
+  }
+
+  async function authorizeInstagram() {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    const res = await apiFetch<{ url: string }>("/api/v1/platforms/instagram/oauth-url", {
+      token: session.access_token,
+    });
+    if (res.success && res.data?.url) {
+      window.location.href = res.data.url;
+    }
   }
 
   async function authorizeYoutube() {
@@ -316,6 +332,17 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
                   onClick={authorizeYoutube}
                 >
                   Authorize YouTube posting
+                </Button>
+              )}
+              {isConnected && platform.id === "instagram" && !platformRows.find((p) => p.platform === "instagram")?.can_post && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={authorizeInstagram}
+                >
+                  Authorize Instagram posting
                 </Button>
               )}
               {bannedPlatforms.has(platform.id) ? (

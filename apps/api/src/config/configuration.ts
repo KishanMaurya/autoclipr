@@ -23,6 +23,9 @@ export default () => ({
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI ?? '',
+  metaAppId: process.env.META_APP_ID ?? '',
+  metaAppSecret: process.env.META_APP_SECRET ?? '',
+  metaRedirectUri: process.env.META_REDIRECT_URI ?? '',
   jwtSecret: process.env.JWT_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '',
 });
 

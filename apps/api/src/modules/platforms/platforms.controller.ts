@@ -58,6 +58,39 @@ export class PlatformsController {
     return ApiResponse.ok(result);
   }
 
+  @Get('instagram/oauth-url')
+  async instagramOAuthUrl(@CurrentUser() user: AuthUser) {
+    const result = await this.platformsService.getInstagramOAuthUrl(user.sub);
+    return ApiResponse.ok(result);
+  }
+
+  @Public()
+  @SkipThrottle()
+  @Get('instagram/callback')
+  async instagramCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Query('error') error: string | undefined,
+    @Res() res: Response,
+  ) {
+    const webUrl = this.webAppUrl();
+
+    if (error || !code || !state) {
+      return res.redirect(
+        `${webUrl}/setup/platforms?from=oauth&platform=instagram&status=error`,
+      );
+    }
+
+    try {
+      const redirect = await this.platformsService.handleInstagramCallback(code, state);
+      return res.redirect(redirect);
+    } catch {
+      return res.redirect(
+        `${webUrl}/setup/platforms?from=oauth&platform=instagram&status=error`,
+      );
+    }
+  }
+
   @Public()
   @SkipThrottle()
   @Get('youtube/callback')

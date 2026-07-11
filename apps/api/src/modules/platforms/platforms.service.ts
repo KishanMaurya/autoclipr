@@ -86,7 +86,9 @@ export class PlatformsService {
       oauth_url:
         dto.platform === 'youtube' && this.isOAuthConfigured('youtube')
           ? this.buildYoutubeOAuthUrl(userId)
-          : null,
+          : dto.platform === 'instagram' && this.isOAuthConfigured('instagram')
+            ? this.buildMetaOAuthUrl(userId, 'instagram')
+            : null,
     };
   }
 
@@ -150,11 +152,71 @@ export class PlatformsService {
     return `${webUrl}/setup/platforms?from=oauth&platform=youtube&status=success`;
   }
 
+  getInstagramOAuthUrl(userId: string) {
+    if (!this.isOAuthConfigured('instagram')) {
+      throw new BadRequestException(
+        'Instagram OAuth is not configured. Add META_APP_ID and META_APP_SECRET to .env',
+      );
+    }
+    return { url: this.buildMetaOAuthUrl(userId, 'instagram') };
+  }
+
+  async handleInstagramCallback(code: string, state: string) {
+    const userId = this.verifyOAuthState(state, 'instagram');
+    const tokens = await this.exchangeMetaCode(code, 'instagram');
+
+    // Exchange short-lived token for a long-lived token (60 days)
+    const longLived = await this.exchangeForLongLivedToken(tokens.access_token);
+
+    // Fetch the Instagram user ID and username
+    let accountName = 'Instagram Account';
+    let igUserId: string | null = null;
+    try {
+      const meRes = await fetch(
+        `https://graph.instagram.com/me?fields=id,username&access_token=${longLived.access_token}`,
+      );
+      if (meRes.ok) {
+        const me = (await meRes.json()) as { id?: string; username?: string };
+        igUserId = me.id ?? null;
+        accountName = me.username ? `@${me.username}` : accountName;
+      }
+    } catch {
+      // optional metadata
+    }
+
+    await this.platformsRepo.saveOAuthTokens(userId, 'instagram', {
+      account_name: accountName,
+      account_id: igUserId,
+      access_token: longLived.access_token,
+      refresh_token: null, // Instagram uses long-lived tokens, no refresh_token
+      token_expires_at: longLived.expires_at,
+    });
+
+    void this.usersRepo.getById(userId).then((profile) => {
+      if (profile?.email && profile.email_notifications_enabled !== false) {
+        void this.email.sendPlatformConnected(profile.email, {
+          userName: profile.full_name || profile.email.split('@')[0],
+          platformName: 'Instagram Reels',
+          accountName,
+        });
+      }
+    });
+
+    const webUrl = this.config.get<string>('webAppUrl') ?? 'http://localhost:3000';
+    return `${webUrl}/setup/platforms?from=oauth&platform=instagram&status=success`;
+  }
+
   private isOAuthConfigured(platform: PlatformId): boolean {
     if (platform === 'youtube') {
       return !!(
         this.config.get<string>('googleClientId') &&
         this.config.get<string>('googleClientSecret')
+      );
+    }
+    if (platform === 'instagram') {
+      return !!(
+        this.config.get<string>('metaAppId') &&
+        this.config.get<string>('metaAppSecret')
       );
     }
     return false;
@@ -226,6 +288,92 @@ export class PlatformsService {
     } catch {
       throw new BadRequestException('Invalid OAuth state');
     }
+  }
+
+  private buildMetaOAuthUrl(userId: string, platform: PlatformId): string {
+    const appId = this.config.get<string>('metaAppId')!;
+    const redirectUri = this.getMetaRedirectUri(platform);
+    const state = this.createOAuthState(userId, platform);
+
+    // instagram_basic + instagram_content_publish are required for Reels publishing
+    const scopes = [
+      'instagram_basic',
+      'instagram_content_publish',
+      'pages_show_list',
+      'pages_read_engagement',
+    ].join(',');
+
+    const params = new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: scopes,
+      state,
+    });
+
+    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
+  }
+
+  private getMetaRedirectUri(platform: PlatformId): string {
+    const configured = this.config.get<string>('metaRedirectUri');
+    if (configured) return configured;
+    const base = this.config.get<string>('apiPublicUrl') ?? 'http://localhost:8080';
+    return `${base}/api/v1/platforms/${platform}/callback`;
+  }
+
+  private async exchangeMetaCode(
+    code: string,
+    platform: PlatformId,
+  ): Promise<{ access_token: string }> {
+    const res = await fetch('https://graph.facebook.com/v21.0/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: this.config.get<string>('metaAppId') ?? '',
+        client_secret: this.config.get<string>('metaAppSecret') ?? '',
+        redirect_uri: this.getMetaRedirectUri(platform),
+        code,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new BadRequestException(`Meta OAuth code exchange failed: ${text.slice(0, 200)}`);
+    }
+
+    const data = (await res.json()) as { access_token?: string };
+    if (!data.access_token) throw new BadRequestException('Meta did not return an access token');
+    return { access_token: data.access_token };
+  }
+
+  private async exchangeForLongLivedToken(
+    shortLivedToken: string,
+  ): Promise<{ access_token: string; expires_at: string | null }> {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/oauth/access_token?` +
+        new URLSearchParams({
+          grant_type: 'fb_exchange_token',
+          client_id: this.config.get<string>('metaAppId') ?? '',
+          client_secret: this.config.get<string>('metaAppSecret') ?? '',
+          fb_exchange_token: shortLivedToken,
+        }),
+    );
+
+    if (!res.ok) {
+      // Non-fatal — fall back to the short-lived token
+      return { access_token: shortLivedToken, expires_at: null };
+    }
+
+    const data = (await res.json()) as { access_token?: string; expires_in?: number };
+    const expiresAt =
+      data.expires_in != null
+        ? new Date(Date.now() + data.expires_in * 1000).toISOString()
+        : null;
+
+    return {
+      access_token: data.access_token ?? shortLivedToken,
+      expires_at: expiresAt,
+    };
   }
 
   private async exchangeGoogleCode(code: string): Promise<{

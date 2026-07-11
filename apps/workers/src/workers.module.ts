@@ -14,6 +14,7 @@ import { TempFilesService } from './pipeline/temp-files.service';
 import { UrlPipelineService } from './pipeline/url-pipeline.service';
 import { PublishService } from './publish/publish.service';
 import { YoutubePublisherService } from './publish/youtube-publisher.service';
+import { InstagramPublisherService } from './publish/instagram-publisher.service';
 import { WhisperService } from './pipeline/whisper.service';
 import { WorkersStorageService } from './pipeline/storage.service';
 import { YtdlpService } from './pipeline/ytdlp.service';
@@ -52,6 +53,7 @@ import { EmailModule } from '@autoclipr/emails';
     UrlPipelineService,
     PublishService,
     YoutubePublisherService,
+    InstagramPublisherService,
   ],
 })
 export class WorkersModule {}

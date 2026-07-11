@@ -8,6 +8,7 @@ import * as path from 'path';
 import { DatabaseService } from '../database/database.service';
 import { TempFilesService } from '../pipeline/temp-files.service';
 import { YoutubePublisherService } from './youtube-publisher.service';
+import { InstagramPublisherService } from './instagram-publisher.service';
 
 type PlatformId = 'youtube' | 'instagram' | 'facebook' | 'tiktok';
 
@@ -20,6 +21,7 @@ export class PublishService {
     private readonly db: DatabaseService,
     private readonly temp: TempFilesService,
     private readonly youtube: YoutubePublisherService,
+    private readonly instagram: InstagramPublisherService,
     private readonly config: ConfigService,
     private readonly monitoring: MonitoringService,
   ) {
@@ -180,10 +182,32 @@ export class PublishService {
             );
           },
         });
-      case 'instagram':
-        throw new Error(
-          'Instagram posting requires Meta OAuth (coming soon). Download the clip and post manually for now.',
-        );
+      case 'instagram': {
+        if (conn.auth_status !== 'authorized' || !conn.access_token) {
+          throw new Error(
+            'Instagram not authorized. Go to Settings → Platforms and reconnect Instagram.',
+          );
+        }
+        if (!conn.account_id) {
+          throw new Error(
+            'Instagram user ID missing. Disconnect and reconnect Instagram in Settings → Platforms.',
+          );
+        }
+        return this.instagram.uploadReel({
+          accessToken: conn.access_token as string,
+          igUserId: conn.account_id as string,
+          title: opts.title,
+          localClipPath: opts.localClipPath,
+          onTokenRefresh: async (newToken, expiresAt) => {
+            await this.db.client.query(
+              `UPDATE platform_connections
+               SET access_token = $1, token_expires_at = $2, auth_status = 'authorized', updated_at = NOW()
+               WHERE user_id = $3 AND platform = 'instagram'`,
+              [newToken, expiresAt, opts.userId],
+            );
+          },
+        });
+      }
       case 'facebook':
         throw new Error(
           'Facebook posting requires Meta OAuth (coming soon). Download the clip and post manually for now.',
