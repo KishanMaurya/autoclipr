@@ -30,7 +30,7 @@ export async function Navbar() {
             <LogoIcon size={20} />
           </span>
           <span className="text-base sm:text-lg">
-            AutoClipr<span className="gradient-text">.ai</span>
+            Auto<span className="gradient-text">Clipr.ai</span>
           </span>
         </Link>
 

@@ -25,7 +25,7 @@ export default function RegisterPage() {
           <LogoIcon size={24} />
         </span>
         <span className="text-xl font-bold">
-          AutoClipr<span className="gradient-text">.ai</span>
+          Auto<span className="gradient-text">Clipr.ai</span>
         </span>
       </div>
       <Suspense fallback={<div className="h-96 w-full max-w-md animate-pulse rounded-2xl bg-white/5" />}>

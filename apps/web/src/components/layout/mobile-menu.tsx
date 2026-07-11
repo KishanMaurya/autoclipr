@@ -51,7 +51,7 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
               <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252]">
                 <LogoIcon size={20} />
               </span>
-              <span className="text-white text-sm">AutoClipr<span className="text-emerald-400">.ai</span></span>
+              <span className="text-white text-sm">Auto<span className="text-emerald-400">Clipr.ai</span></span>
             </Link>
             <button
               onClick={close}

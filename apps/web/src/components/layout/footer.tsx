@@ -70,8 +70,7 @@ export function Footer() {
                 <LogoIcon size={22} />
               </span>
               <span className="text-lg font-bold text-white">
-                Auto<span className="text-emerald-400">Clipr</span>
-                <span className="text-emerald-400">.ai</span>
+                Auto<span className="text-emerald-400">Clipr.ai</span>
               </span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
