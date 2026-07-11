@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import { BrandMark } from "@/lib/brand-mark";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
 export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`;
@@ -25,12 +24,19 @@ export default function OpenGraphImage() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 24,
-            marginBottom: 32,
+            gap: 28,
+            marginBottom: 36,
           }}
         >
-          <BrandMark size={80} radius={18} />
-          <span style={{ fontSize: 72, fontWeight: 700, color: "#ffffff" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://autoclipr.com/assets/brand/logo.png"
+            width={96}
+            height={96}
+            alt="AutoClipr"
+            style={{ borderRadius: 20 }}
+          />
+          <span style={{ fontSize: 80, fontWeight: 700, color: "#ffffff", letterSpacing: "-2px" }}>
             {SITE_NAME}
           </span>
         </div>
@@ -41,6 +47,7 @@ export default function OpenGraphImage() {
             textAlign: "center",
             maxWidth: 900,
             lineHeight: 1.3,
+            margin: 0,
           }}
         >
           Turn long videos into viral shorts with AI captions
