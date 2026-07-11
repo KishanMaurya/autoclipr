@@ -295,12 +295,10 @@ export class PlatformsService {
     const redirectUri = this.getMetaRedirectUri(platform);
     const state = this.createOAuthState(userId, platform);
 
-    // instagram_basic + instagram_content_publish are required for Reels publishing
+    // Instagram API with Instagram Login scopes (not Facebook Login scopes)
     const scopes = [
-      'instagram_basic',
-      'instagram_content_publish',
-      'pages_show_list',
-      'pages_read_engagement',
+      'instagram_business_basic',
+      'instagram_business_content_publish',
     ].join(',');
 
     const params = new URLSearchParams({
@@ -311,7 +309,8 @@ export class PlatformsService {
       state,
     });
 
-    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
+    // Instagram API with Instagram Login uses api.instagram.com auth endpoint
+    return `https://api.instagram.com/oauth/authorize?${params.toString()}`;
   }
 
   private getMetaRedirectUri(platform: PlatformId): string {
@@ -325,12 +324,14 @@ export class PlatformsService {
     code: string,
     platform: PlatformId,
   ): Promise<{ access_token: string }> {
-    const res = await fetch('https://graph.facebook.com/v21.0/oauth/access_token', {
+    // Instagram Login API token endpoint
+    const res = await fetch('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         client_id: this.config.get<string>('metaAppId') ?? '',
         client_secret: this.config.get<string>('metaAppSecret') ?? '',
+        grant_type: 'authorization_code',
         redirect_uri: this.getMetaRedirectUri(platform),
         code,
       }),
@@ -349,13 +350,13 @@ export class PlatformsService {
   private async exchangeForLongLivedToken(
     shortLivedToken: string,
   ): Promise<{ access_token: string; expires_at: string | null }> {
+    // Exchange short-lived token for long-lived token via Instagram Graph API
     const res = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?` +
+      `https://graph.instagram.com/access_token?` +
         new URLSearchParams({
-          grant_type: 'fb_exchange_token',
-          client_id: this.config.get<string>('metaAppId') ?? '',
+          grant_type: 'ig_exchange_token',
           client_secret: this.config.get<string>('metaAppSecret') ?? '',
-          fb_exchange_token: shortLivedToken,
+          access_token: shortLivedToken,
         }),
     );
 
