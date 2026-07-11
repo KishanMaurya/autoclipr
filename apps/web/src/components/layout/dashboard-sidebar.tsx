@@ -61,9 +61,7 @@ export function DashboardSidebar({ credits }: { credits: number }) {
         )}
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-white/[0.06] px-6">
-          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[#3CC252] shadow-glow">
-            <LogoIcon size={20} />
-          </span>
+          <LogoIcon size={32} className="rounded-lg shadow-glow" />
           <span className="font-bold">Auto<span className="text-emerald-400">Clipr</span></span>
         </div>
 

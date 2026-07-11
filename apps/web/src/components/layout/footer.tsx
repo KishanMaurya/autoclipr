@@ -66,9 +66,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-1">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252] shadow-lg shadow-emerald-900/40">
-                <LogoIcon size={22} />
-              </span>
+              <LogoIcon size={36} className="rounded-xl shadow-lg shadow-emerald-900/40" />
               <span className="text-lg font-bold text-white">
                 Auto<span className="text-emerald-400">Clipr.ai</span>
               </span>

@@ -21,9 +21,7 @@ export default function LoginPage() {
         Back to home
       </Link>
       <div className="mb-8 flex items-center gap-2.5">
-        <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252] shadow-glow">
-          <LogoIcon size={24} />
-        </span>
+        <LogoIcon size={40} className="rounded-xl shadow-glow" />
         <span className="text-xl font-bold">
           Auto<span className="gradient-text">Clipr.ai</span>
         </span>

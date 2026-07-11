@@ -48,9 +48,7 @@ export function MobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
           {/* Top bar */}
           <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.06]">
             <Link href="/" onClick={close} className="flex items-center gap-2 font-bold">
-              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[#3CC252]">
-                <LogoIcon size={20} />
-              </span>
+              <LogoIcon size={32} className="rounded-xl" />
               <span className="text-white text-sm">Auto<span className="text-emerald-400">Clipr.ai</span></span>
             </Link>
             <button
