@@ -18,20 +18,17 @@ export default function Icon() {
           borderRadius: 10,
         }}
       >
-        <svg
-          width="30"
-          height="30"
-          viewBox="0 0 100 100"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <polygon
-            points="24,14 24,86 86,50"
-            fill="white"
-            stroke="black"
-            strokeWidth="10"
-            strokeLinejoin="round"
-          />
-        </svg>
+        {/* CSS triangle — play button, pure HTML/CSS for Satori */}
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            marginLeft: 4,
+            borderTop: "13px solid transparent",
+            borderBottom: "13px solid transparent",
+            borderLeft: "22px solid white",
+          }}
+        />
       </div>
     ),
     { ...size },

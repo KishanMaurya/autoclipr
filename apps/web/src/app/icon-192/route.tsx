@@ -17,20 +17,16 @@ export async function GET() {
           borderRadius: 40,
         }}
       >
-        <svg
-          width="118"
-          height="118"
-          viewBox="0 0 100 100"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <polygon
-            points="24,14 24,86 86,50"
-            fill="white"
-            stroke="black"
-            strokeWidth="10"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            marginLeft: 16,
+            borderTop: "52px solid transparent",
+            borderBottom: "52px solid transparent",
+            borderLeft: "90px solid white",
+          }}
+        />
       </div>
     ),
     { width: 192, height: 192 },

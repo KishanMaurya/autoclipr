@@ -17,20 +17,16 @@ export default function AppleIcon() {
           borderRadius: 36,
         }}
       >
-        <svg
-          width="110"
-          height="110"
-          viewBox="0 0 100 100"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <polygon
-            points="24,14 24,86 86,50"
-            fill="white"
-            stroke="black"
-            strokeWidth="10"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            marginLeft: 14,
+            borderTop: "48px solid transparent",
+            borderBottom: "48px solid transparent",
+            borderLeft: "82px solid white",
+          }}
+        />
       </div>
     ),
     { ...size },
