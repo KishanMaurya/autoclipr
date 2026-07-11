@@ -28,8 +28,8 @@ export default function Icon() {
             points="24,14 24,86 86,50"
             fill="white"
             stroke="black"
-            stroke-width="10"
-            stroke-linejoin="round"
+            strokeWidth="10"
+            strokeLinejoin="round"
           />
         </svg>
       </div>
