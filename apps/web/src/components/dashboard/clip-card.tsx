@@ -139,7 +139,7 @@ export function ClipCard({
             aria-label={`Delete ${clip.title}`}
             disabled={deleting}
             onClick={handleDelete}
-            className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/40 bg-black/70 text-red-400 transition hover:border-red-500/70 hover:bg-red-950/60 hover:text-red-300 disabled:opacity-50"
+            className="absolute bottom-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/40 bg-black/70 text-red-400 transition hover:border-red-500/70 hover:bg-red-950/60 hover:text-red-300 disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" />
           </button>
