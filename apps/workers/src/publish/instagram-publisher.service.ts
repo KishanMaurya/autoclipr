@@ -72,10 +72,16 @@ export class InstagramPublisherService {
 
     if (error) throw new Error(`Failed to upload clip to storage: ${error.message}`);
 
-    const { data } = this.supabase.storage.from(bucket).getPublicUrl(objectPath);
-    if (!data?.publicUrl) throw new Error('Could not get public URL for uploaded clip');
+    // Use a signed URL (1 hour) so Instagram can fetch regardless of bucket policy
+    const { data: signedData, error: signedError } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(objectPath, 3600);
 
-    return data.publicUrl;
+    if (signedError || !signedData?.signedUrl) {
+      throw new Error(`Could not create signed URL for clip: ${signedError?.message ?? 'unknown'}`);
+    }
+
+    return signedData.signedUrl;
   }
 
   /** Step 1 — POST /v21.0/{ig-user-id}/media → returns creation_id */
@@ -122,8 +128,9 @@ export class InstagramPublisherService {
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, pollIntervalMs));
 
+      // Correct endpoint: poll the container directly by its ID
       const url =
-        `https://graph.instagram.com/v21.0/${igUserId}/media/${containerId}` +
+        `https://graph.instagram.com/v21.0/${containerId}` +
         `?fields=status_code,status,error_message&access_token=${accessToken}`;
 
       const res = await fetch(url);
