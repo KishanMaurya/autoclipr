@@ -6,6 +6,14 @@ export const metadata: Metadata = { title: "Videos & Clips" };
 
 const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;
 
+type ClipsByUser = {
+  userId: string;
+  email: string;
+  fullName: string | null;
+  subscriptionTier: string;
+  clipCount: number;
+};
+
 async function fetchStats() {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -18,6 +26,18 @@ async function fetchStats() {
   return (await res.json()).data;
 }
 
+async function fetchClipsByUser(): Promise<ClipsByUser[]> {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const res = await fetch(`${API}/admin/clips-by-user?limit=50`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) return [];
+  return (await res.json()).data ?? [];
+}
+
 function fmtDuration(secs: number) {
   if (!secs) return "—";
   const m = Math.floor(secs / 60);
@@ -26,7 +46,7 @@ function fmtDuration(secs: number) {
 }
 
 export default async function VideosPage() {
-  const stats = await fetchStats();
+  const [stats, clipsByUser] = await Promise.all([fetchStats(), fetchClipsByUser()]);
   if (!stats) return <p className="text-white/40">Failed to load.</p>;
 
   const { videos, clips } = stats;
@@ -86,6 +106,47 @@ export default async function VideosPage() {
         <div className="flex h-40 items-center justify-center">
           <p className="text-sm text-white/20">Per-day upload tracking coming soon</p>
         </div>
+      </div>
+
+      {/* Clips created by user */}
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-5">
+        <h3 className="mb-4 text-sm font-semibold text-white/70">Clips Created by User</h3>
+        {clipsByUser.length === 0 ? (
+          <p className="py-8 text-center text-sm text-white/20">No clips generated yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-xs uppercase tracking-wider text-white/30">
+                  <th className="py-2 pr-4 font-medium">User</th>
+                  <th className="py-2 pr-4 font-medium">Plan</th>
+                  <th className="py-2 pr-4 text-right font-medium">Clips</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clipsByUser.map((u) => (
+                  <tr key={u.userId} className="border-b border-white/[0.03] last:border-0">
+                    <td className="py-3 pr-4">
+                      <p className="font-medium text-white/85">{u.fullName || u.email}</p>
+                      {u.fullName && <p className="text-xs text-white/30">{u.email}</p>}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs capitalize text-white/50">
+                        {u.subscriptionTier}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-right">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-400">
+                        <Scissors className="h-3.5 w-3.5" />
+                        {u.clipCount}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

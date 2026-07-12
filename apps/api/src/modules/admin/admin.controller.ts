@@ -36,6 +36,12 @@ export class AdminController {
     return ApiResponse.ok(data);
   }
 
+  @Get('clips-by-user')
+  async clipsByUser(@Query('limit') limit?: string) {
+    const data = await this.service.getClipsByUser(limit ? parseInt(limit, 10) : 50);
+    return ApiResponse.ok(data);
+  }
+
   @Get('errors')
   async errors(@Query('limit') limit?: string) {
     const data = await this.service.getErrors(limit ? parseInt(limit, 10) : 50);

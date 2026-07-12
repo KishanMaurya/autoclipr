@@ -157,6 +157,43 @@ export class AdminRepository {
     return { total: r1.count ?? 0, today: r2.count ?? 0 };
   }
 
+  /** Clip counts grouped by user, joined with profile name/email, sorted highest first. */
+  async getClipsByUser(limit = 50) {
+    const { data: clips } = await this.db.from('clips').select('user_id');
+    const rows = clips ?? [];
+
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      const userId = row.user_id as string;
+      counts.set(userId, (counts.get(userId) ?? 0) + 1);
+    }
+
+    const topUserIds = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([userId]) => userId);
+
+    if (topUserIds.length === 0) return [];
+
+    const { data: profiles } = await this.db
+      .from('profiles')
+      .select('id, email, full_name, subscription_tier')
+      .in('id', topUserIds);
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
+
+    return topUserIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      return {
+        userId,
+        email: (profile?.email as string) ?? 'Unknown',
+        fullName: (profile?.full_name as string | null) ?? null,
+        subscriptionTier: (profile?.subscription_tier as string) ?? 'free',
+        clipCount: counts.get(userId) ?? 0,
+      };
+    });
+  }
+
   // ─── Affiliates ──────────────────────────────────────────────────────────
 
   async getAffiliateStats() {

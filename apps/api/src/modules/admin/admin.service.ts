@@ -24,6 +24,10 @@ export class AdminService {
     return this.repo.getTopCreators(limit);
   }
 
+  async getClipsByUser(limit = 50) {
+    return this.repo.getClipsByUser(limit);
+  }
+
   async getErrors(limit = 50) {
     return this.repo.getRecentErrors(limit);
   }
