@@ -410,6 +410,97 @@ export const BLOG_POSTS: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: "how-to-use-autoclipr-complete-guide",
+    title: "How to Use AutoClipr: The Complete Beginner's Guide",
+    description:
+      "A full walkthrough of AutoClipr — connecting YouTube and other platforms, using your 100 free starter credits, and getting the most out of the free tools before you clip your first video.",
+    keywords: [
+      "how to use AutoClipr",
+      "AutoClipr tutorial",
+      "connect YouTube AutoClipr",
+      "AutoClipr free credits",
+      "AI video clipper guide",
+    ],
+    publishedAt: "2026-07-12",
+    readMinutes: 9,
+    sections: [
+      {
+        paragraphs: [
+          "AutoClipr turns long videos into short, platform-ready clips using AI — no editing software, no manual cropping, no typing captions by hand. This guide walks through the entire setup: creating an account, connecting your channels and posting platforms, spending your free starter credits, and using the free tools that don't cost anything at all.",
+          "If you're new to AutoClipr, start here before jumping into any of our platform-specific strategy guides.",
+        ],
+      },
+      {
+        heading: "Step 1: Create your account and claim 100 free credits",
+        paragraphs: [
+          "Sign up at autoclipr.com/register with your email or Google account. No credit card is required to get started.",
+          "Every new signup receives 100 credits automatically on the free Starter plan. Credits are spent per clip generated, so 100 credits is enough to test the full pipeline — import, AI analysis, captions, and export — across multiple videos before deciding whether to upgrade.",
+          "Once you're signed in, you'll land on the dashboard, your command center for channels, clips, platforms, and analytics.",
+        ],
+      },
+      {
+        heading: "Step 2: Connect a YouTube channel to clip from",
+        paragraphs: [
+          "Go to Channels in the left sidebar (or Settings → Channel Setup). This is where you tell AutoClipr which YouTube channels you want to pull source videos from — separate from where clips get posted.",
+          "Type a channel name or handle (e.g. AdamLZ or @AdamLZ) into the search box and click Connect Channel. AutoClipr resolves the channel automatically and saves it as a clip source.",
+          "You can connect multiple channels this way — your own, a client's, or any public channel you have rights to repurpose.",
+        ],
+      },
+      {
+        heading: "Step 3: Connect posting platforms (YouTube, Instagram, and more)",
+        paragraphs: [
+          "Connecting a channel to clip from is different from connecting a platform to post to — that happens under Settings → Platforms (or the Platforms tab on your dashboard).",
+          "For YouTube Shorts: click Connect on the YouTube card. You'll be redirected to Google's OAuth screen to authorize AutoClipr to upload on your behalf. This is a one-time authorization.",
+          "For Instagram Reels: click Connect on the Instagram card. Your Instagram account must be a Professional account (Business or Creator) — if it isn't, Instagram will prompt you to switch during the connection flow. Complete the OAuth login and grant permission.",
+          "Facebook and TikTok posting are rolling out — cards for these platforms show their current availability on the same screen.",
+          "Once a platform shows a green 'Connected' badge, you can post any completed clip to it directly from the Clips page.",
+        ],
+      },
+      {
+        heading: "Step 4: Generate your first clips",
+        paragraphs: [
+          "Go to Viral Shorts (or click Create Viral Shorts from the dashboard). Paste a video URL — YouTube, Vimeo, Loom, Google Drive, or a direct MP4 link — or upload a file directly.",
+          "Choose your clip count (5, 10, 15, or 20), pick which durations to generate (15s, 30s, 45s, 60s), and select a caption style: Viral (bold, word-by-word), Animated, Emoji Captions, or Karaoke.",
+          "Each clip costs credits based on your plan's per-clip rate — the exact cost is shown next to each clip-count option before you commit, and your remaining balance is shown live so there are no surprises.",
+          "Click Create Viral Shorts. AutoClipr downloads the source, transcribes it with Whisper, uses AI to find the strongest hooks, trims segments, burns in captions, and exports vertical clips — typically within a couple of minutes per video.",
+        ],
+      },
+      {
+        heading: "Step 5: Review, post, and download your clips",
+        paragraphs: [
+          "Once processing finishes, your clips appear on the Clips page with a viral score (an AI-predicted engagement rating) attached to each one. Clips are sorted by score by default, so your strongest options surface first.",
+          "Click Post on any completed clip to publish it to a connected platform — the clip is uploaded automatically, and its status updates from Pending to Posted with a link to the live post once it's confirmed.",
+          "Prefer to post manually? Click Download to save the MP4 locally and upload it yourself through Instagram, TikTok, or wherever you like.",
+          "Use Select all with the Download selected or Delete selected buttons to manage clips in bulk once you're generating in volume.",
+        ],
+      },
+      {
+        heading: "Step 6: Track performance in Analytics",
+        paragraphs: [
+          "The Analytics page shows posted clips, connected platforms, and live view/like/comment counts pulled directly from YouTube and Instagram.",
+          "Click Refresh stats to pull the latest numbers. Use this to spot which clips and caption styles are performing best, then apply that pattern to your next batch.",
+        ],
+      },
+      {
+        heading: "Bonus: free tools that don't cost credits",
+        paragraphs: [
+          "AutoClipr also ships a set of standalone free tools under Free Tools in the navbar — useful even if you're not ready to run the full AI pipeline yet.",
+          "Video Editing: Video Slicer (cut 15s/30s/45s/60s segments in bulk), Aspect Ratio Converter (16:9 → 9:16 or 1:1 for Shorts and Reels), Video Compressor (shrink file size without losing quality), and GIF Generator (turn any segment into a GIF).",
+          "Convert & Extract: Format Converter (MP4 ↔ MOV, MP4 → WebM), Audio Extractor (pull MP3 or WAV from any video), and Thumbnail Extractor (grab a PNG frame at any timestamp).",
+          "Captions & Info: Caption Generator (free auto-transcripts), Caption Templates (simple white caption styles), and Video Metadata Viewer (check duration, FPS, codec, and bitrate instantly).",
+          "These tools run entirely free with no signup required for most of them — a good way to handle quick one-off tasks without touching your credit balance.",
+        ],
+      },
+      {
+        heading: "Quick recap",
+        paragraphs: [
+          "1. Sign up and get 100 free credits automatically. 2. Connect a YouTube channel under Channels to clip from. 3. Connect posting platforms (YouTube, Instagram) under Settings → Platforms. 4. Generate clips from a URL or upload under Viral Shorts. 5. Post or download from the Clips page. 6. Track results in Analytics.",
+          "From here, check out our platform-specific guides — YouTube to TikTok, Instagram Reels strategy, and LinkedIn video clips — for tactics on what to clip and how to caption it once your pipeline is running.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getBlogPost(slug: string): BlogPost | undefined {
