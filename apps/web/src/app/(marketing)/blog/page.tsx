@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BlogIndex } from "@/components/blog/blog-index";
 import { BlogIndexJsonLd } from "@/components/seo/json-ld";
 import { BLOG_POSTS } from "@/lib/blog-posts";
@@ -27,7 +28,7 @@ export default function BlogPage() {
       <BlogIndexJsonLd posts={posts} />
       <div className="mx-auto max-w-5xl text-center">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
-          <a href="/" className="hover:text-foreground">Home</a>
+          <Link href="/" className="hover:text-foreground">Home</Link>
           <span className="mx-2">/</span>
           <span aria-current="page">Blog</span>
         </nav>
