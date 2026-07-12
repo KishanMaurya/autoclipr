@@ -68,7 +68,6 @@ export function ClipCard({
   const [deleting, setDeleting] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [scoreTooltip, setScoreTooltip] = useState(false);
 
   const durationSec =
     clip.duration_seconds ??
@@ -158,26 +157,12 @@ export function ClipCard({
           </button>
         )}
 
-        {/* Viral score badge with tooltip */}
+        {/* Viral score badge — on thumbnail */}
         {viralScore != null && (
-          <div className="absolute left-2 top-2">
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold text-orange-300"
-              onMouseEnter={() => setScoreTooltip(true)}
-              onMouseLeave={() => setScoreTooltip(false)}
-              onClick={() => setScoreTooltip((v) => !v)}
-            >
-              <Flame className="h-3 w-3" />
-              {viralScore}/100
-            </button>
-            {scoreTooltip && (
-              <div className="absolute left-0 top-7 z-10 w-48 rounded-lg bg-zinc-900 px-3 py-2 text-xs text-zinc-300 shadow-xl ring-1 ring-white/10">
-                <p className="font-semibold text-white">Viral Score</p>
-                <p className="mt-0.5">AI-predicted chance this clip goes viral. Higher = stronger hook, pacing & engagement.</p>
-              </div>
-            )}
-          </div>
+          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold text-orange-300">
+            <Flame className="h-3 w-3" />
+            {viralScore}/100
+          </span>
         )}
 
         {/* Play button — only when clip is ready and has a playable URL */}
@@ -207,6 +192,23 @@ export function ClipCard({
             {durationSec}s · Vertical
           </span>
         </div>
+
+        {/* Viral score row with explanation */}
+        {viralScore != null && (
+          <div className="flex items-center justify-between rounded-lg bg-orange-500/8 px-3 py-1.5 ring-1 ring-orange-500/20">
+            <div className="flex items-center gap-1.5">
+              <Flame className="h-3.5 w-3.5 text-orange-400" />
+              <span className="text-xs font-semibold text-orange-300">Viral Score</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-bold text-orange-300">{viralScore}</span>
+              <span className="text-xs text-orange-400/60">/100</span>
+              <span className="ml-1 text-[10px] text-muted-foreground">
+                {viralScore >= 80 ? "🔥 High" : viralScore >= 60 ? "⚡ Good" : "📈 Fair"}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Posted platforms — icons + Live link */}
         {postedPubs.length > 0 && (
