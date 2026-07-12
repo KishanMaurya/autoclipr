@@ -43,8 +43,8 @@ function StatCard({
     amber:   "from-amber-500 to-orange-400 shadow-[0_0_20px_rgba(245,158,11,0.15)]",
   };
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0a0a16] p-5">
-      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${colorMap[color]}`}>
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0a0a16] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]">
+      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${colorMap[color]} transition-transform duration-300 group-hover:scale-110`}>
         <Icon className="h-5 w-5 text-white" />
       </div>
       <p className="text-2xl font-black text-white">{value}</p>
@@ -119,9 +119,15 @@ export function AffiliateDashboard({ data, token }: { data: AffiliateData; token
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Affiliate Dashboard</h1>
+      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="pointer-events-none absolute -left-8 -top-12 h-40 w-64 rounded-full bg-emerald-500/[0.07] blur-3xl" aria-hidden />
+        <div className="relative">
+          <h1 className="text-2xl font-bold sm:text-3xl">
+            Affiliate{" "}
+            <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+              Dashboard
+            </span>
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Your referral link earns you <span className="font-semibold text-emerald-400">{stats.commission_rate}% recurring</span> on every active subscriber.
           </p>

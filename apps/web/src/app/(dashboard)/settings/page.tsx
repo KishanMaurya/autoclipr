@@ -25,9 +25,14 @@ export default async function SettingsPage() {
   const needsEmail = !authEmail;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>
+    <div className="relative mx-auto max-w-2xl space-y-8">
+      <div className="pointer-events-none absolute -top-16 left-1/2 h-48 w-[380px] -translate-x-1/2 rounded-full bg-teal-500/[0.06] blur-3xl" aria-hidden />
+      <div className="relative">
+        <h1 className="text-2xl font-bold sm:text-3xl">
+          <span className="bg-gradient-to-r from-teal-300 to-emerald-400 bg-clip-text text-transparent">
+            Settings
+          </span>
+        </h1>
         <p className="text-muted-foreground">Manage your account and posting identity</p>
       </div>
 
@@ -37,7 +42,8 @@ export default async function SettingsPage() {
         </div>
       )}
 
-      <Card className="glass">
+      <Card className="glass relative overflow-hidden border-white/[0.08]">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0" />
         <CardHeader>
           <CardTitle>Profile</CardTitle>
         </CardHeader>
@@ -56,7 +62,8 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="glass">
+      <Card className="glass relative overflow-hidden border-white/[0.08]">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-sky-500/0 via-sky-500/50 to-sky-500/0" />
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
         </CardHeader>
@@ -67,7 +74,8 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="glass border-red-500/20">
+      <Card className="glass relative overflow-hidden border-red-500/20">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-red-500/0 via-red-500/50 to-red-500/0" />
         <CardHeader>
           <CardTitle className="text-red-400">Delete account</CardTitle>
         </CardHeader>

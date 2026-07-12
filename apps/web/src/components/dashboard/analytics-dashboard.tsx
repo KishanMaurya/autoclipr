@@ -70,10 +70,16 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="pointer-events-none absolute -left-10 -top-12 h-44 w-72 rounded-full bg-sky-500/[0.07] blur-3xl" aria-hidden />
+        <div className="relative">
           <p className="section-label mb-2 !px-3 !py-1 !text-[10px]">Analytics</p>
-          <h1 className="text-3xl font-bold">Posting Analytics</h1>
+          <h1 className="text-3xl font-bold">
+            Posting{" "}
+            <span className="bg-gradient-to-r from-sky-400 to-violet-400 bg-clip-text text-transparent">
+              Analytics
+            </span>
+          </h1>
           <p className="mt-2 text-muted-foreground">
             Track posted clips, platform connections, and view counts.
           </p>
@@ -83,6 +89,7 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
           variant="outline"
           disabled={refreshing}
           onClick={refreshStats}
+          className="border-white/10 bg-white/[0.03] backdrop-blur hover:bg-white/[0.07]"
         >
           {refreshing ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -104,22 +111,26 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
           icon={<Share2 className="h-6 w-6 text-emerald-400" />}
           label="Posted clips"
           value={String(summary.posted_count)}
+          accent="emerald"
         />
         <StatCard
           icon={<Eye className="h-6 w-6 text-sky-400" />}
           label="Total views"
           value={formatNumber(summary.total_views)}
           hint="YouTube live stats"
+          accent="sky"
         />
         <StatCard
           icon={<Heart className="h-6 w-6 text-pink-400" />}
           label="Total likes"
           value={formatNumber(summary.total_likes)}
+          accent="pink"
         />
         <StatCard
           icon={<BarChart3 className="h-6 w-6 text-violet-400" />}
           label="Connected platforms"
           value={String(summary.connected_platforms_count)}
+          accent="violet"
         />
       </div>
 
@@ -176,29 +187,44 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
               </p>
             ) : (
               <ul className="space-y-4">
-                {Object.entries(by_platform).map(([platform, stats]) => (
-                  <li key={platform}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 capitalize">
-                        {platformIcon(platform)}
-                        {platform.replace("_", " ")}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {stats.posted_count} clip{stats.posted_count !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-                      <span className="flex items-center gap-2 text-sm">
-                        <Eye className="h-4 w-4 text-sky-400" />
-                        {formatNumber(stats.total_views)} views
-                      </span>
-                      <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <ThumbsUp className="h-4 w-4" />
-                        {formatNumber(stats.total_likes)} likes
-                      </span>
-                    </div>
-                  </li>
-                ))}
+                {(() => {
+                  const maxViews = Math.max(
+                    1,
+                    ...Object.values(by_platform).map((s) => s.total_views),
+                  );
+                  return Object.entries(by_platform).map(([platform, stats]) => (
+                    <li key={platform}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2 capitalize">
+                          {platformIcon(platform)}
+                          {platform.replace("_", " ")}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {stats.posted_count} clip{stats.posted_count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-white/5 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-sm">
+                            <Eye className="h-4 w-4 text-sky-400" />
+                            {formatNumber(stats.total_views)} views
+                          </span>
+                          <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <ThumbsUp className="h-4 w-4" />
+                            {formatNumber(stats.total_likes)} likes
+                          </span>
+                        </div>
+                        {/* Proportional view bar */}
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500 transition-all duration-500"
+                            style={{ width: `${Math.max(4, (stats.total_views / maxViews) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  ));
+                })()}
               </ul>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
@@ -318,21 +344,35 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
   );
 }
 
+const STAT_ACCENTS: Record<string, { glow: string; bar: string; ring: string }> = {
+  emerald: { glow: "from-emerald-500/15", bar: "from-emerald-500/70 to-emerald-500/0", ring: "bg-emerald-500/10 ring-emerald-500/25" },
+  sky: { glow: "from-sky-500/15", bar: "from-sky-500/70 to-sky-500/0", ring: "bg-sky-500/10 ring-sky-500/25" },
+  pink: { glow: "from-pink-500/15", bar: "from-pink-500/70 to-pink-500/0", ring: "bg-pink-500/10 ring-pink-500/25" },
+  violet: { glow: "from-violet-500/15", bar: "from-violet-500/70 to-violet-500/0", ring: "bg-violet-500/10 ring-violet-500/25" },
+};
+
 function StatCard({
   icon,
   label,
   value,
   hint,
+  accent = "emerald",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   hint?: string;
+  accent?: string;
 }) {
+  const a = STAT_ACCENTS[accent] ?? STAT_ACCENTS.emerald;
   return (
-    <Card className="stat-card border-white/[0.08]">
-      <CardContent className="flex items-center gap-4 p-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+    <Card className="stat-card group relative overflow-hidden border-white/[0.08] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]">
+      <div
+        className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-gradient-to-br ${a.glow} to-transparent opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`}
+      />
+      <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${a.bar}`} />
+      <CardContent className="relative flex items-center gap-4 p-6">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ${a.ring}`}>
           {icon}
         </div>
         <div>

@@ -267,8 +267,9 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
   const isTrial = mode === "trial";
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="text-center">
+    <div className="relative mx-auto max-w-4xl">
+      <div className="pointer-events-none absolute -top-16 left-1/2 h-56 w-[520px] -translate-x-1/2 rounded-full bg-violet-500/[0.07] blur-3xl" aria-hidden />
+      <div className="relative text-center">
         {isTrial && (
           <Badge
             variant="outline"
@@ -279,7 +280,10 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
         )}
         <p className="section-label mx-auto mb-4">Platforms</p>
         <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-          {isTrial ? "Connect Your Platforms" : "Connect Your Platforms"}
+          Connect Your{" "}
+          <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+            Platforms
+          </span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
           {isTrial
@@ -309,14 +313,21 @@ export function PlatformConnectionSetup({ mode = "dashboard" }: { mode?: "trial"
             <article
               key={platform.id}
               className={cn(
-                "surface-hover flex flex-col p-6",
+                "surface-hover group relative flex flex-col overflow-hidden p-6 transition-all duration-300 hover:-translate-y-0.5",
                 isConnected ? "border-emerald-500/30" : ""
               )}
             >
-              <div className="mb-5 flex items-start justify-between">
-                {platform.icon}
+              {isConnected && (
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500/0" />
+              )}
+              <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/[0.04] blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="relative mb-5 flex items-start justify-between">
+                <span className="transition-transform duration-300 group-hover:scale-110">{platform.icon}</span>
                 {isConnected && (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Connected
+                  </span>
                 )}
               </div>
               <h2 className="text-xl font-semibold">{platform.name}</h2>

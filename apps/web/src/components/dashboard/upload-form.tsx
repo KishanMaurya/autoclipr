@@ -227,10 +227,15 @@ export function UploadForm() {
   }
 
   return (
-    <Card className="glass border-white/10">
+    <Card className="glass relative overflow-hidden border-white/10">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-violet-500/0 via-violet-500/60 to-violet-500/0" />
+      <div className="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-violet-500/[0.08] blur-3xl" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileVideo className="h-5 w-5 text-violet-400" />
+          <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/25">
+            <FileVideo className="h-5 w-5 text-violet-400" />
+            <span className="absolute -inset-1 -z-10 rounded-xl bg-violet-500/20 blur-md" />
+          </span>
           Upload Video
         </CardTitle>
       </CardHeader>
@@ -254,13 +259,15 @@ export function UploadForm() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
           className={cn(
-            "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-colors",
+            "group/drop flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-6 py-16 text-center transition-all duration-300",
             busy
               ? "cursor-not-allowed opacity-60"
-              : "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5",
+              : "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:shadow-[inset_0_0_40px_-12px_rgba(52,211,153,0.15)]",
           )}
         >
-          <UploadDropIcon />
+          <div className="transition-transform duration-300 group-hover/drop:-translate-y-1 group-hover/drop:scale-105">
+            <UploadDropIcon />
+          </div>
           <p className="text-sm text-muted-foreground">
             Drag & drop your video, or{" "}
             <span className="font-medium text-emerald-400">browse</span>
