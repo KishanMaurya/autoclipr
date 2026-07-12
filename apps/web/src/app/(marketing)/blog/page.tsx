@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BlogIndex } from "@/components/blog/blog-index";
+import { BlogIndexJsonLd } from "@/components/seo/json-ld";
 import { BLOG_POSTS } from "@/lib/blog-posts";
 import { pageMetadata } from "@/lib/seo";
 
@@ -23,7 +24,13 @@ export default function BlogPage() {
 
   return (
     <div className="px-4 pb-24 pt-28 sm:px-6">
+      <BlogIndexJsonLd posts={posts} />
       <div className="mx-auto max-w-5xl text-center">
+        <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+          <a href="/" className="hover:text-foreground">Home</a>
+          <span className="mx-2">/</span>
+          <span aria-current="page">Blog</span>
+        </nav>
         <p className="section-label mx-auto mb-6">AutoClipr Blog</p>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
           Grow with <span className="text-aurora">short-form video</span>

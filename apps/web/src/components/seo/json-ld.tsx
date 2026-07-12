@@ -1,7 +1,7 @@
 import type { BlogPost } from "@/lib/blog-posts";
 import { MARKETING_FAQS } from "@/lib/faqs";
 import type { LandingPage } from "@/lib/landing-pages";
-import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { DEFAULT_DESCRIPTION, OG_IMAGE_PATH, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 type JsonLdProps = {
   data: Record<string, unknown> | Record<string, unknown>[];
@@ -149,7 +149,9 @@ export function BlogPostJsonLd({ post, url }: { post: BlogPost; url: string }) {
     "@type": "BlogPosting",
     headline: post.title,
     description: post.description,
+    image: `${SITE_URL}${OG_IMAGE_PATH}`,
     datePublished: post.publishedAt,
+    dateModified: post.publishedAt,
     author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
     publisher: {
       "@type": "Organization",
@@ -161,5 +163,44 @@ export function BlogPostJsonLd({ post, url }: { post: BlogPost; url: string }) {
     keywords: post.keywords.join(", "),
   };
 
-  return <JsonLd data={article} />;
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: url },
+    ],
+  };
+
+  return <JsonLd data={[article, breadcrumb]} />;
+}
+
+export function BlogIndexJsonLd({ posts }: { posts: BlogPost[] }) {
+  const blog = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: `${SITE_NAME} Blog`,
+    description: "Guides on repurposing long videos, AI captions, and multi-platform clip workflows.",
+    url: `${SITE_URL}/blog`,
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    blogPost: posts.map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      description: p.description,
+      url: `${SITE_URL}/blog/${p.slug}`,
+      datePublished: p.publishedAt,
+    })),
+  };
+
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+    ],
+  };
+
+  return <JsonLd data={[blog, breadcrumb]} />;
 }
