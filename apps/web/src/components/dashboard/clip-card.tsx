@@ -15,6 +15,8 @@ type ClipCardProps = {
   selected?: boolean;
   onSelectChange?: (clipId: string, selected: boolean) => void;
   onDelete?: (clipId: string) => void;
+  /** Highest-scoring clip in the list — gets a golden ring + Top pick ribbon */
+  topPick?: boolean;
 };
 
 const PLATFORM_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -62,6 +64,7 @@ export function ClipCard({
   selected = false,
   onSelectChange,
   onDelete,
+  topPick = false,
 }: ClipCardProps) {
   const [thumbError, setThumbError] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -105,8 +108,20 @@ export function ClipCard({
   }
 
   return (
-    <Card className="glass overflow-hidden">
+    <Card
+      className={
+        topPick
+          ? "glass relative overflow-hidden ring-2 ring-amber-400/60 shadow-lg shadow-amber-500/15 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/25"
+          : "glass overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.14] hover:shadow-xl hover:shadow-black/40"
+      }
+    >
       <div className="relative aspect-[9/16] w-full overflow-hidden bg-zinc-900">
+        {/* Top pick ribbon */}
+        {topPick && (
+          <span className="absolute left-1/2 top-2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-400 px-2.5 py-0.5 text-[10px] font-bold text-black shadow-lg shadow-amber-500/30">
+            ⭐ Top pick
+          </span>
+        )}
         {clip.thumbnail_url && !thumbError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -157,14 +172,6 @@ export function ClipCard({
           </button>
         )}
 
-        {/* Viral score badge — on thumbnail */}
-        {viralScore != null && (
-          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold text-orange-300">
-            <Flame className="h-3 w-3" />
-            {viralScore}/100
-          </span>
-        )}
-
         {/* Play button — only when clip is ready and has a playable URL */}
         {canDownload && (
           <button
@@ -185,9 +192,11 @@ export function ClipCard({
           {clip.title}
         </h3>
         <div className="flex items-center justify-between">
-          <Badge variant={clip.status === "completed" ? "success" : "outline"}>
-            {clip.status}
-          </Badge>
+          {clip.status !== "completed" ? (
+            <Badge variant="outline">{clip.status}</Badge>
+          ) : (
+            <span />
+          )}
           <span className="text-xs text-muted-foreground">
             {durationSec}s · Vertical
           </span>

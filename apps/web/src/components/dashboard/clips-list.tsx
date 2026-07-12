@@ -49,6 +49,37 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
     [clips],
   );
 
+  // Sort & filter (#3) + top pick (#4)
+  const [sortBy, setSortBy] = useState<"score" | "newest">("score");
+  const [filterBy, setFilterBy] = useState<"all" | "posted" | "unposted">("all");
+
+  const scoreOf = (c: Clip) =>
+    c.viral_score ?? (c.ai_score != null ? Math.round(c.ai_score * 100) : -1);
+
+  const visibleClips = useMemo(() => {
+    let list = clips;
+    if (filterBy === "posted") {
+      list = list.filter((c) => c.publications?.some((p) => p.status === "posted"));
+    } else if (filterBy === "unposted") {
+      list = list.filter((c) => !c.publications?.some((p) => p.status === "posted"));
+    }
+    return [...list].sort((a, b) =>
+      sortBy === "score"
+        ? scoreOf(b) - scoreOf(a)
+        : new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+    );
+  }, [clips, sortBy, filterBy]);
+
+  const topPickId = useMemo(() => {
+    let best: Clip | null = null;
+    for (const c of clips) {
+      if (c.status !== "completed") continue;
+      if (scoreOf(c) < 0) continue;
+      if (!best || scoreOf(c) > scoreOf(best)) best = c;
+    }
+    return best?.id ?? null;
+  }, [clips]);
+
   const allSelected = clips.length > 0 && clips.every((c) => selected.has(c.id));
 
   function toggleAll() {
@@ -216,6 +247,29 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
             <Trash2 className="mr-2 h-4 w-4" />
             {deleteLoading ? "Deleting…" : `Delete selected (${selected.size})`}
           </Button>
+
+          {/* Sort & filter */}
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "score" | "newest")}
+              className="h-9 rounded-lg border border-white/[0.08] bg-black/40 px-2.5 text-xs text-muted-foreground outline-none transition-colors hover:border-white/20 focus:border-emerald-500/40"
+              aria-label="Sort clips"
+            >
+              <option value="score">Sort: Viral score</option>
+              <option value="newest">Sort: Newest</option>
+            </select>
+            <select
+              value={filterBy}
+              onChange={(e) => setFilterBy(e.target.value as "all" | "posted" | "unposted")}
+              className="h-9 rounded-lg border border-white/[0.08] bg-black/40 px-2.5 text-xs text-muted-foreground outline-none transition-colors hover:border-white/20 focus:border-emerald-500/40"
+              aria-label="Filter clips"
+            >
+              <option value="all">All clips</option>
+              <option value="posted">Posted</option>
+              <option value="unposted">Not posted</option>
+            </select>
+          </div>
         </div>
       )}
 
@@ -226,7 +280,7 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {clips.map((clip) => (
+        {visibleClips.map((clip) => (
           <ClipCard
             key={clip.id}
             clip={clip}
@@ -234,9 +288,15 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
             selected={selected.has(clip.id)}
             onSelectChange={toggleOne}
             onDelete={deleteOne}
+            topPick={clip.id === topPickId}
           />
         ))}
       </div>
+      {visibleClips.length === 0 && clips.length > 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          No clips match this filter.
+        </p>
+      )}
     </div>
     </>
   );
