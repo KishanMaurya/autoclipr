@@ -153,7 +153,7 @@ export class PublishService {
     localClipPath: string;
   }): Promise<{ postId: string | null; postUrl: string | null }> {
     const connRes = await this.db.client.query(
-      `SELECT platform, access_token, refresh_token, token_expires_at, auth_status
+      `SELECT platform, access_token, refresh_token, token_expires_at, auth_status, account_id
        FROM platform_connections WHERE user_id = $1 AND platform = $2`,
       [opts.userId, opts.platform],
     );
