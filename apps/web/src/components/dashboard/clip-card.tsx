@@ -123,13 +123,26 @@ export function ClipCard({
         )}
 
         {selectable && (
-          <label className="absolute right-2 top-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-black/60">
+          <label className="group/sel absolute right-2 top-2 z-10 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 accent-emerald-500"
+              className="sr-only"
               checked={selected}
               onChange={(e) => onSelectChange?.(clip.id, e.target.checked)}
             />
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-lg transition-all duration-200
+                ${selected
+                  ? "scale-100 border-emerald-400 bg-emerald-500 shadow-emerald-500/40"
+                  : "scale-90 border-white/40 bg-black/50 opacity-70 group-hover/sel:scale-100 group-hover/sel:border-white/70 group-hover/sel:opacity-100"
+                }`}
+            >
+              {selected && (
+                <svg viewBox="0 0 12 10" className="h-3.5 w-3.5 fill-none stroke-white stroke-2">
+                  <polyline points="1,5 4.5,8.5 11,1" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
           </label>
         )}
 
