@@ -45,6 +45,10 @@ export class UsersService {
     return this.usersRepo.listPlans();
   }
 
+  async getCreditHistory(userId: string) {
+    return this.usersRepo.listCreditTransactions(userId);
+  }
+
   async deleteAccount(userId: string) {
     const existing = await this.usersRepo.getById(userId);
     if (!existing) throw new NotFoundException('Profile not found');

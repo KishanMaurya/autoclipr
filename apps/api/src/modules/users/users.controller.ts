@@ -24,6 +24,12 @@ export class UsersController {
     return ApiResponse.ok(profile);
   }
 
+  @Get('me/credit-history')
+  async creditHistory(@CurrentUser() user: AuthUser) {
+    const data = await this.usersService.getCreditHistory(user.sub);
+    return ApiResponse.ok(data);
+  }
+
   @Post('me/heartbeat')
   async heartbeat(@CurrentUser() user: AuthUser) {
     await this.usersService.heartbeat(user.sub);

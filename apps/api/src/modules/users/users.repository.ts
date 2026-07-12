@@ -143,6 +143,19 @@ export class UsersRepository {
     return newBalance;
   }
 
+  async listCreditTransactions(userId: string, limit = 50) {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('credit_transactions')
+      .select('id, amount, balance_after, reason, reference_id, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
   async getSubscription(userId: string) {
     const { data, error } = await this.supabase
       .getClient()

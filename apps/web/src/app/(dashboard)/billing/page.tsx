@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TransactionHistory } from "@/components/billing/transaction-history";
+import { CreditHistory, type CreditTransaction } from "@/components/billing/credit-history";
 
 export const metadata = { title: "Billing" };
 
@@ -33,9 +34,10 @@ export default async function BillingPage() {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const [billingRes, txRes] = await Promise.all([
+  const [billingRes, txRes, creditHistoryRes] = await Promise.all([
     apiFetch<BillingData>("/api/v1/billing/subscription", { token: session!.access_token }),
     apiFetch<Transaction[]>("/api/v1/billing/transactions", { token: session!.access_token }),
+    apiFetch<CreditTransaction[]>("/api/v1/users/me/credit-history", { token: session!.access_token }),
   ]);
 
   const billing = billingRes.data;
@@ -44,6 +46,7 @@ export default async function BillingPage() {
   const planId = billing?.subscription?.plan_id ?? "free";
   const maxCredits = planId === "business" ? 1200 : planId === "creator" ? 500 : 100;
   const transactions = txRes.data ?? [];
+  const creditHistory = creditHistoryRes.data ?? [];
 
   return (
     <div className="relative mx-auto max-w-3xl space-y-8">
@@ -105,6 +108,8 @@ export default async function BillingPage() {
           )}
         </CardContent>
       </Card>
+
+      <CreditHistory transactions={creditHistory} />
 
       <TransactionHistory transactions={transactions} />
     </div>
