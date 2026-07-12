@@ -117,7 +117,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] py-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} AutoClipr.ai · All rights reserved.
+            © {new Date().getFullYear()} AutoClipr.ai, operated by Kishan Kumar Maurya · All rights reserved.
           </p>
           <div className="flex gap-5">
             <Link href="/privacy" className="text-xs text-muted-foreground hover:text-white transition-colors">Privacy</Link>
