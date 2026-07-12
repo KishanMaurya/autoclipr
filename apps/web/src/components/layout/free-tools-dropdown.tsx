@@ -51,7 +51,7 @@ export function FreeToolsDropdown() {
     <div ref={ref} className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
         className={cn(
-          "flex items-center gap-1 rounded-lg px-4 py-2 text-sm transition-colors",
+          "flex items-center gap-1 rounded-full px-4 py-1.5 text-sm transition-colors",
           open
             ? "bg-white/[0.06] text-white"
             : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
