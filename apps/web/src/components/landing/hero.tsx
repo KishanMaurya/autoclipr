@@ -20,9 +20,36 @@ const stats = [
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+const AVATARS = [
+  "from-rose-400 to-orange-400",
+  "from-violet-400 to-fuchsia-400",
+  "from-cyan-400 to-blue-400",
+  "from-emerald-400 to-teal-400",
+  "from-amber-400 to-yellow-400",
+];
+
 export function Hero() {
   return (
     <section className="relative overflow-hidden px-4 pb-12 pt-2 sm:px-6 lg:pt-2">
+      {/* Ambient drifting orbs */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <motion.div
+          className="absolute left-[8%] top-[6%] h-72 w-72 rounded-full bg-emerald-500/[0.07] blur-3xl"
+          animate={{ x: [0, 40, -20, 0], y: [0, -30, 20, 0] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute right-[6%] top-[18%] h-80 w-80 rounded-full bg-violet-500/[0.06] blur-3xl"
+          animate={{ x: [0, -50, 30, 0], y: [0, 40, -20, 0] }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-[10%] left-[35%] h-64 w-64 rounded-full bg-teal-500/[0.06] blur-3xl"
+          animate={{ x: [0, 30, -40, 0], y: [0, -20, 30, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
       <Stagger className="relative mx-auto max-w-[100vw] text-center" amount={0.1}>
         <MotionItem>
           <motion.span
@@ -52,18 +79,55 @@ export function Hero() {
         </MotionItem>
 
         <MotionItem className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button variant="gradient" size="lg" className="group min-w-[220px]" asChild>
+          <Button
+            variant="gradient"
+            size="lg"
+            className="group relative min-w-[220px] overflow-hidden shadow-lg shadow-emerald-500/25"
+            asChild
+          >
             <Link href="/register">
+              {/* Shimmer sweep */}
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                animate={{ x: ["-150%", "400%"] }}
+                transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.2 }}
+              />
               Start Free Trial
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </Button>
-          <Button variant="outline" size="lg" className="min-w-[200px]" asChild>
+          <Button variant="outline" size="lg" className="min-w-[200px] backdrop-blur" asChild>
             <Link href="/#how-it-works">
               <Play className="h-4 w-4" />
               See how it works
             </Link>
           </Button>
+        </MotionItem>
+
+        {/* Social proof strip */}
+        <MotionItem className="mt-8 flex items-center justify-center gap-3">
+          <div className="flex -space-x-2.5">
+            {AVATARS.map((g, i) => (
+              <span
+                key={g}
+                className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${g} text-[10px] font-bold text-black/70 ring-2 ring-[#030014]`}
+                style={{ zIndex: AVATARS.length - i }}
+              >
+                {String.fromCharCode(65 + i)}
+              </span>
+            ))}
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-0.5 text-amber-400" aria-label="5 star rating">
+              {"★★★★★".split("").map((s, i) => (
+                <span key={i} className="text-xs">{s}</span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Loved by <span className="font-semibold text-foreground/90">2,000+ creators</span>
+            </p>
+          </div>
         </MotionItem>
 
         <MotionItem className="mt-14 flex justify-center px-4">
