@@ -123,7 +123,7 @@ export function ClipCard({
         )}
 
         {selectable && (
-          <label className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-black/60">
+          <label className="absolute right-2 top-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-black/60">
             <input
               type="checkbox"
               className="h-4 w-4 accent-emerald-500"
