@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { motion } from "@/components/ui/motion";
 import { formatPipelineError } from "@/lib/pipeline-errors";
 
 type PipelineStep = {
@@ -61,6 +62,13 @@ const STEP_ICONS: Record<string, typeof Sparkles> = {
 };
 
 const PIPELINE_POLL_MS = 3000;
+
+const CAPTION_EMOJI: Record<string, string> = {
+  viral: "🔥",
+  animated: "✨",
+  emoji: "😄",
+  karaoke: "🎤",
+};
 
 export function CreateFromUrl() {
   const router = useRouter();
@@ -318,10 +326,14 @@ export function CreateFromUrl() {
         </div>
       ) : (
         <>
-          <div className="glass-panel p-6 sm:p-8">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/25">
+          <div className="glass-panel relative overflow-hidden p-6 sm:p-8">
+            {/* Corner ambient glow */}
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-500/[0.08] blur-3xl" aria-hidden />
+
+            <div className="relative mb-6 flex items-center gap-3">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/25">
                 <Link2 className="h-5 w-5 text-emerald-400" />
+                <span className="absolute -inset-1 -z-10 rounded-xl bg-emerald-500/20 blur-md" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold">Paste Video URL</h2>
@@ -331,23 +343,27 @@ export function CreateFromUrl() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               <Label htmlFor="video-url">Video URL</Label>
-              <Input
-                id="video-url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://youtube.com/watch?v=..."
-                className="font-mono text-sm"
-              />
+              <div className="group/url relative rounded-xl transition-shadow duration-300 focus-within:shadow-[0_0_0_1px_rgba(52,211,153,0.4),0_0_28px_-4px_rgba(52,211,153,0.3)]">
+                <Link2 className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within/url:text-emerald-400" />
+                <Input
+                  id="video-url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="pl-10 font-mono text-sm"
+                />
+              </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="relative mt-4 flex flex-wrap gap-2">
               {SUPPORTED_SOURCES.map((s) => (
                 <span
                   key={s.id}
-                  className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-muted-foreground"
+                  className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-muted-foreground"
                 >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" />
                   {s.label}
                 </span>
               ))}
@@ -366,13 +382,16 @@ export function CreateFromUrl() {
                     type="button"
                     onClick={() => setClipCount(n)}
                     className={cn(
-                      "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      "rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
                       clipCount === n
-                        ? "create-selected"
-                        : "border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
+                        ? "create-selected scale-105 shadow-lg shadow-emerald-500/20"
+                        : "border border-white/[0.08] bg-white/[0.03] hover:-translate-y-0.5 hover:bg-white/[0.06]"
                     )}
                   >
                     {n} clips
+                    <span className={cn("ml-1.5 text-[10px]", clipCount === n ? "opacity-80" : "text-muted-foreground/60")}>
+                      {n * creditCostPerClip}cr
+                    </span>
                   </button>
                 ))}
               </div>
@@ -389,12 +408,13 @@ export function CreateFromUrl() {
                     type="button"
                     onClick={() => toggleDuration(sec)}
                     className={cn(
-                      "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
                       durations.includes(sec)
-                        ? "create-selected"
-                        : "border border-white/[0.08] bg-white/[0.03]"
+                        ? "create-selected scale-105 shadow-lg shadow-emerald-500/20"
+                        : "border border-white/[0.08] bg-white/[0.03] hover:-translate-y-0.5 hover:bg-white/[0.06]"
                     )}
                   >
+                    {durations.includes(sec) && <CheckCircle2 className="h-3 w-3" />}
                     {sec}s
                   </button>
                 ))}
@@ -413,12 +433,13 @@ export function CreateFromUrl() {
                   type="button"
                   onClick={() => setCaptionStyle(s.id)}
                   className={cn(
-                    "rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm transition-all duration-200",
                     captionStyle === s.id
-                      ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40"
-                      : "border border-white/[0.08] text-muted-foreground"
+                      ? "scale-105 bg-emerald-500/20 text-emerald-300 shadow-lg shadow-emerald-500/15 ring-1 ring-emerald-500/40"
+                      : "border border-white/[0.08] text-muted-foreground hover:-translate-y-0.5 hover:bg-white/[0.04]"
                   )}
                 >
+                  {CAPTION_EMOJI[s.id] && <span className="text-xs">{CAPTION_EMOJI[s.id]}</span>}
                   {s.label}
                 </button>
               ))}
@@ -552,10 +573,16 @@ export function CreateFromUrl() {
             <Button
               variant="gradient"
               size="lg"
-              className="w-full text-base font-bold"
+              className="relative w-full overflow-hidden text-base font-bold shadow-lg shadow-emerald-500/25"
               disabled={!url.trim() || !hasEnoughCredits}
               onClick={handleCreate}
             >
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 w-1/4 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                animate={{ x: ["-200%", "500%"] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.4 }}
+              />
               <Sparkles className="mr-2 h-5 w-5" />
               Create Viral Shorts
             </Button>
