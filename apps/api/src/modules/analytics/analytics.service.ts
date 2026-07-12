@@ -3,6 +3,7 @@ import { PublicationsRepository, type PostedPublicationRow } from '../clips/publ
 import { PlatformsRepository } from '../platforms/platforms.repository';
 import { StorageService } from '../storage/storage.service';
 import { YoutubeStatsService } from './youtube-stats.service';
+import { InstagramStatsService } from './instagram-stats.service';
 
 const PLATFORM_LABELS: Record<string, string> = {
   youtube: 'YouTube Shorts',
@@ -17,6 +18,7 @@ export class AnalyticsService {
     private readonly publicationsRepo: PublicationsRepository,
     private readonly platformsRepo: PlatformsRepository,
     private readonly youtubeStats: YoutubeStatsService,
+    private readonly instagramStats: InstagramStatsService,
     private readonly storage: StorageService,
   ) {}
 
@@ -70,7 +72,7 @@ export class AnalyticsService {
         account_name: p.account_name,
         auth_status: p.auth_status,
         can_post: p.auth_status === 'authorized' && p.has_tokens,
-        metrics_supported: p.platform === 'youtube',
+        metrics_supported: p.platform === 'youtube' || p.platform === 'instagram',
       })),
       by_platform: byPlatform,
       publications: enrichedPublications,
@@ -78,15 +80,27 @@ export class AnalyticsService {
   }
 
   async refreshMetrics(userId: string) {
-    const youtubeConn = await this.platformsRepo.getByPlatform(userId, 'youtube');
-    if (!youtubeConn?.access_token) return { refreshed: 0 };
-
     const publications = await this.publicationsRepo.listPostedByUser(userId, 200);
+
+    const [youtubeRefreshed, instagramRefreshed] = await Promise.all([
+      this.refreshYoutubeMetrics(userId, publications),
+      this.refreshInstagramMetrics(userId, publications),
+    ]);
+
+    return { refreshed: youtubeRefreshed + instagramRefreshed };
+  }
+
+  private async refreshYoutubeMetrics(
+    userId: string,
+    publications: PostedPublicationRow[],
+  ): Promise<number> {
+    const youtubeConn = await this.platformsRepo.getByPlatform(userId, 'youtube');
+    if (!youtubeConn?.access_token) return 0;
+
     const youtubePosts = publications.filter(
       (p) => p.platform === 'youtube' && p.platform_post_id,
     );
-
-    if (!youtubePosts.length) return { refreshed: 0 };
+    if (!youtubePosts.length) return 0;
 
     const videoIds = youtubePosts.map((p) => p.platform_post_id!).filter(Boolean);
 
@@ -118,7 +132,39 @@ export class AnalyticsService {
       refreshed += 1;
     }
 
-    return { refreshed };
+    return refreshed;
+  }
+
+  private async refreshInstagramMetrics(
+    userId: string,
+    publications: PostedPublicationRow[],
+  ): Promise<number> {
+    const igConn = await this.platformsRepo.getByPlatform(userId, 'instagram');
+    if (!igConn?.access_token) return 0;
+
+    const igPosts = publications.filter(
+      (p) => p.platform === 'instagram' && p.platform_post_id,
+    );
+    if (!igPosts.length) return 0;
+
+    const mediaIds = igPosts.map((p) => p.platform_post_id!).filter(Boolean);
+    const stats = await this.instagramStats.fetchMediaStats(igConn.access_token, mediaIds);
+    const statsMap = new Map(stats.map((s) => [s.mediaId, s]));
+
+    let refreshed = 0;
+    for (const pub of igPosts) {
+      const stat = statsMap.get(pub.platform_post_id!);
+      if (!stat) continue;
+
+      await this.publicationsRepo.updateMetrics(pub.id, {
+        view_count: stat.viewCount,
+        like_count: stat.likeCount,
+        comment_count: stat.commentCount,
+      });
+      refreshed += 1;
+    }
+
+    return refreshed;
   }
 
   private async enrichPublication(pub: PostedPublicationRow) {
@@ -145,7 +191,7 @@ export class AnalyticsService {
       like_count: Number(pub.like_count ?? 0),
       comment_count: Number(pub.comment_count ?? 0),
       metrics_updated_at: pub.metrics_updated_at,
-      metrics_supported: pub.platform === 'youtube',
+      metrics_supported: pub.platform === 'youtube' || pub.platform === 'instagram',
       thumbnail_url,
     };
   }

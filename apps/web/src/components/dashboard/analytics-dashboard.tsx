@@ -228,7 +228,7 @@ export function AnalyticsDashboard({ initialData }: AnalyticsDashboardProps) {
               </ul>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
-              Instagram and Facebook view counts will appear once Meta API integration is added.
+              Facebook view counts will appear once Meta API integration is added for that platform.
             </p>
           </CardContent>
         </Card>

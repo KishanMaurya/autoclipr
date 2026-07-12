@@ -6,6 +6,7 @@ import { StorageService } from '../storage/storage.service';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { YoutubeStatsService } from './youtube-stats.service';
+import { InstagramStatsService } from './instagram-stats.service';
 
 @Module({
   imports: [PlatformsModule],
@@ -13,6 +14,7 @@ import { YoutubeStatsService } from './youtube-stats.service';
     JwtAuthGuard,
     AnalyticsService,
     YoutubeStatsService,
+    InstagramStatsService,
     PublicationsRepository,
     StorageService,
   ],
