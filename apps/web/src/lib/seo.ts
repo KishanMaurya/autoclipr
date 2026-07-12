@@ -123,6 +123,11 @@ export const rootMetadata: Metadata = {
     apple: [{ url: "/assets/brand/logo.png", type: "image/png", sizes: "512x512" }],
     shortcut: ["/favicon.ico"],
   },
+  verification: {
+    other: {
+      "facebook-domain-verification": "6xbn0hqee5ziqkmrqsyg99xwq2ksrm",
+    },
+  },
 };
 
 export const PRIVATE_ROBOTS: Metadata["robots"] = {
