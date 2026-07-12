@@ -160,106 +160,124 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow">
-            <User className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <p className="section-label mb-2 !px-3 !py-1 !text-[10px]">Dashboard</p>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Your Command Center</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Monitor channels, track clips, and manage your content pipeline
-            </p>
-          </div>
-        </div>
+      {/* Header — hero banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-emerald-950/60 via-zinc-950/80 to-zinc-950 p-6 sm:p-8">
+        {/* Ambient glows */}
+        <div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -bottom-28 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
+        {/* Grid texture */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "36px 36px",
+            maskImage: "radial-gradient(ellipse at top left, black 30%, transparent 75%)",
+          }}
+        />
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="gradient" size="sm" asChild>
-            <Link href="/create">
-              <Sparkles className="mr-1.5 h-4 w-4" />
-              Create Viral Shorts
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild className="border-white/10">
-            <Link href="/channels">
-              <Plus className="mr-1.5 h-4 w-4" />
-              Connect Channels
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="border-violet-500/25 bg-violet-500/5 hover:bg-violet-500/10"
-          >
-            <Link href="/setup/platforms?from=dashboard">
-              <Share2 className="mr-1.5 h-4 w-4" />
-              Platforms
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10"
-          >
-            <Link href="/pricing">
-              Upgrade
-            </Link>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={refreshData}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1.5 h-4 w-4" />
-            )}
-            Refresh
-          </Button>
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow">
+              <User className="h-6 w-6 text-white" />
+              <span className="absolute -inset-1 -z-10 rounded-2xl bg-emerald-500/30 blur-lg" />
+            </div>
+            <div>
+              <p className="section-label mb-2 !px-3 !py-1 !text-[10px]">Dashboard</p>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Your Command{" "}
+                <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                  Center
+                </span>
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Monitor channels, track clips, and manage your content pipeline
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="gradient" size="sm" asChild className="shadow-lg shadow-emerald-500/20">
+              <Link href="/create">
+                <Sparkles className="mr-1.5 h-4 w-4" />
+                Create Viral Shorts
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="border-white/10 bg-white/[0.03] backdrop-blur hover:bg-white/[0.07]">
+              <Link href="/channels">
+                <Plus className="mr-1.5 h-4 w-4" />
+                Connect Channels
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="border-violet-500/25 bg-violet-500/5 backdrop-blur hover:bg-violet-500/10"
+            >
+              <Link href="/setup/platforms?from=dashboard">
+                <Share2 className="mr-1.5 h-4 w-4" />
+                Platforms
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="border-amber-500/25 bg-amber-500/5 backdrop-blur hover:bg-amber-500/10"
+            >
+              <Link href="/pricing">
+                Upgrade
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={refreshData}
+              disabled={isLoading}
+              className="border-white/10 bg-white/[0.03] backdrop-blur hover:bg-white/[0.07]"
+            >
+              {isLoading ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+              )}
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="stat-card border-white/[0.08]">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 ring-1 ring-red-500/20">
-              <Youtube className="h-7 w-7 text-red-500" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold tracking-tight">{channels.length}</p>
-              <p className="text-sm text-muted-foreground">Connected Channels</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="stat-card border-white/[0.08]">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-500/20">
-              <TikTokStatIcon />
-            </div>
-            <div>
-              <p className="text-3xl font-bold tracking-tight">{platformCount}</p>
-              <p className="text-sm text-muted-foreground">Platforms Connected</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="stat-card border-white/[0.08]">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 ring-1 ring-amber-500/20">
-              <Clock className="h-7 w-7 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold tracking-tight">{activeRuns}</p>
-              <p className="text-sm text-muted-foreground">Active Runs</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          icon={<Youtube className="h-7 w-7 text-red-500" />}
+          iconClass="bg-red-500/15 ring-red-500/25 group-hover:shadow-red-500/25"
+          glowClass="from-red-500/15"
+          barClass="from-red-500/70 to-red-500/0"
+          value={channels.length}
+          label="Connected Channels"
+          hint={channels.length === 0 ? "Connect your first channel" : "Auto-clipping new uploads"}
+        />
+        <StatCard
+          icon={<TikTokStatIcon />}
+          iconClass="bg-emerald-500/15 ring-emerald-500/25 group-hover:shadow-emerald-500/25"
+          glowClass="from-emerald-500/15"
+          barClass="from-emerald-500/70 to-emerald-500/0"
+          value={platformCount}
+          label="Platforms Connected"
+          hint={platformCount === 0 ? "Connect to start posting" : "Ready to publish"}
+        />
+        <StatCard
+          icon={<Clock className="h-7 w-7 text-amber-400" />}
+          iconClass="bg-amber-500/15 ring-amber-500/25 group-hover:shadow-amber-500/25"
+          glowClass="from-amber-500/15"
+          barClass="from-amber-500/70 to-amber-500/0"
+          value={activeRuns}
+          label="Active Runs"
+          hint={activeRuns > 0 ? "Processing now" : "All caught up"}
+          live={activeRuns > 0}
+        />
       </div>
 
       {/* Tabs */}
@@ -388,6 +406,61 @@ export function DashboardView({
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function StatCard({
+  icon,
+  iconClass,
+  glowClass,
+  barClass,
+  value,
+  label,
+  hint,
+  live = false,
+}: {
+  icon: React.ReactNode;
+  iconClass: string;
+  glowClass: string;
+  barClass: string;
+  value: number;
+  label: string;
+  hint: string;
+  live?: boolean;
+}) {
+  return (
+    <Card className="stat-card group relative overflow-hidden border-white/[0.08] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]">
+      {/* Corner glow on hover */}
+      <div
+        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${glowClass} to-transparent opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100`}
+      />
+      {/* Accent bar */}
+      <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${barClass}`} />
+
+      <CardContent className="relative flex items-center gap-4 p-6">
+        <div
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 shadow-lg shadow-transparent transition-shadow duration-300 ${iconClass}`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-3xl font-bold tracking-tight">{value}</p>
+            {live && (
+              <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-amber-500/25">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400" />
+                </span>
+                LIVE
+              </span>
+            )}
+          </div>
+          <p className="text-sm font-medium text-foreground/90">{label}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{hint}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
