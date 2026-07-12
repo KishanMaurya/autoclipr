@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Trash2, CheckSquare, Square } from "lucide-react";
 import type { Clip } from "@/lib/api";
@@ -23,6 +23,26 @@ export function ClipsList({ clips: initialClips }: ClipsListProps) {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state when server re-renders with fresh data (e.g. after router.refresh)
+  useEffect(() => { setClips(initialClips); }, [initialClips]);
+
+  // Auto-refresh while any publication is pending so status syncs immediately after posting
+  const hasPending = clips.some((c) =>
+    c.publications?.some((p) => p.status === "pending" || p.status === "processing"),
+  );
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!hasPending) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      return;
+    }
+    intervalRef.current = setInterval(() => router.refresh(), 5_000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [hasPending, router]);
 
   const downloadable = useMemo(
     () => clips.filter((c) => c.status === "completed" && c.download_url),
