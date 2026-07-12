@@ -26,12 +26,22 @@ export function usePlatformAvailability(): AvailabilityState {
     let cancelled = false;
 
     async function detect() {
+      // Cache in sessionStorage to avoid hitting ipapi.co rate limits
+      const cached = sessionStorage.getItem("geo_country");
+      if (cached) {
+        if (!cancelled) {
+          setState({ loading: false, banned: new Set(getBannedPlatforms(cached)), countryCode: cached });
+        }
+        return;
+      }
+
       try {
         const res = await fetch("https://ipapi.co/country/", {
           signal: AbortSignal.timeout(4000),
         });
         if (!res.ok) throw new Error("geo failed");
         const code = (await res.text()).trim();
+        sessionStorage.setItem("geo_country", code);
         if (!cancelled) {
           setState({
             loading: false,

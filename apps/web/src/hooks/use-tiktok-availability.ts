@@ -16,12 +16,19 @@ export function useTikTokAvailability(): TikTokAvailability {
     let cancelled = false;
 
     async function detect() {
+      const cached = sessionStorage.getItem("geo_country");
+      if (cached) {
+        if (!cancelled) setStatus(isTikTokBanned(cached) ? "banned" : "available");
+        return;
+      }
+
       try {
         const res = await fetch("https://ipapi.co/country/", {
           signal: AbortSignal.timeout(4000),
         });
         if (!res.ok) throw new Error("geo failed");
         const code = (await res.text()).trim();
+        sessionStorage.setItem("geo_country", code);
         if (!cancelled) {
           setStatus(isTikTokBanned(code) ? "banned" : "available");
         }
