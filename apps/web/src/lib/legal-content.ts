@@ -134,9 +134,9 @@ export const PRIVACY_POLICY: LegalDocumentContent = {
         "AutoClipr's use of information received from Google APIs (including the YouTube Data API v3) will adhere to the Google API Services User Data Policy, including the Limited Use requirements.",
       ],
       list: [
-        "Scopes requested: AutoClipr requests access to your YouTube account solely to publish short clips on your behalf (scope: https://www.googleapis.com/auth/youtube.upload). We do not request access to read your private data, subscriptions, comments, or any content beyond what is needed to upload.",
-        "What we access: only your YouTube channel identity (to confirm the correct channel) and the ability to upload videos you explicitly instruct us to publish.",
-        "What we do NOT do: we do not read, store, or analyse your YouTube watch history, subscriptions, private playlists, comments, or any other YouTube data beyond channel identity and upload confirmation.",
+        "Scopes requested: AutoClipr requests two YouTube Data API v3 scopes — https://www.googleapis.com/auth/youtube.upload, to publish short clips on your behalf, and https://www.googleapis.com/auth/youtube.readonly, to confirm the correct channel when you connect and to display view, like, and comment counts for clips you've posted in your Analytics dashboard.",
+        "What we access: your YouTube channel identity (ID, name, thumbnail), the ability to upload videos you explicitly instruct us to publish, and public statistics (views, likes, comments) for videos AutoClipr has posted on your behalf.",
+        "What we do NOT do: we do not read, store, or analyse your YouTube watch history, subscriptions, private playlists, other users' content, or any YouTube data beyond your own channel identity, your own posted-clip statistics, and upload confirmation.",
         "How we store tokens: OAuth tokens are encrypted at rest in our database (Supabase, row-level security enabled) and transmitted only over HTTPS. Tokens are used exclusively to perform uploads you initiate.",
         "Token revocation: you can disconnect your YouTube account at any time from Settings → Platforms. When disconnected, we immediately delete the associated OAuth tokens from our system. You can also revoke access directly in your Google Account at https://myaccount.google.com/permissions.",
         "No token sharing: we never share, sell, or transfer your YouTube OAuth tokens or channel data to any third party except YouTube's own API endpoints during the upload operation.",
