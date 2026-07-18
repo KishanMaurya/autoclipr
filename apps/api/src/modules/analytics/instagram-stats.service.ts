@@ -31,13 +31,15 @@ export class InstagramStatsService {
   ): Promise<InstagramMediaStats | null> {
     try {
       // like_count / comments_count come from the media object itself (instagram_business_basic).
-      // plays (view count) requires instagram_business_manage_insights.
+      // views (play count) requires instagram_business_manage_insights.
+      // Meta deprecated the "plays" metric in favor of "views" — request both so this
+      // keeps working regardless of which the account's API version returns.
       const [mediaRes, insightsRes] = await Promise.all([
         fetch(
           `https://graph.instagram.com/v21.0/${mediaId}?fields=like_count,comments_count&access_token=${accessToken}`,
         ),
         fetch(
-          `https://graph.instagram.com/v21.0/${mediaId}/insights?metric=plays&access_token=${accessToken}`,
+          `https://graph.instagram.com/v21.0/${mediaId}/insights?metric=views&access_token=${accessToken}`,
         ),
       ]);
 
@@ -51,6 +53,11 @@ export class InstagramStatsService {
           data?: Array<{ name?: string; values?: Array<{ value?: number }> }>;
         };
         viewCount = insights.data?.[0]?.values?.[0]?.value ?? 0;
+      } else {
+        const errBody = await insightsRes.text();
+        this.logger.warn(
+          `Instagram insights call failed for media ${mediaId} (status ${insightsRes.status}): ${errBody.slice(0, 300)}`,
+        );
       }
 
       return {
