@@ -299,6 +299,7 @@ export class PlatformsService {
     const scopes = [
       'instagram_business_basic',
       'instagram_business_content_publish',
+      'instagram_business_manage_insights',
     ].join(',');
 
     const params = new URLSearchParams({
