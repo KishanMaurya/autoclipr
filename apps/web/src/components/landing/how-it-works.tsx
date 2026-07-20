@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, Bell, Scissors, Upload, BadgeDollarSign, ArrowRight } from "lucide-react";
+import { Link2, Bell, Scissors, Upload, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Reveal, Stagger, MotionCard, MotionItem } from "@/components/ui/motion";
 
@@ -122,25 +122,6 @@ const steps = [
       </div>
     ),
   },
-  {
-    num: "05",
-    title: "Earn Rewards",
-    description: "Get paid $0.50–$20 per 1K views through creator campaigns. Your content. Your earnings.",
-    icon: BadgeDollarSign,
-    accent: "from-emerald-500 to-teal-500",
-    iconBg: "bg-emerald-500/15 text-emerald-400",
-    glow: "shadow-emerald-500/20",
-    badge: "NEW",
-    visual: (
-      <div className="flex flex-col items-center gap-3">
-        <span className="text-4xl">💰</span>
-        <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 ring-1 ring-emerald-500/20">
-          <span className="text-xs font-bold text-emerald-400">$0.50–$20</span>
-          <span className="text-[10px] text-emerald-400/60">per 1K views</span>
-        </div>
-      </div>
-    ),
-  },
 ];
 
 export function HowItWorks() {
@@ -151,7 +132,7 @@ export function HowItWorks() {
           <p className="section-label mx-auto mb-6">Workflow</p>
           <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
             From upload to viral in{" "}
-            <span className="text-aurora">5 steps</span>
+            <span className="text-aurora">4 steps</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
             A fully automated pipeline — paste a link and walk away.
@@ -163,7 +144,7 @@ export function HowItWorks() {
           {/* Connector line */}
           <div className="absolute left-[10%] right-[10%] top-[52px] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          <Stagger className="grid grid-cols-5 gap-4" amount={0.1}>
+          <Stagger className="grid grid-cols-4 gap-4" amount={0.1}>
             {steps.map((step, i) => {
               const Icon = step.icon;
               return (
