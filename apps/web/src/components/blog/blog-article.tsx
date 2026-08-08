@@ -48,6 +48,23 @@ export function BlogArticle({ post }: { post: BlogPost }) {
         ))}
       </div>
 
+      {post.relatedTools && post.relatedTools.length > 0 && (
+        <div className="mt-12 border-t border-white/10 pt-8">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Tools mentioned in this post</h2>
+          <div className="flex flex-wrap gap-2">
+            {post.relatedTools.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-emerald-500/40 hover:text-foreground"
+              >
+                {tool.label} →
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-16 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center">
         <h2 className="text-2xl font-bold">Try AutoClipr free</h2>
         <p className="mt-2 text-muted-foreground">

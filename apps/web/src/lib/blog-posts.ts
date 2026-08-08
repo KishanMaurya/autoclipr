@@ -6,6 +6,7 @@ export type BlogPost = {
   publishedAt: string;
   readMinutes: number;
   sections: { heading?: string; paragraphs: string[] }[];
+  relatedTools?: { label: string; href: string }[];
 };
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -557,6 +558,79 @@ export const BLOG_POSTS: BlogPost[] = [
           "Ready to see what your own content looks like clipped? Sign up and your 30 credits are available immediately — no credit card required.",
         ],
       },
+    ],
+  },
+  {
+    slug: "free-online-video-tools-no-upload",
+    title: "10 Free Online Video Tools That Never Upload Your File (No Signup Required)",
+    description:
+      "A full walkthrough of AutoClipr's 10 free browser-based video tools — trim, convert, compress, caption, and more — all running locally via WebAssembly with no account and no upload.",
+    keywords: [
+      "free video tools online",
+      "free video editor no signup",
+      "video compressor online free",
+      "convert video format online free",
+      "free gif maker from video",
+      "no upload video tools",
+      "browser based video editor",
+    ],
+    publishedAt: "2026-08-08",
+    readMinutes: 6,
+    sections: [
+      {
+        paragraphs: [
+          "Most \"free\" online video tools aren't really free — they cap your file size, watermark the output, or quietly upload your video to a server to process it. AutoClipr's tools work differently: everything runs inside your browser using WebAssembly, so your file never leaves your device, there's no account to create, and there's no limit tied to a subscription.",
+          "Here's what each of the 10 tools actually does, and which one to reach for depending on what you're trying to get done.",
+        ],
+      },
+      {
+        heading: "Why these tools can be free — and private",
+        paragraphs: [
+          "Most online video tools cost money to run because someone has to pay for the server that processes your upload. AutoClipr's free tools skip that entirely: they're powered by FFmpeg compiled to WebAssembly, running the actual processing on your own machine, in your own browser tab.",
+          "That's why there's no upload step, no processing queue, and no realistic file-size ceiling tied to a plan — the trade-off of a local tool is also its biggest advantage: your video is never transmitted anywhere, which matters if you're working with client footage, unreleased content, or anything you'd rather not hand to a third-party server.",
+          "It's also why there's no signup wall. Nothing needs to be saved to an account if nothing ever left your device.",
+        ],
+      },
+      {
+        heading: "The 10 tools, and when to reach for each",
+        paragraphs: [
+          "Video Slicer — trims a video into 15s, 30s, 45s, or 60s segments in bulk, with support for multiple cuts and fade in/out. Useful when you already know roughly where the good moments are and just need clean segments fast.",
+          "Format Converter — converts between MP4, WebM, MOV, GIF, MP3, and other common formats instantly. The tool to reach for when a platform or editor rejects a file for being the wrong container format.",
+          "Aspect Ratio Converter — reframes video between 16:9, 9:16, 1:1, and 4:3, built specifically for turning landscape footage into Shorts, Reels, and Stories-ready vertical video.",
+          "Video Compressor — reduces file size using H.264, H.265, or VP9 encoding without a visible quality hit. Useful before uploading to platforms with strict size limits, or just to save storage.",
+          "Thumbnail Extractor — grabs a frame at any exact timestamp as a PNG or JPEG. Faster than screenshotting a paused video player, and gives a clean, full-resolution export.",
+          "Audio Extractor — pulls the audio track out as MP3, WAV, M4A, or OGG. Useful for podcast repurposing, or grabbing just the voiceover from a screen recording.",
+          "GIF Generator — turns any segment of a video into a looping GIF with custom frame rate and scale. Good for reaction clips, Slack/Discord shares, or lightweight previews that don't need a full video player.",
+          "Video Metadata Viewer — inspects codec, bitrate, frame rate, resolution, and duration for any file. Useful for debugging why a video won't play or upload correctly somewhere.",
+          "Caption Generator — auto-transcribes speech into SRT or VTT captions across 6 languages using AI, entirely free, with no clip generation required — just the transcript.",
+          "Caption Templates — a set of stylish caption overlay presets (Bold, Minimal, Karaoke, and more) for burning captions into a video once you already have a transcript.",
+        ],
+      },
+      {
+        heading: "A realistic combo: trim, reframe, compress",
+        paragraphs: [
+          "These tools are single-step by design, but they chain together well. A common path: pull a 45-second segment with Video Slicer, reframe it to 9:16 with Aspect Ratio Converter for Shorts or Reels, then run it through Video Compressor before uploading if the platform is picky about file size.",
+          "Each step happens locally and independently — there's no pipeline to configure, you just move the output of one tool into the next.",
+        ],
+      },
+      {
+        heading: "When you need more than single-step tools",
+        paragraphs: [
+          "These free tools are deliberately manual — you decide what to cut, when to compress, what to convert. If you're instead trying to go from a full-length YouTube video to multiple ready-to-post clips with AI picking the best moments, transcribing, captioning, and exporting for each platform automatically, that's a different job — that's what AutoClipr's core AI clipping pipeline does, and new signups get 30 free credits to try it without a credit card.",
+        ],
+      },
+    ],
+    relatedTools: [
+      { label: "Video Slicer", href: "/tools/video-slicer" },
+      { label: "Format Converter", href: "/tools/format-converter" },
+      { label: "Aspect Ratio Converter", href: "/tools/aspect-ratio-converter" },
+      { label: "Video Compressor", href: "/tools/video-compressor" },
+      { label: "Thumbnail Extractor", href: "/tools/thumbnail-extractor" },
+      { label: "Audio Extractor", href: "/tools/audio-extractor" },
+      { label: "GIF Generator", href: "/tools/gif-generator" },
+      { label: "Video Metadata Viewer", href: "/tools/video-metadata" },
+      { label: "Caption Generator", href: "/tools/caption-generator" },
+      { label: "Caption Templates", href: "/tools/caption-templates" },
     ],
   },
 ];
