@@ -67,6 +67,9 @@ jobs:
       - name: Test
         working-directory: apps/api
         run: npm test -- --coverage
+      - name: E2E test
+        working-directory: apps/api
+        run: npm run test:e2e
       - name: Build
         working-directory: apps/api
         run: npm run build
