@@ -266,16 +266,14 @@ describe('BillingController', () => {
       expect(headersArg).not.toHaveProperty('content-length');
     });
 
-    it('falls back to processing the raw request body when signature verification throws', async () => {
-      const req = makeRequest({ event_type: 'subscription.cancelled' }, 'not-json-or-bad-sig');
+    it('rejects the request with 401 when signature verification throws, instead of trusting the unverified body', async () => {
+      const req = makeRequest({ event_type: 'subscription.active', data: { metadata: { plan_id: 'business' } } }, 'forged-payload');
       dodo.verifyWebhook.mockImplementation(() => {
         throw new Error('bad signature');
       });
 
-      const result = await controller.dodoWebhook(req);
-
-      expect(subscriptions.handleWebhookEvent).toHaveBeenCalledWith({ event_type: 'subscription.cancelled' });
-      expect(result).toEqual({ received: true });
+      await expect(controller.dodoWebhook(req)).rejects.toThrow('Invalid webhook signature');
+      expect(subscriptions.handleWebhookEvent).not.toHaveBeenCalled();
     });
 
     it('stringifies req.body when rawBody is unavailable', async () => {

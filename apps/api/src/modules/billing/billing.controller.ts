@@ -9,6 +9,7 @@ import {
   Res,
   RawBodyRequest,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -142,13 +143,17 @@ export class BillingController {
     for (const [k, v] of Object.entries(req.headers)) {
       if (typeof v === 'string') headers[k] = v;
     }
+
+    let event: any;
     try {
-      const event = this.dodo.verifyWebhook(rawBody, headers);
-      await this.subscriptions.handleWebhookEvent(event);
+      event = this.dodo.verifyWebhook(rawBody, headers);
     } catch {
-      // In test mode signature may not match — still process body
-      await this.subscriptions.handleWebhookEvent(req.body);
+      // Signature didn't verify — reject rather than trusting an unverified body.
+      // A forged request here could grant a paid plan's credits for free.
+      throw new UnauthorizedException('Invalid webhook signature');
     }
+
+    await this.subscriptions.handleWebhookEvent(event);
     return { received: true };
   }
 }

@@ -247,19 +247,37 @@ describe('BillingController (e2e)', () => {
       expect(response.body).toEqual({ received: true });
     });
 
-    it('still returns 200 and processes the raw body when signature verification throws', async () => {
+    it('rejects with 401 and never processes the event when signature verification throws', async () => {
       dodo.verifyWebhook.mockImplementation(() => {
         throw new Error('bad signature');
       });
       subscriptions.handleWebhookEvent.mockResolvedValue(undefined);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/api/v1/webhooks/dodo')
-        .send({ event_type: 'subscription.cancelled' })
-        .expect(200);
+        .send({ event_type: 'subscription.active', data: { metadata: { plan_id: 'business' } } })
+        .expect(401);
 
-      expect(subscriptions.handleWebhookEvent).toHaveBeenCalledWith({ event_type: 'subscription.cancelled' });
-      expect(response.body).toEqual({ received: true });
+      expect(subscriptions.handleWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('a forged payload with no valid signature cannot grant a plan upgrade', async () => {
+      // Regression test for the original vulnerability: previously, an unsigned
+      // POST here would still be processed and could grant paid-plan credits
+      // for free. Now it must be rejected before handleWebhookEvent ever runs.
+      dodo.verifyWebhook.mockImplementation(() => {
+        throw new Error('signature mismatch');
+      });
+
+      await request(app.getHttpServer())
+        .post('/api/v1/webhooks/dodo')
+        .send({
+          event_type: 'subscription.active',
+          data: { metadata: { user_id: 'victim-user-id', plan_id: 'business' } },
+        })
+        .expect(401);
+
+      expect(subscriptions.handleWebhookEvent).not.toHaveBeenCalled();
     });
   });
 });
