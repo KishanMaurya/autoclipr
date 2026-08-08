@@ -14,7 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to Vercel (production)
-        working-directory: apps/web
+        # Run from repo root, not apps/web — the linked Vercel project's Root
+        # Directory setting is already "apps/web", so cd-ing there first
+        # doubles the path (apps/web/apps/web does not exist).
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
