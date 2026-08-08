@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  ci-web:
+    name: CI · web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm install
+      - name: Type-check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+  ci-api:
+    name: CI · api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build @autoclipr/emails
+        working-directory: apps/emails
+        run: |
+          npm install
+          npm run build
+      - name: Build @autoclipr/monitoring
+        working-directory: packages/monitoring
+        run: |
+          npm install
+          npm run build
+      - name: Install dependencies
+        working-directory: apps/api
+        # npm's arborist has a known bug reading Dependabot-regenerated lockfiles
+        # that link to file:-protocol siblings (Cannot read properties of
+        # undefined (reading 'extraneous')). Fall back to a fresh lockfile —
+        # this still validates real dependency compatibility, just not the
+        # exact lockfile bytes.
+        run: npm install || (rm -f package-lock.json && npm install)
+      - name: Type-check
+        working-directory: apps/api
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Build
+        working-directory: apps/api
+        run: npm run build
+
+  ci-workers:
+    name: CI · workers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build @autoclipr/emails
+        working-directory: apps/emails
+        run: |
+          npm install
+          npm run build
+      - name: Build @autoclipr/monitoring
+        working-directory: packages/monitoring
+        run: |
+          npm install
+          npm run build
+      - name: Install dependencies
+        working-directory: apps/workers
+        # See same note in ci-api: Dependabot-regenerated lockfiles with
+        # file:-protocol siblings can crash npm's arborist. Fall back fresh.
+        run: npm install || (rm -f package-lock.json && npm install)
+      - name: Type-check
+        working-directory: apps/workers
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Build
+        working-directory: apps/workers
+        run: npm run build
