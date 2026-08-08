@@ -1,0 +1,84 @@
+name: Security Scan
+
+on:
+  push:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: SAST · Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --config=p/owasp-top-ten \
+            --config=p/typescript \
+            --config=p/javascript \
+            --config=p/react \
+            --config=p/nodejsscan \
+            --exclude-rule=ajinabraham.njsscan.dos.regex_dos.regex_dos \
+            --exclude-rule=ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator \
+            --exclude-rule=ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack \
+            --exclude-rule=ajinabraham.njsscan.generic.hardcoded_secrets.node_secret \
+            --exclude-rule=yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag \
+            --exclude="**/node_modules/**" \
+            --exclude="**/dist/**" \
+            --exclude="**/.next/**" \
+            --exclude="**/coverage/**" \
+            --exclude="apps/web/public/**" \
+            --exclude="supabase/email-templates/**" \
+            --exclude="**/*.spec.ts" \
+            --exclude="**/*.e2e-spec.ts" \
+            --error \
+            --metrics=off
+
+  trivy-deps:
+    name: Dependency scan · Trivy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [apps/web, apps/api, apps/workers, apps/emails, packages/monitoring]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report HIGH + CRITICAL (informational — tracked separately via Dependabot)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: ${{ matrix.app }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: 0
+      - name: Fail only on CRITICAL
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: ${{ matrix.app }}
+          scanners: vuln
+          severity: CRITICAL
+          exit-code: 1
+
+  trivy-config:
+    name: IaC/Dockerfile scan · Trivy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan Dockerfiles and compose files
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1

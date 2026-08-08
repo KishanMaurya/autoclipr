@@ -11,6 +11,10 @@ export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
+      // Safe: content is always JSON.stringify() of internally-constructed
+      // structured-data objects below (blog metadata, org info, FAQ content
+      // from this codebase) — never raw or user-supplied HTML.
+      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />
   );
