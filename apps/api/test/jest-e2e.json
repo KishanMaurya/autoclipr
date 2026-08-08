@@ -6,8 +6,5 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "transformIgnorePatterns": ["node_modules/(?!(jose)/)"],
-  "moduleNameMapper": {
-    "^jose$": "<rootDir>/../src/test-utils/jose-mock.ts"
-  }
+  "transformIgnorePatterns": ["node_modules/(?!(jose)/)"]
 }
