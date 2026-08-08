@@ -1,13 +1,14 @@
 /**
  * Reusable Supabase mocking helpers shared across repository/service spec files.
  *
- * Two complementary builder styles live here because different spec files
- * across the suite were written against each — both fabricate a chainable +
+ * Three complementary builder styles live here because different spec files
+ * across the suite were written against each — all fabricate a chainable +
  * thenable object mimicking the Supabase query builder (`.select().eq()...`),
  * so `await` resolves correctly whether or not the caller terminates the
  * chain with `.single()` / `.maybeSingle()`.
  *  - `mockQueryBuilder` / `createMockSupabaseClient` / `mockSupabaseAdminService`
  *  - `createQueryBuilderMock` / `createSupabaseAdminServiceMock`
+ *  - `createSupabaseMock`
  */
 
 export interface QueryResult<T = any> {
@@ -164,4 +165,77 @@ export function createSupabaseAdminServiceMock(defaultBuilder?: SupabaseQueryBui
     isConfigured: true,
     __client: client,
   };
+}
+
+export interface SupabaseMockResult<T = unknown> {
+  data: T;
+  error: { message: string; code?: string } | null;
+  count?: number | null;
+}
+
+export type ChainableMock = {
+  from: jest.Mock;
+  select: jest.Mock;
+  insert: jest.Mock;
+  update: jest.Mock;
+  upsert: jest.Mock;
+  delete: jest.Mock;
+  eq: jest.Mock;
+  neq: jest.Mock;
+  in: jest.Mock;
+  order: jest.Mock;
+  range: jest.Mock;
+  limit: jest.Mock;
+  single: jest.Mock;
+  maybeSingle: jest.Mock;
+  then: (
+    onfulfilled?: (value: SupabaseMockResult) => unknown,
+    onrejected?: (reason: unknown) => unknown,
+  ) => Promise<unknown>;
+  __setResult: (result: SupabaseMockResult) => ChainableMock;
+};
+
+/**
+ * Creates a chainable mock mimicking the Supabase query builder.
+ * Every chained method returns `this`; the terminal awaited value is the
+ * provided `result` (or whatever is later configured via `__setResult`).
+ */
+export function createSupabaseMock(
+  initialResult: SupabaseMockResult = { data: null, error: null },
+): ChainableMock {
+  let result: SupabaseMockResult = initialResult;
+
+  const chain = {} as ChainableMock;
+
+  const chainMethods = [
+    'from',
+    'select',
+    'insert',
+    'update',
+    'upsert',
+    'delete',
+    'eq',
+    'neq',
+    'in',
+    'order',
+    'range',
+    'limit',
+  ] as const;
+
+  for (const method of chainMethods) {
+    chain[method] = jest.fn().mockReturnValue(chain);
+  }
+
+  chain.single = jest.fn().mockImplementation(() => Promise.resolve(result));
+  chain.maybeSingle = jest.fn().mockImplementation(() => Promise.resolve(result));
+
+  // Makes the chain itself awaitable, e.g. `await client.from(...).select(...).eq(...)`.
+  chain.then = (onfulfilled, onrejected) => Promise.resolve(result).then(onfulfilled, onrejected);
+
+  chain.__setResult = (next: SupabaseMockResult) => {
+    result = next;
+    return chain;
+  };
+
+  return chain;
 }
