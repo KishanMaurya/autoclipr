@@ -62,6 +62,7 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": ["node_modules/(?!(jose)/)"],
     "collectCoverageFrom": ["**/*.(t|j)s", "!**/*.module.ts", "!main.ts"],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
