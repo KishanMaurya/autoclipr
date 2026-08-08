@@ -235,7 +235,7 @@ export function Hero() {
             No credit card required
           </span>
           <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:block" />
-          <span>Free trial included</span>
+          <span>30 credits free to start</span>
           <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:block" />
           <span>Cancel anytime</span>
         </div>

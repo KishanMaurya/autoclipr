@@ -414,7 +414,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "how-to-use-autoclipr-complete-guide",
     title: "How to Use AutoClipr: The Complete Beginner's Guide",
     description:
-      "A full walkthrough of AutoClipr — connecting YouTube and other platforms, using your 100 free starter credits, and getting the most out of the free tools before you clip your first video.",
+      "A full walkthrough of AutoClipr — connecting YouTube and other platforms, using your 30 free starter credits, and getting the most out of the free tools before you clip your first video.",
     keywords: [
       "how to use AutoClipr",
       "AutoClipr tutorial",
@@ -432,10 +432,10 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
       },
       {
-        heading: "Step 1: Create your account and claim 100 free credits",
+        heading: "Step 1: Create your account and claim 30 free credits",
         paragraphs: [
           "Sign up at autoclipr.com/register with your email or Google account. No credit card is required to get started.",
-          "Every new signup receives 100 credits automatically on the free Starter plan. Credits are spent per clip generated, so 100 credits is enough to test the full pipeline — import, AI analysis, captions, and export — across multiple videos before deciding whether to upgrade.",
+          "Every new signup receives 30 credits automatically on the free Starter plan. Credits are spent per clip generated, so 30 credits is enough to test the full pipeline — import, AI analysis, captions, and export — across multiple videos before deciding whether to upgrade.",
           "Once you're signed in, you'll land on the dashboard, your command center for channels, clips, platforms, and analytics.",
         ],
       },
@@ -495,8 +495,66 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "Quick recap",
         paragraphs: [
-          "1. Sign up and get 100 free credits automatically. 2. Connect a YouTube channel under Channels to clip from. 3. Connect posting platforms (YouTube, Instagram) under Settings → Platforms. 4. Generate clips from a URL or upload under Viral Shorts. 5. Post or download from the Clips page. 6. Track results in Analytics.",
+          "1. Sign up and get 30 free credits automatically. 2. Connect a YouTube channel under Channels to clip from. 3. Connect posting platforms (YouTube, Instagram) under Settings → Platforms. 4. Generate clips from a URL or upload under Viral Shorts. 5. Post or download from the Clips page. 6. Track results in Analytics.",
           "From here, check out our platform-specific guides — YouTube to TikTok, Instagram Reels strategy, and LinkedIn video clips — for tactics on what to clip and how to caption it once your pipeline is running.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "what-you-get-with-30-free-credits",
+    title: "What You Can Actually Do With 30 Free AutoClipr Credits",
+    description:
+      "A practical breakdown of what the free Starter plan's 30 credits actually get you — how credits work, a realistic walkthrough, and when it makes sense to upgrade.",
+    keywords: [
+      "AutoClipr free credits",
+      "AutoClipr free plan",
+      "free AI video clipper",
+      "AutoClipr starter plan",
+      "how many clips free credits",
+    ],
+    publishedAt: "2026-08-08",
+    readMinutes: 5,
+    sections: [
+      {
+        paragraphs: [
+          "\"30 free credits\" sounds like a decent deal, but it doesn't mean much until you know what a credit actually buys. Here's a straight answer: what credits pay for, how far 30 of them realistically go, and what to expect once you sign up — no credit card required.",
+        ],
+      },
+      {
+        heading: "How credits actually work",
+        paragraphs: [
+          "Credits are spent per clip generated, not per video imported. Import as many source videos as you want — you're only charged when AutoClipr actually renders a clip from one.",
+          "The exact cost per clip is shown next to each clip-count option before you commit, and your remaining balance updates live, so there's no guessing or surprise deductions.",
+          "This means 30 credits doesn't lock you into one video. You could spend them all on a single long episode broken into many clips, or spread them across several shorter videos — whatever matches how you actually work.",
+        ],
+      },
+      {
+        heading: "A realistic example: one podcast episode",
+        paragraphs: [
+          "Say you paste the URL for a 40-minute podcast episode. AutoClipr downloads it, transcribes the audio, and scores every moment for hooks, emotion, and shareability.",
+          "From a single episode like that, most creators pull somewhere between 5 and 10 clips worth posting — the AI surfaces the strongest moments first, so you're not scrubbing the full transcript yourself.",
+          "Auto-captions, 9:16 formatting, and platform export (TikTok, Reels, Shorts) happen automatically for each clip — the credit spend covers the finished, ready-to-post file, not just a rough cut.",
+          "At that rate, 30 credits is enough to fully test the pipeline on more than one video before you have to decide whether it's worth paying for.",
+        ],
+      },
+      {
+        heading: "What doesn't cost you anything",
+        paragraphs: [
+          "AutoClipr also ships a set of free, no-signup browser tools — video slicer, format converter, aspect ratio converter, audio extractor, caption generator, compressor, thumbnail extractor, GIF generator, and a metadata viewer. None of them touch your credit balance.",
+          "They run entirely in-browser via WebAssembly, so your video never leaves your device for these — useful for quick one-off edits that don't need the full AI clipping pipeline.",
+        ],
+      },
+      {
+        heading: "When it's time to upgrade",
+        paragraphs: [
+          "If you're clipping one video occasionally, the free Starter plan with 30 credits will comfortably cover that. The signal to upgrade is frequency, not curiosity — once you're consistently generating clips every week rather than testing the tool once, a paid plan's larger credit pool and faster rendering modes start paying for themselves.",
+          "There's no pressure to decide upfront. Start on the free plan, see how the output performs on your channels, and upgrade only once the workflow has already proven useful to you.",
+        ],
+      },
+      {
+        paragraphs: [
+          "Ready to see what your own content looks like clipped? Sign up and your 30 credits are available immediately — no credit card required.",
         ],
       },
     ],
