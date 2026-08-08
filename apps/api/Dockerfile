@@ -24,11 +24,12 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /repo/apps/api
 ENV NODE_ENV=production
-COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
-COPY --from=emails-builder /repo/apps/emails /repo/apps/emails
-COPY apps/api/package.json apps/api/package-lock.json* ./
+COPY --from=monitoring-builder --chown=node:node /repo/packages/monitoring /repo/packages/monitoring
+COPY --from=emails-builder --chown=node:node /repo/apps/emails /repo/apps/emails
+COPY --chown=node:node apps/api/package.json apps/api/package-lock.json* ./
 RUN npm ci --omit=dev
-COPY --from=builder /repo/apps/api/dist ./dist
-COPY apps/api/newrelic.js ./newrelic.js
+COPY --from=builder --chown=node:node /repo/apps/api/dist ./dist
+COPY --chown=node:node apps/api/newrelic.js ./newrelic.js
+USER node
 EXPOSE 8080
 CMD ["node", "-r", "newrelic", "dist/main.js"]

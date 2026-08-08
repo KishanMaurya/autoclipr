@@ -29,10 +29,11 @@ ENV NODE_ENV=production
 RUN apk add --no-cache ffmpeg python3 py3-pip \
   && pip3 install --break-system-packages --no-cache-dir 'yt-dlp[default]'
 
-COPY --from=monitoring-builder /repo/packages/monitoring /repo/packages/monitoring
-COPY --from=emails-builder /repo/apps/emails /repo/apps/emails
-COPY apps/workers/package.json apps/workers/package-lock.json* ./
+COPY --from=monitoring-builder --chown=node:node /repo/packages/monitoring /repo/packages/monitoring
+COPY --from=emails-builder --chown=node:node /repo/apps/emails /repo/apps/emails
+COPY --chown=node:node apps/workers/package.json apps/workers/package-lock.json* ./
 RUN npm ci --omit=dev
-COPY --from=builder /repo/apps/workers/dist ./dist
-COPY apps/workers/newrelic.js ./newrelic.js
+COPY --from=builder --chown=node:node /repo/apps/workers/dist ./dist
+COPY --chown=node:node apps/workers/newrelic.js ./newrelic.js
+USER node
 CMD ["node", "-r", "newrelic", "dist/main.js"]
