@@ -1,0 +1,138 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  ci-web:
+    name: CI · web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm install
+      - name: Type-check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+  ci-api:
+    name: CI · api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build @autoclipr/emails
+        working-directory: apps/emails
+        run: |
+          npm install
+          npm run build
+      - name: Build @autoclipr/monitoring
+        working-directory: packages/monitoring
+        run: |
+          npm install
+          npm run build
+      - name: Install dependencies
+        working-directory: apps/api
+        run: npm install
+      - name: Type-check
+        working-directory: apps/api
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Build
+        working-directory: apps/api
+        run: npm run build
+
+  ci-workers:
+    name: CI · workers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build @autoclipr/emails
+        working-directory: apps/emails
+        run: |
+          npm install
+          npm run build
+      - name: Build @autoclipr/monitoring
+        working-directory: packages/monitoring
+        run: |
+          npm install
+          npm run build
+      - name: Install dependencies
+        working-directory: apps/workers
+        run: npm install
+      - name: Type-check
+        working-directory: apps/workers
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Build
+        working-directory: apps/workers
+        run: npm run build
+
+  deploy-web:
+    name: Deploy · web (Vercel)
+    needs: [ci-web, ci-api, ci-workers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel (production)
+        working-directory: apps/web
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --token="$VERCEL_TOKEN" --prod --yes
+
+  deploy-api:
+    name: Deploy · api (Railway)
+    needs: [ci-web, ci-api, ci-workers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy API service
+        working-directory: apps/api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_API }}
+        run: railway up --service api --detach
+
+  deploy-workers:
+    name: Deploy · workers (Railway)
+    needs: [ci-web, ci-api, ci-workers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy Workers service
+        working-directory: apps/workers
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_WORKERS }}
+        run: railway up --service workers --detach
