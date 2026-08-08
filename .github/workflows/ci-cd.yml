@@ -119,7 +119,7 @@ jobs:
       - name: Deploy API service
         working-directory: apps/api
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_API }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service api --detach
 
   deploy-workers:
@@ -134,5 +134,5 @@ jobs:
       - name: Deploy Workers service
         working-directory: apps/workers
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_WORKERS }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service workers --detach
