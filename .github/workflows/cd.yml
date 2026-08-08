@@ -47,4 +47,4 @@ jobs:
         working-directory: apps/workers
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service workers --detach
+        run: railway up --service worker --detach
