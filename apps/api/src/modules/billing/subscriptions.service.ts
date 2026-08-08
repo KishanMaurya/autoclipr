@@ -13,7 +13,7 @@ const PLAN_TIER: Record<string, string> = {
 };
 
 const PLAN_CREDITS: Record<string, number> = {
-  starter: 100,
+  starter: 30,
   creator: 500,
   business: 1200,
 };
@@ -71,7 +71,7 @@ export class SubscriptionsService {
       .from('profiles')
       .update({
         subscription_tier: tier,
-        credits: PLAN_CREDITS[planId] ?? 100,
+        credits: PLAN_CREDITS[planId] ?? 30,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
@@ -186,7 +186,7 @@ export class SubscriptionsService {
       updated_at: new Date().toISOString(),
     };
     if (status === 'active') {
-      profileUpdate.credits = PLAN_CREDITS[planId] ?? 100;
+      profileUpdate.credits = PLAN_CREDITS[planId] ?? 30;
     }
     const { error: profileError } = await this.supabase.getClient()
       .from('profiles')

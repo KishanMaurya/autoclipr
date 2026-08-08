@@ -99,7 +99,7 @@ export default function ChangelogPage() {
               href="/register"
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white/70 transition-all hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
             >
-              Start free — 100 credits
+              Start free — 30 credits
             </Link>
           </div>
         </div>

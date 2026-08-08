@@ -44,7 +44,7 @@ export default async function BillingPage() {
   const tier = billing?.profile?.subscription_tier ?? "free";
   const credits = billing?.credits ?? 10;
   const planId = billing?.subscription?.plan_id ?? "free";
-  const maxCredits = planId === "business" ? 1200 : planId === "creator" ? 500 : 100;
+  const maxCredits = planId === "business" ? 1200 : planId === "creator" ? 500 : 30;
   const transactions = txRes.data ?? [];
   const creditHistory = creditHistoryRes.data ?? [];
 

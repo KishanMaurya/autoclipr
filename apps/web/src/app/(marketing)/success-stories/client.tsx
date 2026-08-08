@@ -166,7 +166,7 @@ const FAQS = [
   { question: "How long does it take to see results?", answer: "Most creators see their first viral short within 2–4 weeks. Subscriber growth typically accelerates after 60–90 days of consistent short-form posting driven by AutoClipr clips." },
   { question: "Do I need to edit the clips AutoClipr generates?", answer: "No editing required. AutoClipr auto-detects viral moments, trims them precisely, adds captions, and formats for TikTok, Reels, and Shorts — all ready to post in under 2 minutes." },
   { question: "Will short-form clips hurt my long-form channel?", answer: "The opposite. Shorts and Reels consistently drive viewers back to full-length videos. Creators using AutoClipr report 30–50% of their new long-form subscribers discovering them through clips." },
-  { question: "How many clips can I generate per month?", answer: "The Starter plan (free) includes 20 clips/month with 100 credits. Pro and Agency plans offer unlimited clips. Every new signup starts on the free Starter plan — no credit card required." },
+  { question: "How many clips can I generate per month?", answer: "The Starter plan (free) includes 20 clips/month with 30 credits. Pro and Agency plans offer unlimited clips. Every new signup starts on the free Starter plan — no credit card required." },
 ];
 
 const HOW_IT_WORKS = [
@@ -443,14 +443,14 @@ export function CtaSection() {
           </span>
         </h2>
         <p className="mx-auto mt-5 max-w-md text-white/50">
-          Join thousands of creators turning long videos into viral clips — automatically. 100 credits free, no credit card required.
+          Join thousands of creators turning long videos into viral clips — automatically. 30 credits free, no credit card required.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link
             href="/register"
             className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-7 py-3.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_32px_rgba(16,185,129,0.5)] hover:scale-[1.02]"
           >
-            Start free — 100 credits included
+            Start free — 30 credits included
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
