@@ -31,7 +31,11 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
       - name: Deploy API service
-        working-directory: apps/api
+        # Run from repo root, not apps/api — the Railway service's Root
+        # Directory is already "apps/api", so it expects a full-repo archive
+        # and looks for apps/api/Dockerfile within it. Uploading from inside
+        # apps/api instead ships Dockerfile at the archive root, which the
+        # service can't find at its configured path.
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service api --detach
@@ -44,7 +48,8 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
       - name: Deploy Workers service
-        working-directory: apps/workers
+        # Same reasoning as deploy-api: run from repo root so the archive
+        # matches what the service's Root Directory setting expects.
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service worker --detach
