@@ -64,6 +64,9 @@ jobs:
       - name: Type-check
         working-directory: apps/api
         run: npx tsc --noEmit -p tsconfig.json
+      - name: Test
+        working-directory: apps/api
+        run: npm test -- --coverage
       - name: Build
         working-directory: apps/api
         run: npm run build
