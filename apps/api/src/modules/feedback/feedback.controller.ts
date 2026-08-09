@@ -1,5 +1,6 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { Public } from '../../common/decorators/public.decorator';
@@ -9,6 +10,7 @@ import { AuthUser } from '../../common/guards/jwt-auth.guard';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { FeedbackService } from './feedback.service';
 
+@ApiTags('Feedback')
 @Controller('feedback')
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}

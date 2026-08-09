@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { InvoicePdfService } from '@autoclipr/emails';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponse } from '../../common/api-response';
@@ -43,6 +44,7 @@ class ActivatePlanDto {
   billingPeriod?: 'monthly' | 'yearly';
 }
 
+@ApiTags('Billing')
 @Controller()
 export class BillingController {
   constructor(
@@ -53,6 +55,7 @@ export class BillingController {
   ) {}
 
   @Get('billing/subscription')
+  @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
   async subscription(@CurrentUser() user: AuthUser) {
     const data = await this.usersService.getBilling(user.sub);
@@ -65,6 +68,7 @@ export class BillingController {
   }
 
   @Post('billing/checkout')
+  @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
   async checkout(
     @CurrentUser() user: AuthUser,
@@ -85,6 +89,7 @@ export class BillingController {
   }
 
   @Get('billing/transactions')
+  @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
   async transactions(@CurrentUser() user: AuthUser) {
     const data = await this.subscriptions.getTransactions(user.sub);
@@ -125,6 +130,7 @@ export class BillingController {
 
   // Called from frontend on payment success redirect — fallback when webhook is delayed/missing
   @Post('billing/activate')
+  @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
   async activatePlan(
     @CurrentUser() user: AuthUser,

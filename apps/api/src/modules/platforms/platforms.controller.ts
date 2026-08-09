@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SkipThrottle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ApiResponse } from '../../common/api-response';
 import { Public } from '../../common/decorators/public.decorator';
@@ -19,6 +20,8 @@ import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { ConnectPlatformDto, type PlatformId } from './dto/platform.dto';
 import { PlatformsService } from './platforms.service';
 
+@ApiTags('Platforms')
+@ApiBearerAuth('JWT')
 @Controller('platforms')
 @UseGuards(JwtAuthGuard)
 export class PlatformsController {

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -20,6 +21,8 @@ import { BulkDownloadDto } from './dto/bulk-download.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { PublishClipDto } from '../platforms/dto/platform.dto';
 
+@ApiTags('Clips')
+@ApiBearerAuth('JWT')
 @Controller('clips')
 @UseGuards(JwtAuthGuard)
 export class ClipsController {

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -19,6 +20,8 @@ import { InitUploadDto } from './dto/init-upload.dto';
 import { ImportUrlDto } from './dto/import-url.dto';
 import { DeleteVideoDto } from './dto/delete-video.dto';
 
+@ApiTags('Videos')
+@ApiBearerAuth('JWT')
 @Controller('videos')
 @UseGuards(JwtAuthGuard)
 export class VideosController {

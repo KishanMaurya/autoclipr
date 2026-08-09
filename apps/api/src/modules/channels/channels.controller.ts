@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -18,6 +19,8 @@ import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { ChannelsService } from './channels.service';
 import { ConnectChannelDto } from './dto/connect-channel.dto';
 
+@ApiTags('Channels')
+@ApiBearerAuth('JWT')
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {

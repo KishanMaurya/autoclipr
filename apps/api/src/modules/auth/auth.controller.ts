@@ -1,5 +1,6 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +8,7 @@ import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { SyncProfileDto } from './dto/sync-profile.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -15,6 +17,7 @@ export class AuthController {
     default: { limit: THROTTLE.auth.limit, ttl: THROTTLE.auth.ttl },
   })
   @Post('sync')
+  @ApiBearerAuth('JWT')
   @UseGuards(JwtAuthGuard)
   async sync(@CurrentUser() user: AuthUser, @Body() dto: SyncProfileDto) {
     const profile = await this.authService.syncProfile(

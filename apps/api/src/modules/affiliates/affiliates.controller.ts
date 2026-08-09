@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -40,6 +41,8 @@ class RequestPayoutDto {
   details?: string;
 }
 
+@ApiTags('Affiliates')
+@ApiBearerAuth('JWT')
 @Controller('affiliates')
 @UseGuards(JwtAuthGuard)
 export class AffiliatesController {

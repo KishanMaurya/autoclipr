@@ -1,11 +1,14 @@
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { THROTTLE } from '../../config/throttle.config';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { AnalyticsService } from './analytics.service';
 
+@ApiTags('Analytics')
+@ApiBearerAuth('JWT')
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
