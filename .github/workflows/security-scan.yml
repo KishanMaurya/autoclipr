@@ -54,7 +54,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Report HIGH + CRITICAL (informational — tracked separately via Dependabot)
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned by commit SHA, not a mutable tag — trivy-action had its
+        # version tags force-pushed to credential-stealing malware in a
+        # March 2026 supply chain attack (GHSA-69fq-xp46-6x23). This SHA is
+        # the commit behind the v0.36.0 tag, verified via GitHub's API with
+        # a valid signature dated after the incident.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: ${{ matrix.app }}
@@ -62,7 +67,12 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: 0
       - name: Fail only on CRITICAL
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned by commit SHA, not a mutable tag — trivy-action had its
+        # version tags force-pushed to credential-stealing malware in a
+        # March 2026 supply chain attack (GHSA-69fq-xp46-6x23). This SHA is
+        # the commit behind the v0.36.0 tag, verified via GitHub's API with
+        # a valid signature dated after the incident.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: ${{ matrix.app }}
@@ -76,7 +86,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Scan Dockerfiles and compose files
-        uses: aquasecurity/trivy-action@0.28.0
+        # Pinned by commit SHA, not a mutable tag — trivy-action had its
+        # version tags force-pushed to credential-stealing malware in a
+        # March 2026 supply chain attack (GHSA-69fq-xp46-6x23). This SHA is
+        # the commit behind the v0.36.0 tag, verified via GitHub's API with
+        # a valid signature dated after the incident.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: config
           scan-ref: .
