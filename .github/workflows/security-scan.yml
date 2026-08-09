@@ -15,7 +15,11 @@ jobs:
     name: SAST · Semgrep
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      # Pinned by digest, not the :latest tag — same reasoning as the
+      # trivy-action pin below: a mutable Docker Hub tag can be silently
+      # re-pushed. Digest captured directly via `docker pull` + `docker
+      # inspect`, not a third-party lookup.
+      image: semgrep/semgrep@sha256:bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8
     steps:
       - uses: actions/checkout@v4
       - name: Run Semgrep
