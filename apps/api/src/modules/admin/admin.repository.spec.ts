@@ -562,8 +562,8 @@ describe('AdminRepository', () => {
         .mockReturnValueOnce(
           mockQueryBuilder({
             data: [
-              { id: 'j1', job_type: 'render', error_message: 'timeout', attempts: 1, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-              { id: 'j2', job_type: 'render', error_message: 'timeout', attempts: 2, created_at: '2026-01-02T00:00:00Z', updated_at: '2026-01-02T00:00:00Z' },
+              { id: 'j1', job_type: 'render', error_message: 'timeout', attempts: 1, created_at: '2026-01-01T00:00:00Z', completed_at: '2026-01-01T00:00:00Z' },
+              { id: 'j2', job_type: 'render', error_message: 'timeout', attempts: 2, created_at: '2026-01-02T00:00:00Z', completed_at: '2026-01-02T00:00:00Z' },
             ],
           }),
         )
@@ -610,6 +610,91 @@ describe('AdminRepository', () => {
       expect(result).toEqual({ entries: [], summary: { errors: 0, warnings: 0, total: 0 } });
     });
 
+    it('does not select updated_at from processing_jobs — that column does not exist', async () => {
+      // Regression: selecting a non-existent column made Postgres reject the
+      // whole query (42703), and because the result is read as `data ?? []`
+      // every worker error silently disappeared from the admin page.
+      const jobsBuilder = mockQueryBuilder({ data: [] });
+      client.from
+        .mockReturnValueOnce(jobsBuilder)
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }));
+
+      await repo.getRecentErrors();
+
+      const selected = jobsBuilder.select.mock.calls[0][0] as string;
+      expect(selected).not.toContain('updated_at');
+      expect(selected).toContain('completed_at');
+    });
+
+    it('uses completed_at as the failure timestamp for jobs', async () => {
+      client.from
+        .mockReturnValueOnce(
+          mockQueryBuilder({
+            data: [
+              {
+                id: 'j1',
+                job_type: 'render',
+                error_message: 'timeout',
+                attempts: 1,
+                created_at: '2026-01-01T00:00:00Z',
+                completed_at: '2026-01-09T00:00:00Z',
+              },
+            ],
+          }),
+        )
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }));
+
+      const result = await repo.getRecentErrors();
+
+      expect(result.entries[0].lastSeen).toBe('2026-01-09T00:00:00Z');
+    });
+
+    it('falls back to created_at when a job has no completed_at', async () => {
+      client.from
+        .mockReturnValueOnce(
+          mockQueryBuilder({
+            data: [
+              {
+                id: 'j1',
+                job_type: 'render',
+                error_message: 'timeout',
+                attempts: 1,
+                created_at: '2026-01-01T00:00:00Z',
+                completed_at: null,
+              },
+            ],
+          }),
+        )
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }));
+
+      const result = await repo.getRecentErrors();
+
+      expect(result.entries[0].lastSeen).toBe('2026-01-01T00:00:00Z');
+    });
+
+    it('logs each failing source query instead of silently dropping its results', async () => {
+      const logSpy = jest
+        .spyOn(require('@nestjs/common').Logger.prototype, 'error')
+        .mockImplementation();
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ data: null, error: { message: 'boom-jobs' } }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: null, error: { message: 'boom-pubs' } }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: [] }));
+
+      const result = await repo.getRecentErrors();
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('processing_jobs'));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('boom-jobs'));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('clip_publications'));
+      // Still degrades gracefully rather than blanking the page.
+      expect(result.summary.total).toBe(0);
+
+      logSpy.mockRestore();
+    });
+
     it('increments the count without replacing lastSeen when a later duplicate arrives out of order', async () => {
       // Third occurrence has an *older* timestamp than the second, so the `else` branch
       // (count++ without updating lastSeen) must run for both job and publication grouping.
@@ -617,9 +702,9 @@ describe('AdminRepository', () => {
         .mockReturnValueOnce(
           mockQueryBuilder({
             data: [
-              { id: 'j1', job_type: 'render', error_message: 'timeout', attempts: 1, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-              { id: 'j2', job_type: 'render', error_message: 'timeout', attempts: 2, created_at: '2026-01-05T00:00:00Z', updated_at: '2026-01-05T00:00:00Z' },
-              { id: 'j3', job_type: 'render', error_message: 'timeout', attempts: 3, created_at: '2026-01-02T00:00:00Z', updated_at: '2026-01-02T00:00:00Z' },
+              { id: 'j1', job_type: 'render', error_message: 'timeout', attempts: 1, created_at: '2026-01-01T00:00:00Z', completed_at: '2026-01-01T00:00:00Z' },
+              { id: 'j2', job_type: 'render', error_message: 'timeout', attempts: 2, created_at: '2026-01-05T00:00:00Z', completed_at: '2026-01-05T00:00:00Z' },
+              { id: 'j3', job_type: 'render', error_message: 'timeout', attempts: 3, created_at: '2026-01-02T00:00:00Z', completed_at: '2026-01-02T00:00:00Z' },
             ],
           }),
         )

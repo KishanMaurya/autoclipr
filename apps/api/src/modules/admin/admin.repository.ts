@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 
 function parseAmountPaise(amount: string | null | undefined): number {
@@ -9,6 +9,8 @@ function parseAmountPaise(amount: string | null | undefined): number {
 
 @Injectable()
 export class AdminRepository {
+  private readonly logger = new Logger(AdminRepository.name);
+
   constructor(private readonly supabase: SupabaseAdminService) {}
 
   private get db() { return this.supabase.getClient(); }
@@ -566,10 +568,12 @@ export class AdminRepository {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const [jobsRes, pubsRes, failedVideosRes] = await Promise.all([
-      // Failed processing jobs with error messages
+      // Failed processing jobs with error messages.
+      // processing_jobs has no updated_at column — completed_at is the
+      // timestamp written when a job is marked failed.
       this.db
         .from('processing_jobs')
-        .select('id, job_type, error_message, attempts, created_at, updated_at')
+        .select('id, job_type, error_message, attempts, created_at, completed_at')
         .eq('status', 'failed')
         .not('error_message', 'is', null)
         .gte('created_at', since)
@@ -596,6 +600,22 @@ export class AdminRepository {
         .limit(limit),
     ]);
 
+    // Each source degrades independently — one bad query shouldn't blank the
+    // whole page. But it must not vanish silently either: a stale column name
+    // here previously dropped every worker error from this list with no
+    // outward sign that anything was wrong.
+    for (const [source, res] of [
+      ['processing_jobs', jobsRes],
+      ['clip_publications', pubsRes],
+      ['videos', failedVideosRes],
+    ] as const) {
+      if (res.error) {
+        this.logger.error(
+          `getRecentErrors: ${source} query failed — results omitted: ${res.error.message}`,
+        );
+      }
+    }
+
     type ErrorEntry = {
       id: string;
       level: 'error' | 'warning' | 'info';
@@ -614,7 +634,7 @@ export class AdminRepository {
       const service = (j.job_type as string) ?? 'worker';
       const key = `${service}::${msg}`;
       const existing = jobErrors.get(key);
-      const ts = (j.updated_at as string) ?? (j.created_at as string);
+      const ts = (j.completed_at as string) ?? (j.created_at as string);
       if (!existing || ts > existing.lastSeen) {
         jobErrors.set(key, { count: (existing?.count ?? 0) + 1, lastSeen: ts, id: j.id as string, service });
       } else {
