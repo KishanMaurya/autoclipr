@@ -9,7 +9,7 @@ import { JobType } from '../jobs/jobs.constants';
 import { StorageService } from '../storage/storage.service';
 import { PlatformsRepository } from '../platforms/platforms.repository';
 import type { PlatformId } from '../platforms/dto/platform.dto';
-import { UsersRepository } from '../users/users.repository';
+import { InsufficientCreditsError, UsersRepository } from '../users/users.repository';
 import { VideosRepository } from '../videos/videos.repository';
 import { ClipsRepository, type Clip } from './clips.repository';
 import { PublicationsRepository, type ClipPublication } from './publications.repository';
@@ -102,31 +102,49 @@ export class ClipsService {
     const costPerClip = this.config.get<number>('clipCreditCost') ?? 5;
     const totalCost = costPerClip * clipCount;
 
-    await this.usersRepo.deductCredits(
-      userId,
-      totalCost,
-      'clip_generation',
-      dto.video_id,
-    );
+    try {
+      await this.usersRepo.deductCredits(userId, totalCost, 'clip_generation', dto.video_id);
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError) {
+        const balance = (await this.usersRepo.getById(userId))?.credits ?? 0;
+        throw new BadRequestException(
+          `Not enough credits: need ${totalCost} (${clipCount} clips × ${costPerClip} credits). You have ${balance}. Reduce clip count or upgrade your plan.`,
+        );
+      }
+      throw err;
+    }
 
-    const job = await this.jobsService.enqueueAndDispatch({
-      user_id: userId,
-      video_id: dto.video_id,
-      job_type: JobType.GENERATE_CLIPS,
-      payload: {
+    try {
+      return await this.jobsService.enqueueAndDispatch({
+        user_id: userId,
         video_id: dto.video_id,
-        clip_count: clipCount,
-        aspect_ratio: dto.aspect_ratio ?? '9:16',
-        with_subtitles: dto.with_subtitles ?? true,
-        durations: dto.durations ?? [15, 30, 45, 60],
-        caption_style: dto.caption_style ?? 'viral',
-        caption_language: dto.caption_language ?? 'en',
-        platforms: dto.platforms ?? ['tiktok', 'instagram', 'youtube'],
-        export_quality: dto.export_quality ?? 'hd',
-      },
-    });
-
-    return job;
+        job_type: JobType.GENERATE_CLIPS,
+        payload: {
+          video_id: dto.video_id,
+          clip_count: clipCount,
+          aspect_ratio: dto.aspect_ratio ?? '9:16',
+          with_subtitles: dto.with_subtitles ?? true,
+          durations: dto.durations ?? [15, 30, 45, 60],
+          caption_style: dto.caption_style ?? 'viral',
+          caption_language: dto.caption_language ?? 'en',
+          platforms: dto.platforms ?? ['tiktok', 'instagram', 'youtube'],
+          export_quality: dto.export_quality ?? 'hd',
+        },
+      });
+    } catch (err) {
+      // Charged but never queued — give the credits back.
+      try {
+        await this.usersRepo.refundCredits(
+          userId,
+          totalCost,
+          'clip_generation_enqueue_failed',
+          dto.video_id,
+        );
+      } catch {
+        // Swallow: the original enqueue error is the one worth surfacing.
+      }
+      throw err;
+    }
   }
 
   async list(userId: string, page: number, limit: number) {

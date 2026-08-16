@@ -4,7 +4,7 @@ import { ClipsRepository, type Clip } from './clips.repository';
 import { PublicationsRepository } from './publications.repository';
 import { PlatformsRepository } from '../platforms/platforms.repository';
 import { VideosRepository } from '../videos/videos.repository';
-import { UsersRepository } from '../users/users.repository';
+import { InsufficientCreditsError, UsersRepository } from '../users/users.repository';
 import { JobsService } from '../jobs/jobs.service';
 import { StorageService } from '../storage/storage.service';
 import { JobType } from '../jobs/jobs.constants';
@@ -71,6 +71,8 @@ describe('ClipsService', () => {
 
     usersRepo = {
       deductCredits: jest.fn(),
+      refundCredits: jest.fn().mockResolvedValue(100),
+      getById: jest.fn(),
     } as unknown as jest.Mocked<UsersRepository>;
 
     jobsService = {
@@ -213,6 +215,53 @@ describe('ClipsService', () => {
 
       const result = await service.generate('u1', { video_id: 'v1' });
       expect(result).toBe(job);
+    });
+
+    it('maps InsufficientCreditsError to a BadRequestException with the live balance', async () => {
+      videosRepo.getById.mockResolvedValue({ id: 'v1', status: 'ready' } as never);
+      config.get.mockReturnValue(5);
+      usersRepo.deductCredits.mockRejectedValue(new InsufficientCreditsError(15));
+      usersRepo.getById.mockResolvedValue({ credits: 3 } as never);
+
+      await expect(service.generate('u1', { video_id: 'v1' })).rejects.toThrow(
+        /Not enough credits: need 15.*You have 3/,
+      );
+      expect(jobsService.enqueueAndDispatch).not.toHaveBeenCalled();
+    });
+
+    it('reports a zero balance when the profile is missing', async () => {
+      videosRepo.getById.mockResolvedValue({ id: 'v1', status: 'ready' } as never);
+      config.get.mockReturnValue(5);
+      usersRepo.deductCredits.mockRejectedValue(new InsufficientCreditsError(15));
+      usersRepo.getById.mockResolvedValue(null);
+
+      await expect(service.generate('u1', { video_id: 'v1' })).rejects.toThrow(/You have 0/);
+    });
+
+    it('refunds the credits when enqueueing fails after charging', async () => {
+      videosRepo.getById.mockResolvedValue({ id: 'v1', status: 'ready' } as never);
+      config.get.mockReturnValue(5);
+      usersRepo.deductCredits.mockResolvedValue(90);
+      jobsService.enqueueAndDispatch.mockRejectedValue(new Error('redis down'));
+
+      await expect(service.generate('u1', { video_id: 'v1' })).rejects.toThrow('redis down');
+
+      expect(usersRepo.refundCredits).toHaveBeenCalledWith(
+        'u1',
+        15,
+        'clip_generation_enqueue_failed',
+        'v1',
+      );
+    });
+
+    it('still surfaces the enqueue error when the refund itself fails', async () => {
+      videosRepo.getById.mockResolvedValue({ id: 'v1', status: 'ready' } as never);
+      config.get.mockReturnValue(5);
+      usersRepo.deductCredits.mockResolvedValue(90);
+      jobsService.enqueueAndDispatch.mockRejectedValue(new Error('redis down'));
+      usersRepo.refundCredits.mockRejectedValue(new Error('refund exploded'));
+
+      await expect(service.generate('u1', { video_id: 'v1' })).rejects.toThrow('redis down');
     });
   });
 

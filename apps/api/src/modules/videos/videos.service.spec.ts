@@ -5,7 +5,7 @@ import { ClipsRepository } from '../clips/clips.repository';
 import { StorageService } from '../storage/storage.service';
 import { JobsService } from '../jobs/jobs.service';
 import { JobsRepository } from '../jobs/jobs.repository';
-import { UsersRepository } from '../users/users.repository';
+import { InsufficientCreditsError, UsersRepository } from '../users/users.repository';
 import { JobType } from '../jobs/jobs.constants';
 
 describe('VideosService', () => {
@@ -16,7 +16,7 @@ describe('VideosService', () => {
   let jobsService: jest.Mocked<JobsService>;
   let jobsRepo: jest.Mocked<JobsRepository>;
   let usersRepo: jest.Mocked<UsersRepository>;
-  let monitoring: { recordEvent: jest.Mock };
+  let monitoring: { recordEvent: jest.Mock; noticeError: jest.Mock };
   let config: { get: jest.Mock };
 
   beforeEach(() => {
@@ -55,9 +55,11 @@ describe('VideosService', () => {
 
     usersRepo = {
       getById: jest.fn(),
+      deductCredits: jest.fn().mockResolvedValue(90),
+      refundCredits: jest.fn().mockResolvedValue(100),
     } as unknown as jest.Mocked<UsersRepository>;
 
-    monitoring = { recordEvent: jest.fn() };
+    monitoring = { recordEvent: jest.fn(), noticeError: jest.fn() };
     config = { get: jest.fn() };
 
     service = new VideosService(
@@ -166,8 +168,11 @@ describe('VideosService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('throws BadRequestException when credits are insufficient', async () => {
+    it('throws BadRequestException when the atomic deduction reports insufficient credits', async () => {
       config.get.mockReturnValue(2); // clipCreditCost
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      usersRepo.deductCredits.mockRejectedValue(new InsufficientCreditsError(20));
       usersRepo.getById.mockResolvedValue({ credits: 5 } as never);
 
       await expect(
@@ -175,11 +180,107 @@ describe('VideosService', () => {
       ).rejects.toThrow(/Not enough credits: need 20/);
     });
 
-    it('treats a missing profile as zero credits', async () => {
+    it('treats a missing profile as zero credits in the rejection message', async () => {
       config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      usersRepo.deductCredits.mockRejectedValue(new InsufficientCreditsError(10));
       usersRepo.getById.mockResolvedValue(null);
 
+      await expect(service.importFromUrl('u1', dto)).rejects.toThrow(/You have 0/);
+    });
+
+    it('never enqueues a job when the deduction is rejected', async () => {
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      usersRepo.deductCredits.mockRejectedValue(new InsufficientCreditsError(10));
+      usersRepo.getById.mockResolvedValue({ credits: 0 } as never);
+
       await expect(service.importFromUrl('u1', dto)).rejects.toThrow(BadRequestException);
+
+      expect(jobsService.enqueueAndDispatch).not.toHaveBeenCalled();
+      expect(videosRepo.updateStatus).toHaveBeenCalledWith('v1', 'failed');
+    });
+
+    it('charges credits before the job is enqueued, not after processing', async () => {
+      // Regression guard: the old flow only *checked* the balance here and
+      // deducted inside the worker after the pipeline finished, so concurrent
+      // requests could all pass the check and overspend.
+      const callOrder: string[] = [];
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      usersRepo.deductCredits.mockImplementation(async () => {
+        callOrder.push('deduct');
+        return 90;
+      });
+      jobsService.enqueueAndDispatch.mockImplementation(async () => {
+        callOrder.push('enqueue');
+        return { id: 'job1' } as never;
+      });
+
+      await service.importFromUrl('u1', dto);
+
+      expect(callOrder).toEqual(['deduct', 'enqueue']);
+      expect(usersRepo.deductCredits).toHaveBeenCalledWith(
+        'u1',
+        10,
+        'url_import_pipeline',
+        'v1',
+      );
+    });
+
+    it('refunds the credits when enqueueing fails after charging', async () => {
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      jobsService.enqueueAndDispatch.mockRejectedValue(new Error('redis down'));
+
+      await expect(service.importFromUrl('u1', dto)).rejects.toThrow('redis down');
+
+      expect(usersRepo.refundCredits).toHaveBeenCalledWith(
+        'u1',
+        10,
+        'url_import_enqueue_failed',
+        'v1',
+      );
+      expect(videosRepo.updateStatus).toHaveBeenCalledWith('v1', 'failed');
+    });
+
+    it('still surfaces the enqueue error when the refund itself fails', async () => {
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      jobsService.enqueueAndDispatch.mockRejectedValue(new Error('redis down'));
+      usersRepo.refundCredits.mockRejectedValue(new Error('refund exploded'));
+
+      await expect(service.importFromUrl('u1', dto)).rejects.toThrow('redis down');
+      expect(monitoring.noticeError).toHaveBeenCalled();
+    });
+
+    it('wraps a non-Error refund rejection before reporting it', async () => {
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      jobsService.enqueueAndDispatch.mockRejectedValue(new Error('redis down'));
+      usersRepo.refundCredits.mockRejectedValue('refund string failure');
+
+      await expect(service.importFromUrl('u1', dto)).rejects.toThrow('redis down');
+      expect(monitoring.noticeError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'refund string failure' }),
+        expect.objectContaining({ source: 'refundCredits' }),
+      );
+    });
+
+    it('propagates a non-insufficient deduction error unchanged', async () => {
+      config.get.mockReturnValue(1);
+      videosRepo.create.mockResolvedValue({ id: 'v1', title: 't' } as never);
+      videosRepo.updateStoragePath.mockResolvedValue(undefined);
+      usersRepo.deductCredits.mockRejectedValue(new Error('db exploded'));
+
+      await expect(service.importFromUrl('u1', dto)).rejects.toThrow('db exploded');
+      expect(jobsService.enqueueAndDispatch).not.toHaveBeenCalled();
     });
 
     it('uses default clip_count (10) and costPerClip (1) when not configured/provided', async () => {

@@ -265,11 +265,10 @@ export class UrlPipelineService {
       steps[4].status = 'completed';
       await this.db.client.query(`UPDATE videos SET status = 'ready' WHERE id = $1`, [videoId]);
 
-      // Deduct credits only after successful completion
-      const creditCost = (data as Record<string, unknown>).credit_cost as number | undefined;
-      if (userId && creditCost && creditCost > 0) {
-        await this.deductCredits(userId, creditCost, 'url_import_pipeline', videoId);
-      }
+      // Credits were already charged atomically by the API before this job was
+      // queued (see VideosService.importFromUrl). Nothing to deduct here — the
+      // old post-completion deduction silently no-opped when the balance had
+      // since dropped, handing out the finished clips for free.
 
       // Send clip-ready email (non-blocking)
       void this.sendClipReadyEmail(userId, videoId, videoRow.title as string, moments.length);
@@ -316,6 +315,14 @@ export class UrlPipelineService {
     } catch (err) {
       plog.stepFail('pipeline', 0, err);
       await this.markPipelineFailed(jobId, steps, err);
+
+      // Credits were taken up front, before this job was queued. The user got
+      // nothing usable, so hand them back.
+      const creditCost = (data as Record<string, unknown>).credit_cost as number | undefined;
+      if (userId && creditCost && creditCost > 0) {
+        await this.refundCredits(userId, creditCost, 'url_import_pipeline_failed', videoId);
+      }
+
       throw err;
     } finally {
       await this.temp.cleanup(workDir);
@@ -512,38 +519,31 @@ export class UrlPipelineService {
     );
   }
 
-  private async deductCredits(
+  /**
+   * Give back credits charged up front for a pipeline that failed. Uses the
+   * refund_credits RPC so the balance update and ledger entry stay consistent.
+   * Best-effort: a refund failure is logged, never rethrown over the original
+   * pipeline error.
+   */
+  private async refundCredits(
     userId: string,
     amount: number,
     reason: string,
     referenceId: string,
   ): Promise<void> {
     try {
-      const res = await this.db.client.query<{ credits: number }>(
-        `SELECT credits FROM profiles WHERE id = $1`,
-        [userId],
+      const res = await this.db.client.query<{ refund_credits: number | null }>(
+        `SELECT refund_credits($1, $2, $3, $4) AS refund_credits`,
+        [userId, amount, reason, referenceId],
       );
-      const balance = res.rows[0]?.credits ?? 0;
-      if (balance < amount) {
-        this.logger.warn(
-          `Cannot deduct ${amount} credits from user ${userId} (balance: ${balance}) — skipping`,
-        );
+      const newBalance = res.rows[0]?.refund_credits ?? null;
+      if (newBalance === null) {
+        this.logger.warn(`Refund of ${amount} credits skipped — user ${userId} not found`);
         return;
       }
-      const newBalance = balance - amount;
-      await this.db.client.query(
-        `UPDATE profiles SET credits = $1, updated_at = NOW() WHERE id = $2`,
-        [newBalance, userId],
-      );
-      await this.db.client.query(
-        `INSERT INTO credit_transactions (user_id, amount, balance_after, reason, reference_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [userId, -amount, newBalance, reason, referenceId],
-      );
-      this.logger.log(`Deducted ${amount} credits from ${userId} (balance: ${balance} → ${newBalance})`);
+      this.logger.log(`Refunded ${amount} credits to ${userId} (new balance: ${newBalance})`);
     } catch (err) {
-      // Non-fatal — clips are already generated; log and continue
-      this.logger.error(`Credit deduction failed for user ${userId}: ${err}`);
+      this.logger.error(`Credit refund failed for user ${userId}: ${err}`);
     }
   }
 

@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
-import { UsersRepository } from './users.repository';
+import { InsufficientCreditsError, UsersRepository } from './users.repository';
 import { createQueryBuilderMock, createSupabaseAdminServiceMock } from '../../test-utils/supabase-mock';
 
 describe('UsersRepository', () => {
@@ -222,101 +222,115 @@ describe('UsersRepository', () => {
   });
 
   describe('deductCredits', () => {
-    it('deducts credits, updates the balance, and records a transaction', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 50 }, error: null });
-      const updateBuilder = createQueryBuilderMock({ data: null, error: null });
-      const txBuilder = createQueryBuilderMock({ data: null, error: null });
-      supabaseMock.__client.from
-        .mockReturnValueOnce(readBuilder)
-        .mockReturnValueOnce(updateBuilder)
-        .mockReturnValueOnce(txBuilder);
+    it('delegates to the atomic RPC and returns the new balance', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 40, error: null });
 
       const newBalance = await repo.deductCredits('user-1', 10, 'clip_generation', 'clip-1');
 
       expect(newBalance).toBe(40);
-      expect(updateBuilder.update).toHaveBeenCalledWith(
-        expect.objectContaining({ credits: 40 }),
-      );
-      expect(txBuilder.insert).toHaveBeenCalledWith({
-        user_id: 'user-1',
-        amount: -10,
-        balance_after: 40,
-        reason: 'clip_generation',
-        reference_id: 'clip-1',
+      expect(supabaseMock.__client.rpc).toHaveBeenCalledWith('deduct_credits_atomic', {
+        p_user_id: 'user-1',
+        p_amount: 10,
+        p_reason: 'clip_generation',
+        p_reference_id: 'clip-1',
       });
     });
 
-    it('defaults reference_id to null when not provided', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 50 }, error: null });
-      const updateBuilder = createQueryBuilderMock({ data: null, error: null });
-      const txBuilder = createQueryBuilderMock({ data: null, error: null });
-      supabaseMock.__client.from
-        .mockReturnValueOnce(readBuilder)
-        .mockReturnValueOnce(updateBuilder)
-        .mockReturnValueOnce(txBuilder);
+    it('never issues a separate read-then-write against profiles', async () => {
+      // The whole point of the RPC is that the check and the debit are one
+      // locked statement — a client-side read/update pair would reintroduce
+      // the race this replaced.
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 40, error: null });
 
       await repo.deductCredits('user-1', 10, 'clip_generation');
 
-      expect(txBuilder.insert).toHaveBeenCalledWith(expect.objectContaining({ reference_id: null }));
+      expect(supabaseMock.__client.from).not.toHaveBeenCalled();
     });
 
-    it('treats a missing profile balance as zero credits', async () => {
-      const readBuilder = createQueryBuilderMock({ data: null, error: null });
-      supabaseMock.__client.from.mockReturnValueOnce(readBuilder);
+    it('defaults p_reference_id to null when not provided', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 40, error: null });
 
-      await expect(repo.deductCredits('user-1', 1, 'clip_generation')).rejects.toThrow(
-        'insufficient credits: need 1, have 0',
+      await repo.deductCredits('user-1', 10, 'clip_generation');
+
+      expect(supabaseMock.__client.rpc).toHaveBeenCalledWith(
+        'deduct_credits_atomic',
+        expect.objectContaining({ p_reference_id: null }),
       );
     });
 
-    it('throws when the balance read fails', async () => {
-      const readBuilder = createQueryBuilderMock({ data: null, error: { message: 'read failed' } });
-      supabaseMock.__client.from.mockReturnValueOnce(readBuilder);
-
-      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow('read failed');
-    });
-
-    it('throws insufficient credits when balance is lower than the amount', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 5 }, error: null });
-      supabaseMock.__client.from.mockReturnValueOnce(readBuilder);
+    it('throws InsufficientCreditsError when the RPC returns null (balance too low)', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: null, error: null });
 
       await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow(
-        'insufficient credits: need 10, have 5',
+        InsufficientCreditsError,
       );
     });
 
-    it('throws when the balance update fails', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 50 }, error: null });
-      const updateBuilder = createQueryBuilderMock({ data: null, error: { message: 'update failed' } });
-      supabaseMock.__client.from.mockReturnValueOnce(readBuilder).mockReturnValueOnce(updateBuilder);
+    it('carries the required amount on InsufficientCreditsError', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: null, error: null });
 
-      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow('update failed');
+      await expect(repo.deductCredits('user-1', 25, 'clip_generation')).rejects.toMatchObject({
+        required: 25,
+      });
     });
 
-    it('throws when the transaction insert fails', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 50 }, error: null });
-      const updateBuilder = createQueryBuilderMock({ data: null, error: null });
-      const txBuilder = createQueryBuilderMock({ data: null, error: { message: 'tx insert failed' } });
-      supabaseMock.__client.from
-        .mockReturnValueOnce(readBuilder)
-        .mockReturnValueOnce(updateBuilder)
-        .mockReturnValueOnce(txBuilder);
+    it('throws InsufficientCreditsError when the RPC returns undefined', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: undefined, error: null });
 
-      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow('tx insert failed');
+      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow(
+        InsufficientCreditsError,
+      );
     });
 
-    it('allows deducting exactly the full balance down to zero', async () => {
-      const readBuilder = createQueryBuilderMock({ data: { credits: 10 }, error: null });
-      const updateBuilder = createQueryBuilderMock({ data: null, error: null });
-      const txBuilder = createQueryBuilderMock({ data: null, error: null });
-      supabaseMock.__client.from
-        .mockReturnValueOnce(readBuilder)
-        .mockReturnValueOnce(updateBuilder)
-        .mockReturnValueOnce(txBuilder);
+    it('surfaces a database error rather than treating it as insufficient credits', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
 
-      const newBalance = await repo.deductCredits('user-1', 10, 'clip_generation');
+      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).rejects.toThrow('rpc failed');
+    });
 
-      expect(newBalance).toBe(0);
+    it('allows spending exactly the full balance down to zero', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 0, error: null });
+
+      await expect(repo.deductCredits('user-1', 10, 'clip_generation')).resolves.toBe(0);
+    });
+  });
+
+  describe('refundCredits', () => {
+    it('delegates to the refund RPC and returns the new balance', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 60, error: null });
+
+      const newBalance = await repo.refundCredits('user-1', 10, 'pipeline_failed', 'video-1');
+
+      expect(newBalance).toBe(60);
+      expect(supabaseMock.__client.rpc).toHaveBeenCalledWith('refund_credits', {
+        p_user_id: 'user-1',
+        p_amount: 10,
+        p_reason: 'pipeline_failed',
+        p_reference_id: 'video-1',
+      });
+    });
+
+    it('defaults p_reference_id to null when not provided', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: 60, error: null });
+
+      await repo.refundCredits('user-1', 10, 'pipeline_failed');
+
+      expect(supabaseMock.__client.rpc).toHaveBeenCalledWith(
+        'refund_credits',
+        expect.objectContaining({ p_reference_id: null }),
+      );
+    });
+
+    it('returns null when the user row is missing', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: null, error: null });
+
+      await expect(repo.refundCredits('ghost', 10, 'pipeline_failed')).resolves.toBeNull();
+    });
+
+    it('throws when the RPC errors', async () => {
+      supabaseMock.__client.rpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
+
+      await expect(repo.refundCredits('user-1', 10, 'pipeline_failed')).rejects.toThrow('rpc failed');
     });
   });
 

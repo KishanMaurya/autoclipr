@@ -152,6 +152,9 @@ export function createQueryBuilderMock(
 export function createSupabaseAdminServiceMock(defaultBuilder?: SupabaseQueryBuilderMock) {
   const client: any = {
     from: jest.fn(() => defaultBuilder ?? createQueryBuilderMock()),
+    // Postgres functions called via supabase.rpc(name, args) — e.g. the atomic
+    // credit deduct/refund helpers. Resolves { data, error } like the real client.
+    rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
     auth: {
       admin: {
         deleteUser: jest.fn().mockResolvedValue({ error: null }),

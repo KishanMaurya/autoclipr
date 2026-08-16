@@ -18,6 +18,17 @@ export interface Profile {
 const PROFILE_COLUMNS =
   'id, email, full_name, avatar_url, phone, credits, subscription_tier, email_notifications_enabled, welcome_sent, created_at, updated_at';
 
+/**
+ * Raised when a credit deduction is rejected because the balance can't cover it.
+ * Distinct from a generic Error so callers can map it to a 400 rather than a 500.
+ */
+export class InsufficientCreditsError extends Error {
+  constructor(readonly required: number) {
+    super(`insufficient credits: need ${required}`);
+    this.name = 'InsufficientCreditsError';
+  }
+}
+
 @Injectable()
 export class UsersRepository {
   constructor(private readonly supabase: SupabaseAdminService) {}
@@ -101,46 +112,56 @@ export class UsersRepository {
     return data as Profile;
   }
 
+  /**
+   * Spend credits atomically. Delegates to the deduct_credits_atomic RPC so the
+   * balance check and the debit happen in one locked statement — a read-then-write
+   * from here would let concurrent requests all pass the check against the same
+   * stale balance and overspend.
+   *
+   * Throws InsufficientCreditsError when the balance can't cover `amount`;
+   * nothing is written in that case.
+   */
   async deductCredits(
     userId: string,
     amount: number,
     reason: string,
     referenceId?: string,
   ): Promise<number> {
-    const { data: profile, error: readErr } = await this.supabase
-      .getClient()
-      .from('profiles')
-      .select('credits')
-      .eq('id', userId)
-      .single();
-
-    if (readErr) throw new Error(readErr.message);
-    const balance = profile?.credits ?? 0;
-    if (balance < amount) {
-      throw new Error(`insufficient credits: need ${amount}, have ${balance}`);
-    }
-
-    const newBalance = balance - amount;
-
-    const { error: updateErr } = await this.supabase
-      .getClient()
-      .from('profiles')
-      .update({ credits: newBalance, updated_at: new Date().toISOString() })
-      .eq('id', userId);
-
-    if (updateErr) throw new Error(updateErr.message);
-
-    const { error: txErr } = await this.supabase.getClient().from('credit_transactions').insert({
-      user_id: userId,
-      amount: -amount,
-      balance_after: newBalance,
-      reason,
-      reference_id: referenceId ?? null,
+    const { data, error } = await this.supabase.getClient().rpc('deduct_credits_atomic', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_reason: reason,
+      p_reference_id: referenceId ?? null,
     });
 
-    if (txErr) throw new Error(txErr.message);
+    if (error) throw new Error(error.message);
+    if (data === null || data === undefined) {
+      throw new InsufficientCreditsError(amount);
+    }
 
-    return newBalance;
+    return data as number;
+  }
+
+  /**
+   * Return credits that were taken up front for work that never completed.
+   * Best-effort by design: the caller is already handling a failure, so a
+   * refund problem is logged rather than allowed to mask the original error.
+   */
+  async refundCredits(
+    userId: string,
+    amount: number,
+    reason: string,
+    referenceId?: string,
+  ): Promise<number | null> {
+    const { data, error } = await this.supabase.getClient().rpc('refund_credits', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_reason: reason,
+      p_reference_id: referenceId ?? null,
+    });
+
+    if (error) throw new Error(error.message);
+    return (data as number | null) ?? null;
   }
 
   async listCreditTransactions(userId: string, limit = 50) {

@@ -5,7 +5,7 @@ import { ClipsRepository, type Clip } from '../clips/clips.repository';
 import { JobsService } from '../jobs/jobs.service';
 import { JobsRepository } from '../jobs/jobs.repository';
 import { JobType } from '../jobs/jobs.constants';
-import { UsersRepository } from '../users/users.repository';
+import { InsufficientCreditsError, UsersRepository } from '../users/users.repository';
 import { StorageService } from '../storage/storage.service';
 import { VideosRepository } from './videos.repository';
 import { InitUploadDto } from './dto/init-upload.dto';
@@ -70,14 +70,6 @@ export class VideosService {
     const costPerClip = this.config.get<number>('clipCreditCost') ?? 1;
     const totalCost = costPerClip * clipCount;
 
-    const profile = await this.usersRepo.getById(userId);
-    const balance = profile?.credits ?? 0;
-    if (balance < totalCost) {
-      throw new BadRequestException(
-        `Not enough credits: need ${totalCost} (${clipCount} clips × ${costPerClip} credits). You have ${balance}. Reduce clip count or upgrade your plan.`,
-      );
-    }
-
     const title =
       dto.title?.trim() ||
       `${getSourceLabel(parsed.sourceType)} import · ${new Date().toLocaleDateString()}`;
@@ -94,24 +86,51 @@ export class VideosService {
 
     await this.videosRepo.updateStoragePath(video.id, `url-import:${video.id}`);
 
-    const job = await this.jobsService.enqueueAndDispatch({
-      user_id: userId,
-      video_id: video.id,
-      job_type: JobType.URL_PIPELINE,
-      payload: {
+    // Charge before the job is queued, not after the pipeline finishes. The
+    // pipeline costs real money (yt-dlp egress, Whisper, LLM analysis, FFmpeg
+    // render) the moment it starts, so the balance has to be committed first —
+    // otherwise concurrent requests all pass a check against the same balance
+    // and get far more processing than they paid for.
+    try {
+      await this.usersRepo.deductCredits(userId, totalCost, 'url_import_pipeline', video.id);
+    } catch (err) {
+      await this.videosRepo.updateStatus(video.id, 'failed');
+      if (err instanceof InsufficientCreditsError) {
+        const balance = (await this.usersRepo.getById(userId))?.credits ?? 0;
+        throw new BadRequestException(
+          `Not enough credits: need ${totalCost} (${clipCount} clips × ${costPerClip} credits). You have ${balance}. Reduce clip count or upgrade your plan.`,
+        );
+      }
+      throw err;
+    }
+
+    let job: Awaited<ReturnType<JobsService['enqueueAndDispatch']>>;
+    try {
+      job = await this.jobsService.enqueueAndDispatch({
+        user_id: userId,
         video_id: video.id,
-        source_url: parsed.normalizedUrl,
-        source_type: parsed.sourceType,
-        clip_count: clipCount,
-        durations: dto.durations ?? [15, 30, 45, 60],
-        caption_style: dto.caption_style ?? 'viral',
-        caption_language: dto.caption_language ?? 'en',
-        platforms: dto.platforms ?? ['tiktok', 'instagram', 'youtube', 'linkedin'],
-        export_quality: dto.export_quality ?? 'hd',
-        auto_publish: dto.auto_publish ?? false,
-        credit_cost: totalCost,
-      },
-    });
+        job_type: JobType.URL_PIPELINE,
+        payload: {
+          video_id: video.id,
+          source_url: parsed.normalizedUrl,
+          source_type: parsed.sourceType,
+          clip_count: clipCount,
+          durations: dto.durations ?? [15, 30, 45, 60],
+          caption_style: dto.caption_style ?? 'viral',
+          caption_language: dto.caption_language ?? 'en',
+          platforms: dto.platforms ?? ['tiktok', 'instagram', 'youtube', 'linkedin'],
+          export_quality: dto.export_quality ?? 'hd',
+          auto_publish: dto.auto_publish ?? false,
+          credit_cost: totalCost,
+        },
+      });
+    } catch (err) {
+      // Charged but never queued — give the credits back rather than silently
+      // keeping them.
+      await this.refundQuietly(userId, totalCost, 'url_import_enqueue_failed', video.id);
+      await this.videosRepo.updateStatus(video.id, 'failed');
+      throw err;
+    }
 
     return {
       video_id: video.id,
@@ -121,6 +140,26 @@ export class VideosService {
       title: video.title,
       status: 'importing',
     };
+  }
+
+  /**
+   * Refund on a failure path. Never throws: the caller is already unwinding a
+   * different error and a refund problem shouldn't replace it — log and move on.
+   */
+  private async refundQuietly(
+    userId: string,
+    amount: number,
+    reason: string,
+    referenceId: string,
+  ): Promise<void> {
+    try {
+      await this.usersRepo.refundCredits(userId, amount, reason, referenceId);
+    } catch (refundErr) {
+      this.monitoring.noticeError(
+        refundErr instanceof Error ? refundErr : new Error(String(refundErr)),
+        { source: 'refundCredits', userId, amount: String(amount), reason },
+      );
+    }
   }
 
   async getPipeline(userId: string, videoId: string) {
