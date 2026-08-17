@@ -23,6 +23,20 @@ const navColumns = [
     ],
   },
   {
+    // Highest-intent tools only — the full set of 10 lives on /tools, linked
+    // at the end so the column stays in proportion with its neighbours.
+    title: "Free Tools",
+    links: [
+      { href: "/tools/video-slicer", label: "Video Slicer" },
+      { href: "/tools/aspect-ratio-converter", label: "Aspect Ratio Converter" },
+      { href: "/tools/video-compressor", label: "Video Compressor" },
+      { href: "/tools/format-converter", label: "Format Converter" },
+      { href: "/tools/caption-generator", label: "Caption Generator" },
+      { href: "/tools/gif-generator", label: "GIF Generator" },
+      { href: "/tools", label: "All Free Tools →" },
+    ],
+  },
+  {
     title: "Company",
     links: [
       { href: "/contact", label: "Contact" },
@@ -62,9 +76,9 @@ export function Footer() {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Main grid */}
-        <div className="grid gap-12 py-16 lg:grid-cols-5">
+        <div className="grid gap-x-8 gap-y-12 py-16 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand column */}
-          <div className="lg:col-span-1">
+          <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
               <LogoIcon size={36} className="rounded-xl shadow-lg shadow-emerald-900/40" />
               <span className="text-lg font-bold text-white">
