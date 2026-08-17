@@ -23,14 +23,12 @@ const navColumns = [
     ],
   },
   {
-    // Highest-intent tools only — the full set of 10 lives on /tools, linked
-    // at the end so the column stays in proportion with its neighbours.
+    // Kept to four tools so the column stays level with its neighbours — the
+    // full set of 10 lives on /tools, linked at the end.
     title: "Free Tools",
     links: [
       { href: "/tools/video-slicer", label: "Video Slicer" },
-      { href: "/tools/aspect-ratio-converter", label: "Aspect Ratio Converter" },
       { href: "/tools/video-compressor", label: "Video Compressor" },
-      { href: "/tools/format-converter", label: "Format Converter" },
       { href: "/tools/caption-generator", label: "Caption Generator" },
       { href: "/tools/gif-generator", label: "GIF Generator" },
       { href: "/tools", label: "All Free Tools →" },
