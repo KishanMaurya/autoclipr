@@ -81,7 +81,14 @@ export function MockupVideo({
           // these embeds (see hero.tsx).
           // @ts-expect-error not yet in React's iframe typings
           credentialless=""
-          className="absolute inset-0 h-full w-full scale-[1.35]"
+          // YouTube's player always renders a 16:9 frame, so a vertical Short
+          // sits in a centred column of width height*(9/16) with black bars
+          // either side. Giving the iframe the container's full height and a
+          // 16:9 width makes that column exactly fill a 9:16 container — the
+          // bars fall outside and are clipped. Sizing the iframe itself to
+          // 9:16 instead shrinks the video to a thin strip, which is what the
+          // old scale-[1.35] was trying (and failing) to zoom past.
+          className="absolute left-1/2 top-1/2 h-full max-w-none aspect-video -translate-x-1/2 -translate-y-1/2"
           style={{ border: "none", pointerEvents: "none" }}
         />
       )}

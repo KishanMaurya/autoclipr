@@ -4,13 +4,13 @@ import Link from "next/link";
 import { Reveal, Stagger } from "@/components/ui/motion";
 import { MockupVideo } from "@/components/landing/mockup-video";
 
-/* Real Shorts used as the mockup "screens" — same clips as the hero. */
+/* Real Shorts used as the phone-mockup "screens" — same clips as the hero.
+   LinkedIn is intentionally absent: its mockup is a feed post, not a phone. */
 const MOCKUP_CLIPS = {
   youtube: "Ypbsei0ug7w",
   instagram: "mXTlAKm0VEo",
   tiktok: "LmxTVsJfInQ",
   facebook: "aiQrLxzu9ug",
-  linkedin: "Ypbsei0ug7w",
 } as const;
 
 /* ─── Platform brand colours ─── */
@@ -175,8 +175,10 @@ function FacebookMockup() {
           <svg width="80" height="16" viewBox="0 0 90 18"><text y="14" fontSize="14" fontWeight="700" fill="#1877F2" fontFamily="sans-serif">Reels</text></svg>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B3B8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </div>
-        {/* video bg */}
-        <MockupVideo videoId={MOCKUP_CLIPS.facebook} className="mt-8" />
+        {/* Video fills the whole screen; the opaque header above covers the
+            top strip. Insetting it instead would make the area non-9:16 and
+            leave the player's black bars showing at the sides. */}
+        <MockupVideo videoId={MOCKUP_CLIPS.facebook} />
         {/* right actions */}
         <div className="absolute right-2 bottom-20 flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-0.5">
@@ -232,17 +234,17 @@ function LinkedInMockup() {
             Paste any YouTube link → get viral clips in minutes.<br/>
             <span className="text-[#0A66C2]">#ContentMarketing #AI #VideoMarketing</span>
           </p>
-          {/* video thumbnail */}
-          <div className="relative flex-1 rounded-lg overflow-hidden min-h-0">
-            <MockupVideo
-              videoId={MOCKUP_CLIPS.linkedin}
-              placeholderClassName="bg-gradient-to-br from-zinc-700 to-zinc-900"
-            />
-            {/* Feed-post chrome sits above the clip */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center">
-              <span className="rounded bg-black/60 px-1.5 py-0.5 text-[8px] text-white/60">
-                autoclipr.com
-              </span>
+          {/* Video thumbnail — deliberately static. This box is a short, wide
+              feed-post frame, not a 9:16 phone screen: a vertical clip sits
+              badly in it, and at this size YouTube overlays its own title bar,
+              logo and play button, which reads as a broken embed. A still
+              thumbnail is also what a real LinkedIn feed post looks like. */}
+          <div className="flex-1 rounded-lg overflow-hidden bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center min-h-0">
+            <div className="flex flex-col items-center gap-1">
+              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+              </div>
+              <span className="text-[8px] text-white/30">autoclipr.com</span>
             </div>
           </div>
           {/* reactions */}
