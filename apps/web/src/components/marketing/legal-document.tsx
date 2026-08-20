@@ -2,13 +2,48 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Shield, FileText, ChevronRight, Mail } from "lucide-react";
+import { Shield, FileText, Receipt, ChevronRight, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTACT_EMAIL, LEGAL_LAST_UPDATED, type LegalDocumentContent } from "@/lib/legal-content";
 
+type LegalDocType = "privacy" | "terms" | "refund";
+
 type LegalDocumentProps = {
   document: LegalDocumentContent;
-  type?: "privacy" | "terms";
+  type?: LegalDocType;
+};
+
+const DOC_THEME: Record<
+  LegalDocType,
+  { icon: typeof Shield; accent: string; badge: string; active: string; dot: string; label: string; href: string }
+> = {
+  privacy: {
+    icon: Shield,
+    accent: "text-emerald-400",
+    badge: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
+    active: "bg-emerald-500/10 text-emerald-400 border-l-emerald-500",
+    dot: "bg-emerald-500/60",
+    label: "Privacy Policy",
+    href: "/privacy",
+  },
+  terms: {
+    icon: FileText,
+    accent: "text-violet-400",
+    badge: "bg-violet-500/10 text-violet-400 ring-violet-500/20",
+    active: "bg-violet-500/10 text-violet-400 border-l-violet-500",
+    dot: "bg-violet-500/60",
+    label: "Terms & Conditions",
+    href: "/terms",
+  },
+  refund: {
+    icon: Receipt,
+    accent: "text-sky-400",
+    badge: "bg-sky-500/10 text-sky-400 ring-sky-500/20",
+    active: "bg-sky-500/10 text-sky-400 border-l-sky-500",
+    dot: "bg-sky-500/60",
+    label: "Refund & Cancellation Policy",
+    href: "/refund-policy",
+  },
 };
 
 export function LegalDocument({ document, type = "privacy" }: LegalDocumentProps) {
@@ -30,10 +65,15 @@ export function LegalDocument({ document, type = "privacy" }: LegalDocumentProps
     return () => observer.disconnect();
   }, [document.sections]);
 
-  const Icon = type === "privacy" ? Shield : FileText;
-  const accentClass = type === "privacy" ? "text-emerald-400" : "text-violet-400";
-  const badgeBg = type === "privacy" ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20" : "bg-violet-500/10 text-violet-400 ring-violet-500/20";
-  const activeBg = type === "privacy" ? "bg-emerald-500/10 text-emerald-400 border-l-emerald-500" : "bg-violet-500/10 text-violet-400 border-l-violet-500";
+  const theme = DOC_THEME[type];
+  const Icon = theme.icon;
+  const accentClass = theme.accent;
+  const badgeBg = theme.badge;
+  const activeBg = theme.active;
+  // The other two policies, so every legal page cross-links to its siblings.
+  const relatedDocs = (Object.keys(DOC_THEME) as LegalDocType[])
+    .filter((t) => t !== type)
+    .map((t) => DOC_THEME[t]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
@@ -136,7 +176,7 @@ export function LegalDocument({ document, type = "privacy" }: LegalDocumentProps
                   <ul className="mt-3 space-y-2.5">
                     {section.list.map((item) => (
                       <li key={item.slice(0, 48)} className="flex items-start gap-3 text-[15px] leading-relaxed text-muted-foreground">
-                        <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", type === "privacy" ? "bg-emerald-500/60" : "bg-violet-500/60")} />
+                        <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", theme.dot)} />
                         {item}
                       </li>
                     ))}
@@ -173,13 +213,17 @@ export function LegalDocument({ document, type = "privacy" }: LegalDocumentProps
             </div>
           </div>
 
-          {/* Cross-link to other policy */}
+          {/* Cross-links to the sibling policies */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {type === "privacy" ? (
-              <>Also see our{" "}<Link href="/terms" className={cn("hover:underline", accentClass)}>Terms & Conditions →</Link></>
-            ) : (
-              <>Also see our{" "}<Link href="/privacy" className={cn("hover:underline", accentClass)}>Privacy Policy →</Link></>
-            )}
+            Also see our{" "}
+            {relatedDocs.map((doc, i) => (
+              <span key={doc.href}>
+                {i > 0 && " · "}
+                <Link href={doc.href} className={cn("hover:underline", accentClass)}>
+                  {doc.label} →
+                </Link>
+              </span>
+            ))}
           </p>
         </main>
       </div>

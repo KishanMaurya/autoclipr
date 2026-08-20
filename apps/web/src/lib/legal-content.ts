@@ -222,8 +222,8 @@ export const TERMS_AND_CONDITIONS: LegalDocumentContent = {
       list: [
         "Certain features consume credits or require a paid subscription as shown on our Pricing page.",
         "Credits and plan limits are described at purchase and may change with notice for future billing periods.",
-        "Fees are generally non-refundable except where required by law or explicitly stated in a promotion.",
-        "Failed processing jobs may consume credits depending on the stage of processing; we aim to charge fairly and may adjust credits for clear system errors at our discretion.",
+        "Fees are generally non-refundable except where required by law or explicitly stated in a promotion. See our Refund & Cancellation Policy for details.",
+        "Credits are deducted when a job is submitted. If a job fails before producing clips, those credits are returned to your balance automatically.",
         "You are responsible for applicable taxes unless we state otherwise.",
       ],
     },
@@ -290,6 +290,81 @@ export const TERMS_AND_CONDITIONS: LegalDocumentContent = {
       title: "16. Contact",
       paragraphs: [
         `Questions about these Terms? Email ${CONTACT_EMAIL} or visit ${SITE_URL}/feedback.`,
+      ],
+    },
+  ],
+};
+
+export const REFUND_POLICY: LegalDocumentContent = {
+  title: "Refund & Cancellation Policy",
+  intro: [
+    `This policy explains how subscriptions, cancellations, and refunds work on ${SITE_NAME}, and how credits are charged and returned.`,
+    "It applies alongside our Terms & Conditions. Where this policy and the Terms differ on refunds or credits, this policy governs.",
+  ],
+  sections: [
+    {
+      id: "free-plan",
+      title: "1. Try before you pay",
+      paragraphs: [
+        "Every account starts on the free Starter plan, which includes free credits and requires no credit card. We recommend using those credits to confirm the service works for your content before subscribing.",
+      ],
+    },
+    {
+      id: "cancellation",
+      title: "2. Cancelling a subscription",
+      list: [
+        "You can cancel at any time from Billing in your dashboard. There is no cancellation fee and no minimum contract.",
+        "Cancelling stops future renewals. Your plan stays active for the remainder of the billing period you have already paid for.",
+        "When the period ends, your account returns to the free Starter plan. Your existing clips and account data are not deleted by cancelling.",
+      ],
+    },
+    {
+      id: "refunds",
+      title: "3. Subscription refunds",
+      paragraphs: [
+        "Subscription fees are charged in advance for the billing period you select. Because the free plan lets you evaluate the service before paying, fees are generally non-refundable once a billing period has started.",
+        "We will consider a refund in these cases:",
+      ],
+      list: [
+        "A duplicate or clearly accidental charge.",
+        "A billing error on our side, such as being charged for a plan you did not select or a renewal after a confirmed cancellation.",
+        "A sustained service failure that prevented you from using the plan you paid for and that we were unable to resolve.",
+        "Where a refund is required by applicable consumer protection law in your country.",
+      ],
+    },
+    {
+      id: "credits",
+      title: "4. How credits are charged and returned",
+      paragraphs: [
+        "Credits are deducted when you submit a job, before processing begins, so your balance always reflects work that is queued or completed.",
+      ],
+      list: [
+        "If a job fails before producing clips, the credits for that job are returned to your balance automatically.",
+        "If a job is rejected because your balance is too low, no credits are taken and no job is queued.",
+        "Credits spent on jobs that completed successfully are not returned, even if you are unhappy with the AI output. Clip selection, captions, and viral scores are generated automatically and can be imperfect — this is described in our Terms.",
+        "Credits have no cash value, cannot be exchanged for money, and are not transferable between accounts.",
+      ],
+    },
+    {
+      id: "how-to-request",
+      title: "5. Requesting a refund",
+      paragraphs: [
+        `Email ${CONTACT_EMAIL} from the address on your account within 14 days of the charge. Include your account email, the approximate date and amount of the charge, and what went wrong.`,
+        "We aim to respond within 5 business days. Approved refunds are returned to the original payment method through our payment provider, and the time to appear on your statement depends on your bank or card issuer.",
+      ],
+    },
+    {
+      id: "changes",
+      title: "6. Changes to this policy",
+      paragraphs: [
+        "We may update this policy from time to time. The revised version will be posted on this page with a new date and applies to charges made after it is published.",
+      ],
+    },
+    {
+      id: "contact",
+      title: "7. Contact",
+      paragraphs: [
+        `Questions about billing, cancellations, or refunds? Email ${CONTACT_EMAIL} or visit ${SITE_URL}/contact.`,
       ],
     },
   ],
