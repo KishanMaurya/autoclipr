@@ -102,17 +102,23 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Main grid */}
-        <div className="grid gap-x-6 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
+        {/* Main grid. From xl the brand block takes two of eight tracks so it
+            isn't squeezed against Product. Below that there isn't room for a
+            brand column plus six readable nav columns — at lg the brand spans
+            its own row and the six nav columns get the full width, which keeps
+            labels like "Terms & Conditions" on one line. */}
+        <div className="grid gap-x-6 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
           {/* Brand column */}
-          <div className="sm:col-span-2 md:col-span-3 lg:col-span-1">
+          <div className="sm:col-span-2 md:col-span-3 lg:col-span-6 xl:col-span-2 xl:pr-6">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
               <LogoIcon size={36} className="rounded-xl shadow-lg shadow-emerald-900/40" />
               <span className="text-lg font-bold text-white">
                 Auto<span className="text-emerald-400">Clipr.ai</span>
               </span>
             </Link>
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            {/* Capped at lg, where the brand block spans the full row and the
+                text would otherwise stretch edge to edge. */}
+            <p className="max-w-md text-sm leading-relaxed text-muted-foreground xl:max-w-none">
               Turn long videos into viral shorts with AI. Monitor channels, detect uploads, auto-clip.
             </p>
 
