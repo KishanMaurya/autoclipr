@@ -12,6 +12,11 @@ const DEFAULT_EXTRACTOR_VARIANTS = [
   'youtube:player_client=mweb',
 ];
 
+/** Hides proxy credentials so they never reach logs or user-facing errors. */
+function maskProxy(proxy: string): string {
+  return proxy.replace(/:\/\/[^@/]+@/, '://***@');
+}
+
 @Injectable()
 export class YtdlpService implements OnModuleInit {
   private readonly logger = new Logger(YtdlpService.name);
@@ -24,6 +29,8 @@ export class YtdlpService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
+    this.validateProxyConfig();
+
     try {
       this.cookiesFile = await resolveYtdlpCookiesFile({
         cookiesFile: this.config.get<string>('ytdlpCookiesFile'),
@@ -40,6 +47,51 @@ export class YtdlpService implements OnModuleInit {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to load YouTube cookies: ${message}`);
     }
+  }
+
+  /**
+   * Surfaces proxy misconfiguration at boot. Without this the first sign of a
+   * bad YTDLP_PROXY is every download job failing, which is how a batch of 407s
+   * went unnoticed: nothing logged the proxy state until a job already failed.
+   */
+  private validateProxyConfig(): void {
+    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+
+    if (!proxy) {
+      this.logger.warn(
+        'No YTDLP_PROXY configured — YouTube commonly blocks downloads from cloud IPs',
+      );
+      return;
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(proxy);
+    } catch {
+      this.logger.error(
+        'YTDLP_PROXY is not a valid URL. Expected http://user:pass@host:port — downloads will fail.',
+      );
+      return;
+    }
+
+    if (!parsed.username || !parsed.password) {
+      this.logger.warn(
+        `YTDLP_PROXY (${maskProxy(proxy)}) has no credentials. If the proxy requires auth, downloads will fail with HTTP 407.`,
+      );
+      return;
+    }
+
+    // A raw "@" or ":" in the password splits the URL in the wrong place, so
+    // the parsed host/credentials are silently wrong and the proxy answers 407.
+    const rawUserInfo = proxy.slice(proxy.indexOf('://') + 3, proxy.lastIndexOf('@'));
+    if (rawUserInfo.includes('@')) {
+      this.logger.error(
+        'YTDLP_PROXY credentials contain an unencoded "@". Percent-encode it as %40, otherwise the proxy will reject auth with HTTP 407.',
+      );
+      return;
+    }
+
+    this.logger.log(`yt-dlp proxy configured: ${maskProxy(proxy)}`);
   }
 
   private getExtractorVariants(): string[] {
@@ -218,7 +270,13 @@ export class YtdlpService implements OnModuleInit {
 
   private isRetryableYoutubeError(message: string): boolean {
     // Proxy errors are never retryable — every variant will fail the same way
-    if (/unsupported proxy type|proxy.*failed|cannot connect.*proxy/i.test(message)) return false;
+    if (
+      /unsupported proxy type|proxy.*failed|cannot connect.*proxy|unable to connect to proxy|407 proxy authentication required/i.test(
+        message,
+      )
+    ) {
+      return false;
+    }
 
     return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check|requested format is not available|format is not available/i.test(
       message,
@@ -229,10 +287,24 @@ export class YtdlpService implements OnModuleInit {
     const raw = err instanceof Error ? err.message : String(err);
     const normalized = raw.replace(/^(yt-dlp failed:\s*)+/i, '').trim();
 
-    if (/unsupported proxy type|unsupported url scheme.*websocket/i.test(normalized)) {
+    // The proxy rejected our credentials outright. Distinct from a proxy that
+    // is unreachable or misconfigured — here we connected and were refused.
+    if (/407 proxy authentication required|proxy authentication required/i.test(normalized)) {
+      return (
+        `The download proxy rejected our credentials (HTTP 407). ` +
+        `Update YTDLP_PROXY on the worker service — the username or password is wrong or expired. ` +
+        `Note that special characters in the password must be percent-encoded ` +
+        `(for example "@" becomes "%40").`
+      );
+    }
+    if (
+      /unsupported proxy type|unsupported url scheme.*websocket|unable to connect to proxy/i.test(
+        normalized,
+      )
+    ) {
       const proxy = this.config.get<string>('ytdlpProxy')?.trim();
       return proxy
-        ? `Proxy connection failed (${proxy.replace(/:\/\/[^@]+@/, '://***@')}). Check that the proxy is online and the credentials are correct in YTDLP_PROXY.`
+        ? `Proxy connection failed (${maskProxy(proxy)}). Check that the proxy is online and the credentials are correct in YTDLP_PROXY.`
         : 'No proxy configured. YouTube is blocking downloads from this server\'s IP. Set YTDLP_PROXY in Railway environment variables (e.g. http://user:pass@host:port).';
     }
     if (/sign in to confirm|not a bot|bot check/i.test(normalized)) {
