@@ -19,6 +19,7 @@ import { ChannelsModule } from './modules/channels/channels.module';
 import { PlatformsModule } from './modules/platforms/platforms.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { AffiliatesModule } from './modules/affiliates/affiliates.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
@@ -53,6 +54,7 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
     PlatformsModule,
     AnalyticsModule,
     FeedbackModule,
+    NewsletterModule,
     AffiliatesModule,
     AdminModule,
   ],
