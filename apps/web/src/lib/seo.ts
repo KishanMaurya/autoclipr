@@ -160,10 +160,13 @@ export const SITEMAP_ROUTES = [
   { path: "/success-stories",               changeFrequency: "monthly" as const, priority: 0.7  },
   { path: "/top-creators",                  changeFrequency: "weekly"  as const, priority: 0.7  },
   { path: "/faq",                           changeFrequency: "monthly" as const, priority: 0.65 },
+  { path: "/tutorials",                     changeFrequency: "monthly" as const, priority: 0.7  },
+  { path: "/coaching",                      changeFrequency: "monthly" as const, priority: 0.7  },
   { path: "/contact",                       changeFrequency: "monthly" as const, priority: 0.5  },
   { path: "/feedback",                      changeFrequency: "monthly" as const, priority: 0.5  },
   { path: "/privacy",                       changeFrequency: "yearly"  as const, priority: 0.4  },
   { path: "/terms",                         changeFrequency: "yearly"  as const, priority: 0.4  },
+  { path: "/refund-policy",                 changeFrequency: "yearly"  as const, priority: 0.4  },
   ...LANDING_PAGES.map((p) => ({
     path: `/${p.slug}`,
     changeFrequency: "monthly" as const,

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Twitter, Youtube, Instagram, Linkedin } from "lucide-react";
 import { LogoIcon } from "@/components/ui/logo-icon";
+import { NewsletterSignup } from "@/components/layout/newsletter-signup";
 import { cn } from "@/lib/utils";
 
+// Columns are kept to a similar length so no single one hangs below the rest.
 const navColumns = [
   {
     title: "Product",
@@ -10,7 +12,8 @@ const navColumns = [
       { href: "/#features", label: "Features" },
       { href: "/#how-it-works", label: "How It Works" },
       { href: "/pricing", label: "Pricing" },
-      { href: "/blog", label: "Blog" },
+      { href: "/coaching", label: "Coaching" },
+      { href: "/changelog", label: "Changelog" },
     ],
   },
   {
@@ -23,8 +26,7 @@ const navColumns = [
     ],
   },
   {
-    // Kept to four tools so the column stays level with its neighbours — the
-    // full set of 10 lives on /tools, linked at the end.
+    // Four tools only — the full set of 10 lives on /tools, linked at the end.
     title: "Free Tools",
     links: [
       { href: "/tools/video-slicer", label: "Video Slicer" },
@@ -35,10 +37,21 @@ const navColumns = [
     ],
   },
   {
+    title: "Resources",
+    links: [
+      { href: "/blog", label: "Blog" },
+      { href: "/tutorials", label: "Tutorials" },
+      { href: "/faq", label: "FAQ" },
+      { href: "/success-stories", label: "Success Stories" },
+      { href: "/top-creators", label: "Top Creators" },
+    ],
+  },
+  {
     title: "Company",
     links: [
       { href: "/contact", label: "Contact" },
       { href: "/feedback", label: "Feedback" },
+      { href: "/affiliate", label: "Affiliate Program" },
     ],
   },
   {
@@ -46,6 +59,7 @@ const navColumns = [
     links: [
       { href: "/privacy", label: "Privacy Policy" },
       { href: "/terms", label: "Terms & Conditions" },
+      { href: "/refund-policy", label: "Refund Policy" },
     ],
   },
 ];
@@ -73,10 +87,25 @@ export function Footer() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Newsletter — its own row; the nav columns are too narrow for an input */}
+        <div className="flex flex-col gap-6 border-b border-white/[0.06] py-10 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-md">
+            <h3 className="text-base font-bold text-white">
+              Get clip tips that actually move views
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Short-form strategy and product updates. No spam.
+            </p>
+          </div>
+          <div className="w-full md:max-w-sm">
+            <NewsletterSignup />
+          </div>
+        </div>
+
         {/* Main grid */}
-        <div className="grid gap-x-8 gap-y-12 py-16 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-x-6 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
           {/* Brand column */}
-          <div className="sm:col-span-2 lg:col-span-1">
+          <div className="sm:col-span-2 md:col-span-3 lg:col-span-1">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
               <LogoIcon size={36} className="rounded-xl shadow-lg shadow-emerald-900/40" />
               <span className="text-lg font-bold text-white">
