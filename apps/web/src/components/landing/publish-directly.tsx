@@ -2,6 +2,16 @@
 
 import Link from "next/link";
 import { Reveal, Stagger } from "@/components/ui/motion";
+import { MockupVideo } from "@/components/landing/mockup-video";
+
+/* Real Shorts used as the mockup "screens" — same clips as the hero. */
+const MOCKUP_CLIPS = {
+  youtube: "Ypbsei0ug7w",
+  instagram: "mXTlAKm0VEo",
+  tiktok: "LmxTVsJfInQ",
+  facebook: "aiQrLxzu9ug",
+  linkedin: "Ypbsei0ug7w",
+} as const;
 
 /* ─── Platform brand colours ─── */
 const YT_RED = "#FF0000";
@@ -18,7 +28,7 @@ function YoutubeMockup() {
       {/* phone shell */}
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
         {/* video bg */}
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-800 to-zinc-950" />
+        <MockupVideo videoId={MOCKUP_CLIPS.youtube} />
         {/* progress bar */}
         <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10">
           <div className="h-full w-[62%] bg-red-500" />
@@ -64,7 +74,10 @@ function InstagramMockup() {
   return (
     <div className="relative mx-auto w-full max-w-[300px]">
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-950/60 to-zinc-950" />
+        <MockupVideo
+          videoId={MOCKUP_CLIPS.instagram}
+          placeholderClassName="bg-gradient-to-b from-purple-950/60 to-zinc-950"
+        />
         {/* top bar */}
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 py-2.5">
           <span className="text-[11px] font-bold text-white" style={{ fontFamily: "serif" }}>Reels</span>
@@ -107,7 +120,10 @@ function TikTokMockup() {
   return (
     <div className="relative mx-auto w-full max-w-[280px]">
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black" />
+        <MockupVideo
+          videoId={MOCKUP_CLIPS.tiktok}
+          placeholderClassName="bg-gradient-to-b from-zinc-900 to-black"
+        />
         {/* tiktok header */}
         <div className="absolute top-0 left-0 right-0 flex items-center justify-center gap-6 px-3 py-2.5">
           <span className="text-[10px] text-white/40">Following</span>
@@ -160,7 +176,7 @@ function FacebookMockup() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B3B8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </div>
         {/* video bg */}
-        <div className="absolute inset-0 mt-8 bg-gradient-to-b from-zinc-800 to-zinc-950" />
+        <MockupVideo videoId={MOCKUP_CLIPS.facebook} className="mt-8" />
         {/* right actions */}
         <div className="absolute right-2 bottom-20 flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-0.5">
@@ -217,12 +233,16 @@ function LinkedInMockup() {
             <span className="text-[#0A66C2]">#ContentMarketing #AI #VideoMarketing</span>
           </p>
           {/* video thumbnail */}
-          <div className="flex-1 rounded-lg overflow-hidden bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center min-h-0">
-            <div className="flex flex-col items-center gap-1">
-              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-              </div>
-              <span className="text-[8px] text-white/30">autoclipr.com</span>
+          <div className="relative flex-1 rounded-lg overflow-hidden min-h-0">
+            <MockupVideo
+              videoId={MOCKUP_CLIPS.linkedin}
+              placeholderClassName="bg-gradient-to-br from-zinc-700 to-zinc-900"
+            />
+            {/* Feed-post chrome sits above the clip */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center">
+              <span className="rounded bg-black/60 px-1.5 py-0.5 text-[8px] text-white/60">
+                autoclipr.com
+              </span>
             </div>
           </div>
           {/* reactions */}
