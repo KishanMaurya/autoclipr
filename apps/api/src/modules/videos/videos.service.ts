@@ -320,14 +320,20 @@ export class VideosService {
     if (!video) throw new NotFoundException('Video not found');
 
     const clips = await this.clipsRepo.listByVideoId(videoId, userId);
-    for (const clip of clips) {
-      await this.removeStorageObjects(this.clipsBucket(), this.storagePathsForClip(clip));
-    }
 
-    await this.removeStorageObjects(
-      this.videosBucket(),
-      this.storagePathsForVideo(video),
-    );
+    // One remove call for every clip object rather than one per clip —
+    // removeObjects already takes a list, so deleting a video with 20 clips
+    // was making 20 sequential Storage round trips for no reason.
+    await Promise.all([
+      this.removeStorageObjects(
+        this.clipsBucket(),
+        clips.flatMap((clip) => this.storagePathsForClip(clip)),
+      ),
+      this.removeStorageObjects(
+        this.videosBucket(),
+        this.storagePathsForVideo(video),
+      ),
+    ]);
 
     await this.videosRepo.deleteById(videoId, userId);
 

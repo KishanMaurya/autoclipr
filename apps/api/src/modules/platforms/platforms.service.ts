@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { fetchWithTimeout } from '../../common/utils/fetch-with-timeout.util';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { EmailService } from '@autoclipr/emails';
@@ -114,7 +115,7 @@ export class PlatformsService {
     let accountName = 'YouTube Channel';
     let accountId: string | null = null;
     try {
-      const channelRes = await fetch(
+      const channelRes = await fetchWithTimeout(
         'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
         { headers: { Authorization: `Bearer ${tokens.access_token}` } },
       );
@@ -172,7 +173,7 @@ export class PlatformsService {
     let accountName = 'Instagram Account';
     let igUserId: string | null = null;
     try {
-      const meRes = await fetch(
+      const meRes = await fetchWithTimeout(
         `https://graph.instagram.com/me?fields=id,username&access_token=${longLived.access_token}`,
       );
       if (meRes.ok) {
@@ -326,7 +327,7 @@ export class PlatformsService {
     platform: PlatformId,
   ): Promise<{ access_token: string }> {
     // Instagram Login API token endpoint
-    const res = await fetch('https://api.instagram.com/oauth/access_token', {
+    const res = await fetchWithTimeout('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -352,7 +353,7 @@ export class PlatformsService {
     shortLivedToken: string,
   ): Promise<{ access_token: string; expires_at: string | null }> {
     // Exchange short-lived token for long-lived token via Instagram Graph API
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://graph.instagram.com/access_token?` +
         new URLSearchParams({
           grant_type: 'ig_exchange_token',
@@ -383,7 +384,7 @@ export class PlatformsService {
     refresh_token?: string;
     expires_at: string | null;
   }> {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
+    const res = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

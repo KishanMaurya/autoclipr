@@ -59,16 +59,20 @@ export class ClipsService {
       }
     }
 
-    for (const objectPath of candidates) {
-      if (!objectPath) continue;
-      const exists = await this.storage.objectExists(bucket, objectPath);
-      if (!exists) continue;
+    // Probe every candidate at once rather than walking them one at a time:
+    // each check is a Storage round trip, and they don't depend on each other.
+    // Order still decides the winner — the first candidate that resolves wins.
+    const resolved = await Promise.all(
+      [...candidates]
+        .filter(Boolean)
+        .map(async (objectPath) => {
+          const exists = await this.storage.objectExists(bucket, objectPath);
+          if (!exists) return null;
+          return this.storage.createSignedDownloadUrl(bucket, objectPath);
+        }),
+    );
 
-      const signed = await this.storage.createSignedDownloadUrl(bucket, objectPath);
-      if (signed) return signed;
-    }
-
-    return null;
+    return resolved.find((url) => Boolean(url)) ?? null;
   }
 
   private async enrichClip(clip: Clip): Promise<EnrichedClip> {
@@ -77,12 +81,13 @@ export class ClipsService {
     }
 
     const bucket = this.clipsBucket();
-    const download_url = await this.storage.createSignedDownloadUrl(
-      bucket,
-      clip.storage_path,
-    );
 
-    const thumbnail_url = await this.resolveThumbnailUrl(clip);
+    // Independent Storage calls — awaiting them in sequence doubled the
+    // latency of every clip in a listing for no reason.
+    const [download_url, thumbnail_url] = await Promise.all([
+      this.storage.createSignedDownloadUrl(bucket, clip.storage_path),
+      this.resolveThumbnailUrl(clip),
+    ]);
 
     return { ...clip, download_url, thumbnail_url };
   }
@@ -237,16 +242,25 @@ export class ClipsService {
   }
 
   async bulkDownloadUrls(userId: string, clipIds: string[]) {
-    const items: EnrichedClip[] = [];
+    // Fetch, then enrich, in two parallel passes. Validation stays in the
+    // caller's order so the "not ready" error names the same clip it always
+    // did, rather than whichever request happened to land first.
+    const clips = await Promise.all(
+      clipIds.map((clipId) => this.clipsRepo.getById(clipId, userId)),
+    );
 
-    for (const clipId of clipIds) {
-      const clip = await this.clipsRepo.getById(clipId, userId);
-      if (!clip) continue;
+    const ready: Clip[] = [];
+    clips.forEach((clip, i) => {
+      if (!clip) return;
       if (clip.status !== 'completed' || !clip.storage_path) {
-        throw new BadRequestException(`Clip ${clipId} is not ready for download`);
+        throw new BadRequestException(`Clip ${clipIds[i]} is not ready for download`);
       }
-      items.push(await this.enrichClip(clip));
-    }
+      ready.push(clip);
+    });
+
+    const items: EnrichedClip[] = await Promise.all(
+      ready.map((clip) => this.enrichClip(clip)),
+    );
 
     if (!items.length) {
       throw new NotFoundException('No clips found');
@@ -315,16 +329,21 @@ export class ClipsService {
   }
 
   async bulkDelete(userId: string, clipIds: string[]) {
-    const deletedIds: string[] = [];
+    // Deleting each clip is independent of the others, so do them together
+    // rather than a full fetch/unlink/delete round trip per clip. Mapping
+    // preserves the caller's order in the returned ids.
+    const results = await Promise.all(
+      clipIds.map(async (clipId) => {
+        const clip = await this.clipsRepo.getById(clipId, userId);
+        if (!clip) return null;
 
-    for (const clipId of clipIds) {
-      const clip = await this.clipsRepo.getById(clipId, userId);
-      if (!clip) continue;
+        await this.removeClipAssets(clip);
+        const deleted = await this.clipsRepo.deleteById(clipId, userId);
+        return deleted ? clipId : null;
+      }),
+    );
 
-      await this.removeClipAssets(clip);
-      const deleted = await this.clipsRepo.deleteById(clipId, userId);
-      if (deleted) deletedIds.push(clipId);
-    }
+    const deletedIds = results.filter((id): id is string => id !== null);
 
     if (!deletedIds.length) {
       throw new NotFoundException('No clips found');

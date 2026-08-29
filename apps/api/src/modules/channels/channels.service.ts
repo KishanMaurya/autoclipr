@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { fetchWithTimeout } from '../../common/utils/fetch-with-timeout.util';
 import { ChannelsRepository } from './channels.repository';
 import { ConnectChannelDto } from './dto/connect-channel.dto';
 
@@ -48,7 +49,7 @@ export class ChannelsService {
 
     try {
       const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(channelUrl)}&format=json`;
-      const res = await fetch(oembedUrl, {
+      const res = await fetchWithTimeout(oembedUrl, {
         headers: { 'User-Agent': 'AutoClipr/1.0' },
       });
 

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { fetchWithTimeout } from '../../common/utils/fetch-with-timeout.util';
 
 export type InstagramMediaStats = {
   mediaId: string;
@@ -35,10 +36,10 @@ export class InstagramStatsService {
       // Meta deprecated the "plays" metric in favor of "views" — request both so this
       // keeps working regardless of which the account's API version returns.
       const [mediaRes, insightsRes] = await Promise.all([
-        fetch(
+        fetchWithTimeout(
           `https://graph.instagram.com/v21.0/${mediaId}?fields=like_count,comments_count&access_token=${accessToken}`,
         ),
-        fetch(
+        fetchWithTimeout(
           `https://graph.instagram.com/v21.0/${mediaId}/insights?metric=views&access_token=${accessToken}`,
         ),
       ]);

@@ -118,21 +118,25 @@ export class AnalyticsService {
     );
 
     const statsMap = new Map(stats.map((s) => [s.videoId, s]));
-    let refreshed = 0;
 
-    for (const pub of youtubePosts) {
-      const stat = statsMap.get(pub.platform_post_id!);
-      if (!stat) continue;
+    // Each row's update is independent, so write them together instead of
+    // one round trip per post — this loop is why refreshing a busy account
+    // crawled.
+    const updates = youtubePosts
+      .map((pub) => ({ pub, stat: statsMap.get(pub.platform_post_id!) }))
+      .filter((entry) => entry.stat);
 
-      await this.publicationsRepo.updateMetrics(pub.id, {
-        view_count: stat.viewCount,
-        like_count: stat.likeCount,
-        comment_count: stat.commentCount,
-      });
-      refreshed += 1;
-    }
+    await Promise.all(
+      updates.map(({ pub, stat }) =>
+        this.publicationsRepo.updateMetrics(pub.id, {
+          view_count: stat!.viewCount,
+          like_count: stat!.likeCount,
+          comment_count: stat!.commentCount,
+        }),
+      ),
+    );
 
-    return refreshed;
+    return updates.length;
   }
 
   private async refreshInstagramMetrics(
@@ -151,20 +155,21 @@ export class AnalyticsService {
     const stats = await this.instagramStats.fetchMediaStats(igConn.access_token, mediaIds);
     const statsMap = new Map(stats.map((s) => [s.mediaId, s]));
 
-    let refreshed = 0;
-    for (const pub of igPosts) {
-      const stat = statsMap.get(pub.platform_post_id!);
-      if (!stat) continue;
+    const updates = igPosts
+      .map((pub) => ({ pub, stat: statsMap.get(pub.platform_post_id!) }))
+      .filter((entry) => entry.stat);
 
-      await this.publicationsRepo.updateMetrics(pub.id, {
-        view_count: stat.viewCount,
-        like_count: stat.likeCount,
-        comment_count: stat.commentCount,
-      });
-      refreshed += 1;
-    }
+    await Promise.all(
+      updates.map(({ pub, stat }) =>
+        this.publicationsRepo.updateMetrics(pub.id, {
+          view_count: stat!.viewCount,
+          like_count: stat!.likeCount,
+          comment_count: stat!.commentCount,
+        }),
+      ),
+    );
 
-    return refreshed;
+    return updates.length;
   }
 
   private async enrichPublication(pub: PostedPublicationRow) {

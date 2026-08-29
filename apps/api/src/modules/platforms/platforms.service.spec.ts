@@ -514,7 +514,11 @@ describe('PlatformsService', () => {
       expect(fetchMock).toHaveBeenNthCalledWith(
         2,
         'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
-        { headers: { Authorization: 'Bearer yt-access' } },
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer yt-access' },
+          // Supplied by fetchWithTimeout — proves the call is time-bounded.
+          signal: expect.any(AbortSignal),
+        }),
       );
       expect(repo.saveOAuthTokens).toHaveBeenCalledWith('u1', 'youtube', {
         account_name: 'My Channel',

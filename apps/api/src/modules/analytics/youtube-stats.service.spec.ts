@@ -42,7 +42,11 @@ describe('YoutubeStatsService', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://www.googleapis.com/youtube/v3/videos?part=statistics&id=v1',
-      { headers: { Authorization: 'Bearer token' } },
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer token' },
+        // Supplied by fetchWithTimeout — proves the call is time-bounded.
+        signal: expect.any(AbortSignal),
+      }),
     );
     expect(result).toEqual([{ videoId: 'v1', viewCount: 100, likeCount: 10, commentCount: 2 }]);
   });
@@ -108,13 +112,13 @@ describe('YoutubeStatsService', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining('videos?part=statistics&id=v1'),
-      { headers: { Authorization: 'Bearer expired-token' } },
+      expect.objectContaining({ headers: { Authorization: 'Bearer expired-token' } }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://oauth2.googleapis.com/token', expect.objectContaining({ method: 'POST' }));
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       expect.stringContaining('videos?part=statistics&id=v1'),
-      { headers: { Authorization: 'Bearer new-access' } },
+      expect.objectContaining({ headers: { Authorization: 'Bearer new-access' } }),
     );
     expect(onTokenRefresh).toHaveBeenCalledWith({
       access_token: 'new-access',

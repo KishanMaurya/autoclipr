@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { fetchWithTimeout } from '../../common/utils/fetch-with-timeout.util';
 import { ConfigService } from '@nestjs/config';
 
 export type YoutubeVideoStats = {
@@ -64,13 +65,13 @@ export class YoutubeStatsService {
       id: videoIds.slice(0, 50).join(','),
     });
 
-    return fetch(`https://www.googleapis.com/youtube/v3/videos?${params.toString()}`, {
+    return fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?${params.toString()}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
   }
 
   private async refreshAccessToken(refreshToken: string) {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
+    const res = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

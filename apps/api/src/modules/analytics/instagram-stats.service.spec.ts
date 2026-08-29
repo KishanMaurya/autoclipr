@@ -36,13 +36,17 @@ describe('InstagramStatsService', () => {
 
     const result = await service.fetchMediaStats('token', ['media1']);
 
+    // The second argument is supplied by fetchWithTimeout — asserting the
+    // signal is there is what proves the call is actually time-bounded.
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       'https://graph.instagram.com/v21.0/media1?fields=like_count,comments_count&access_token=token',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       'https://graph.instagram.com/v21.0/media1/insights?metric=views&access_token=token',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(result).toEqual([{ mediaId: 'media1', viewCount: 250, likeCount: 10, commentCount: 3 }]);
   });
