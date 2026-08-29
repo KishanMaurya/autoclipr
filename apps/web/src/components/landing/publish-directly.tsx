@@ -4,13 +4,15 @@ import Link from "next/link";
 import { Reveal, Stagger } from "@/components/ui/motion";
 import { MockupVideo } from "@/components/landing/mockup-video";
 
-/* Real Shorts used as the phone-mockup "screens" — same clips as the hero.
+/* Self-hosted 9:16 loops used as the phone-mockup "screens".
+   Drop the files in apps/web/public/assets/mockups/. Until they exist each
+   mockup just shows its gradient placeholder — nothing breaks.
    LinkedIn is intentionally absent: its mockup is a feed post, not a phone. */
 const MOCKUP_CLIPS = {
-  youtube: "Ypbsei0ug7w",
-  instagram: "mXTlAKm0VEo",
-  tiktok: "LmxTVsJfInQ",
-  facebook: "aiQrLxzu9ug",
+  youtube: "/assets/mockups/youtube.mp4",
+  instagram: "/assets/mockups/instagram.mp4",
+  tiktok: "/assets/mockups/tiktok.mp4",
+  facebook: "/assets/mockups/facebook.mp4",
 } as const;
 
 /* ─── Platform brand colours ─── */
@@ -28,7 +30,7 @@ function YoutubeMockup() {
       {/* phone shell */}
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
         {/* video bg */}
-        <MockupVideo videoId={MOCKUP_CLIPS.youtube} />
+        <MockupVideo src={MOCKUP_CLIPS.youtube} />
         {/* progress bar */}
         <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10">
           <div className="h-full w-[62%] bg-red-500" />
@@ -75,7 +77,7 @@ function InstagramMockup() {
     <div className="relative mx-auto w-full max-w-[300px]">
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
         <MockupVideo
-          videoId={MOCKUP_CLIPS.instagram}
+          src={MOCKUP_CLIPS.instagram}
           placeholderClassName="bg-gradient-to-b from-purple-950/60 to-zinc-950"
         />
         {/* top bar */}
@@ -121,7 +123,7 @@ function TikTokMockup() {
     <div className="relative mx-auto w-full max-w-[280px]">
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black aspect-[9/16]">
         <MockupVideo
-          videoId={MOCKUP_CLIPS.tiktok}
+          src={MOCKUP_CLIPS.tiktok}
           placeholderClassName="bg-gradient-to-b from-zinc-900 to-black"
         />
         {/* tiktok header */}
@@ -178,7 +180,7 @@ function FacebookMockup() {
         {/* Video fills the whole screen; the opaque header above covers the
             top strip. Insetting it instead would make the area non-9:16 and
             leave the player's black bars showing at the sides. */}
-        <MockupVideo videoId={MOCKUP_CLIPS.facebook} />
+        <MockupVideo src={MOCKUP_CLIPS.facebook} />
         {/* right actions */}
         <div className="absolute right-2 bottom-20 flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-0.5">

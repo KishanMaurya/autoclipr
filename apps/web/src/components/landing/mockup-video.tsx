@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 type MockupVideoProps = {
-  /** YouTube video id to loop inside the phone mockup. */
-  videoId: string;
-  /** Tailwind classes for the placeholder shown before the iframe mounts. */
+  /** Path to a muted 9:16 loop under /public, e.g. "/assets/mockups/youtube.mp4". */
+  src: string;
+  /** Tailwind classes for the placeholder shown before/instead of the video. */
   placeholderClassName?: string;
   className?: string;
 };
@@ -13,18 +13,24 @@ type MockupVideoProps = {
 /**
  * Looping muted clip used as the "screen" of a phone mockup.
  *
- * The iframe is only mounted once the card is near the viewport. This section
- * sits well below the fold and there are five mockups — eagerly embedding all
- * of them would pull in five YouTube players on first paint for something the
- * visitor may never scroll to.
+ * Self-hosted rather than a YouTube embed: the embedded player re-frames
+ * vertical videos inside its own 16:9 box, which cropped the clips
+ * unpredictably and showed YouTube's chrome at small sizes. A plain <video>
+ * with object-fit: cover gives exact control over the framing.
+ *
+ * The file is only fetched once the card is near the viewport — this section
+ * sits thousands of pixels down the page and there are several mockups.
+ * If the file is missing or fails to decode, the gradient placeholder simply
+ * stays, so the section degrades cleanly.
  */
 export function MockupVideo({
-  videoId,
+  src,
   placeholderClassName = "bg-gradient-to-b from-zinc-800 to-zinc-950",
   className = "",
 }: MockupVideoProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -37,7 +43,6 @@ export function MockupVideo({
     // Deliberately a plain scroll + rect check rather than
     // IntersectionObserver or a rAF throttle: both are suspended while a tab
     // is hidden, and the failure mode is the clip silently never appearing.
-    // One getBoundingClientRect per scroll for a handful of mockups is cheap.
     let done = false;
 
     const check = () => {
@@ -46,7 +51,7 @@ export function MockupVideo({
       const margin = 300;
       if (rect.bottom > -margin && rect.top < window.innerHeight + margin) {
         done = true;
-        setVisible(true);
+        setShouldLoad(true);
         teardown();
       }
     };
@@ -69,27 +74,19 @@ export function MockupVideo({
   return (
     <div ref={ref} className={`absolute inset-0 overflow-hidden ${className}`}>
       <div className={`absolute inset-0 ${placeholderClassName}`} />
-      {visible && (
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&showinfo=0&playsinline=1`}
-          title=""
+      {shouldLoad && !failed && (
+        <video
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
           aria-hidden
           tabIndex={-1}
-          allow="autoplay; encrypted-media"
-          loading="lazy"
-          // credentialless is needed under the COEP policy used elsewhere for
-          // these embeds (see hero.tsx).
-          // @ts-expect-error not yet in React's iframe typings
-          credentialless=""
-          // YouTube's player always renders a 16:9 frame, so a vertical Short
-          // sits in a centred column of width height*(9/16) with black bars
-          // either side. Giving the iframe the container's full height and a
-          // 16:9 width makes that column exactly fill a 9:16 container — the
-          // bars fall outside and are clipped. Sizing the iframe itself to
-          // 9:16 instead shrinks the video to a thin strip, which is what the
-          // old scale-[1.35] was trying (and failing) to zoom past.
-          className="absolute left-1/2 top-1/2 h-full max-w-none aspect-video -translate-x-1/2 -translate-y-1/2"
-          style={{ border: "none", pointerEvents: "none" }}
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ pointerEvents: "none" }}
         />
       )}
     </div>
