@@ -184,6 +184,37 @@ export class AdminRepository {
     };
   }
 
+  /**
+   * Deletion-notice emails sent by the Starter retention sweep.
+   *
+   * Counted from retention_notices rather than videos.retention_warning_sent_at:
+   * a warned video is deleted a grace period later and takes its stamp with it,
+   * so the stamp can only ever show pending warnings, never a running total.
+   */
+  async getRetentionNoticeStats() {
+    const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+    const [totalRes, todayRes, coverageRes] = await Promise.all([
+      this.db.from('retention_notices').select('*', { count: 'exact', head: true }),
+      this.db
+        .from('retention_notices')
+        .select('*', { count: 'exact', head: true })
+        .gte('sent_at', today),
+      this.db.from('retention_notices').select('video_count'),
+    ]);
+
+    const videosCovered = (coverageRes.data ?? []).reduce(
+      (sum, row) => sum + ((row.video_count as number | null) ?? 0),
+      0,
+    );
+
+    return {
+      total: totalRes.count ?? 0,
+      today: todayRes.count ?? 0,
+      videosCovered,
+    };
+  }
+
   async getClipStats() {
     const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
     const [r1, r2] = await Promise.all([

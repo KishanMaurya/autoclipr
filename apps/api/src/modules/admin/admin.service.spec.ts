@@ -16,6 +16,7 @@ function makeRepo(overrides: Partial<Record<keyof AdminRepository, jest.Mock>> =
     getSubscriptionStats: jest.fn().mockResolvedValue({ active: 0, cancelled: 0, byPlan: {} }),
     getVideoStats: jest.fn().mockResolvedValue({ total: 0, today: 0, totalBytes: 0, avgDurationSecs: 0 }),
     getVideoDeletionStats: jest.fn().mockResolvedValue({ total: 0, today: 0, byRetention: 0, byUser: 0 }),
+    getRetentionNoticeStats: jest.fn().mockResolvedValue({ total: 0, today: 0, videosCovered: 0 }),
     getClipStats: jest.fn().mockResolvedValue({ total: 0, today: 0 }),
     getAffiliateStats: jest.fn().mockResolvedValue({ total: 0, active: 0, totalReferrals: 0, totalRevenuePaise: 0, top: [] }),
     getCreditUsageStats: jest.fn().mockResolvedValue({ totalCreditsUsed: 0, totalTransactions: 0 }),
@@ -94,6 +95,7 @@ describe('AdminService', () => {
         getSubscriptionStats: jest.fn().mockResolvedValue({ active: 20, cancelled: 2, byPlan: { creator: 20 } }),
         getVideoStats: jest.fn().mockResolvedValue({ total: 50, today: 3, totalBytes: 2_000_000_000, avgDurationSecs: 90 }),
         getVideoDeletionStats: jest.fn().mockResolvedValue({ total: 12, today: 2, byRetention: 9, byUser: 3 }),
+        getRetentionNoticeStats: jest.fn().mockResolvedValue({ total: 12, today: 2, videosCovered: 24 }),
         getClipStats: jest.fn().mockResolvedValue({ total: 200, today: 10 }),
         getAffiliateStats: jest.fn().mockResolvedValue({ total: 3, active: 2, totalReferrals: 9, totalRevenuePaise: 1000, top: [] }),
         getCreditUsageStats: jest.fn().mockResolvedValue({ totalCreditsUsed: 500, totalTransactions: 12 }),
@@ -140,6 +142,7 @@ describe('AdminService', () => {
         getUserCounts: jest.fn().mockResolvedValue({ total: 0, paid: 0, today: 0 }),
         getVideoStats: jest.fn().mockResolvedValue({ total: 0, today: 0, totalBytes: 0, avgDurationSecs: 0 }),
         getVideoDeletionStats: jest.fn().mockResolvedValue({ total: 0, today: 0, byRetention: 0, byUser: 0 }),
+        getRetentionNoticeStats: jest.fn().mockResolvedValue({ total: 0, today: 0, videosCovered: 0 }),
         getClipStats: jest.fn().mockResolvedValue({ total: 0, today: 0 }),
       });
       const service = new AdminService(repo);
@@ -163,6 +166,7 @@ describe('AdminService', () => {
         const repo = makeRepo({
           getVideoStats: jest.fn().mockResolvedValue({ total: 1, today: 0, totalBytes: bytes, avgDurationSecs: 0 }),
           getVideoDeletionStats: jest.fn().mockResolvedValue({ total: 0, today: 0, byRetention: 0, byUser: 0 }),
+          getRetentionNoticeStats: jest.fn().mockResolvedValue({ total: 0, today: 0, videosCovered: 0 }),
         });
         const service = new AdminService(repo);
         const dashboard = await service.getExecutiveDashboard();

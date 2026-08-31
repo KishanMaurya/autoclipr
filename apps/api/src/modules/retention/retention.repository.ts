@@ -60,6 +60,25 @@ export class RetentionRepository {
     return (data ?? []).map(mapRow);
   }
 
+  /**
+   * Log a notice email that actually went out. One row per email, not per
+   * video — counting from videos.retention_warning_sent_at would undercount,
+   * since those rows are deleted a grace period later.
+   */
+  async recordNotice(entry: {
+    user_id: string;
+    email: string;
+    video_count: number;
+    deletion_date: string;
+  }): Promise<void> {
+    const { error } = await this.supabase
+      .getClient()
+      .from('retention_notices')
+      .insert(entry);
+
+    if (error) throw new Error(error.message);
+  }
+
   async markWarned(videoIds: string[], at: Date): Promise<void> {
     if (!videoIds.length) return;
 

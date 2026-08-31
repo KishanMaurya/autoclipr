@@ -126,6 +126,32 @@ describe('RetentionRepository', () => {
     });
   });
 
+  describe('recordNotice', () => {
+    it('inserts one row per email sent', async () => {
+      const builder = mockQueryBuilder({ data: null, error: null });
+      client.from.mockReturnValue(builder);
+      const entry = {
+        user_id: 'u1',
+        email: 'jane@example.com',
+        video_count: 4,
+        deletion_date: '2026-09-03',
+      };
+
+      await repo.recordNotice(entry);
+
+      expect(client.from).toHaveBeenCalledWith('retention_notices');
+      expect(builder.insert).toHaveBeenCalledWith(entry);
+    });
+
+    it('throws when the insert fails', async () => {
+      client.from.mockReturnValue(mockQueryBuilder({ data: null, error: { message: 'no write' } }));
+
+      await expect(
+        repo.recordNotice({ user_id: 'u1', email: 'a@b.com', video_count: 1, deletion_date: '2026-09-03' }),
+      ).rejects.toThrow('no write');
+    });
+  });
+
   describe('markWarned', () => {
     it('stamps every id with the given timestamp', async () => {
       const builder = mockQueryBuilder({ data: null, error: null });

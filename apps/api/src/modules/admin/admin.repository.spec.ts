@@ -191,6 +191,44 @@ describe('AdminRepository', () => {
     });
   });
 
+  describe('getRetentionNoticeStats', () => {
+    it('returns totals, today, and how many videos the emails covered', async () => {
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: 18 }))  // total
+        .mockReturnValueOnce(mockQueryBuilder({ count: 4 }))   // today
+        .mockReturnValueOnce(mockQueryBuilder({               // coverage rows
+          data: [{ video_count: 3 }, { video_count: 5 }, { video_count: 1 }],
+        }));
+
+      const result = await repo.getRetentionNoticeStats();
+
+      expect(client.from).toHaveBeenCalledWith('retention_notices');
+      expect(result).toEqual({ total: 18, today: 4, videosCovered: 9 });
+    });
+
+    it('handles null counts and a null coverage payload', async () => {
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: null }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: null }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: null }));
+
+      await expect(repo.getRetentionNoticeStats()).resolves.toEqual({
+        total: 0, today: 0, videosCovered: 0,
+      });
+    });
+
+    it('treats a missing video_count as zero', async () => {
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: 2 }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: 0 }))
+        .mockReturnValueOnce(mockQueryBuilder({ data: [{ video_count: null }, { video_count: 4 }] }));
+
+      const result = await repo.getRetentionNoticeStats();
+
+      expect(result.videosCovered).toBe(4);
+    });
+  });
+
   describe('getVideoStats', () => {
     it('computes totals, byte sum and average duration', async () => {
       client.from

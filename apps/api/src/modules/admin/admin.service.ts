@@ -42,6 +42,7 @@ export class AdminService {
       subscriptions,
       videoStats,
       videoDeletions,
+      retentionNotices,
       clipStats,
       affiliateStats,
       creditStats,
@@ -55,6 +56,7 @@ export class AdminService {
       this.repo.getSubscriptionStats(),
       this.repo.getVideoStats(),
       this.repo.getVideoDeletionStats(),
+      this.repo.getRetentionNoticeStats(),
       this.repo.getClipStats(),
       this.repo.getAffiliateStats(),
       this.repo.getCreditUsageStats(),
@@ -159,6 +161,10 @@ export class AdminService {
         deletedToday: videoDeletions.today,
         deletedByRetention: videoDeletions.byRetention,
         deletedByUser: videoDeletions.byUser,
+        // Deletion-notice emails sent by the retention sweep.
+        noticesSent: retentionNotices.total,
+        noticesSentToday: retentionNotices.today,
+        noticesVideosCovered: retentionNotices.videosCovered,
         avgDurationSecs: videoStats.avgDurationSecs,
         storageFormatted,
         storagePct: 18.2, // mock TB out of 100

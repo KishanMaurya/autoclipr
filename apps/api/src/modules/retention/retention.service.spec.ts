@@ -43,6 +43,7 @@ describe('RetentionService', () => {
       findVideosToWarn: jest.fn().mockResolvedValue([]),
       findVideosToDelete: jest.fn().mockResolvedValue([]),
       markWarned: jest.fn().mockResolvedValue(undefined),
+      recordNotice: jest.fn().mockResolvedValue(undefined),
       clearWarningsForUser: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RetentionRepository>;
 
@@ -213,6 +214,56 @@ describe('RetentionService', () => {
       expect(repo.markWarned).not.toHaveBeenCalled();
       expect(result.usersWarned).toBe(0);
       expect(result.videosWarned).toBe(0);
+    });
+
+    it('records one notice row per email sent', async () => {
+      repo.findVideosToWarn.mockResolvedValue([
+        video({ id: 'v1', user_id: 'u1', created_at: new Date(NOW.getTime() - 2 * DAY).toISOString() }),
+        video({ id: 'v2', user_id: 'u1', created_at: new Date(NOW.getTime() - 2 * DAY).toISOString() }),
+      ]);
+
+      await service.runSweep({ dryRun: false });
+
+      // One row for the email, not one per video.
+      expect(repo.recordNotice).toHaveBeenCalledTimes(1);
+      expect(repo.recordNotice).toHaveBeenCalledWith({
+        user_id: 'u1',
+        email: 'jane@example.com',
+        video_count: 2,
+        deletion_date: '2026-09-01',
+      });
+    });
+
+    it('does not record a notice when the email failed', async () => {
+      email.sendVideoRetentionWarning.mockResolvedValue(false);
+      repo.findVideosToWarn.mockResolvedValue([video()]);
+
+      await service.runSweep({ dryRun: false });
+
+      expect(repo.recordNotice).not.toHaveBeenCalled();
+    });
+
+    it('keeps sweeping when recording a notice fails', async () => {
+      repo.findVideosToWarn.mockResolvedValue([
+        video({ id: 'v1', user_id: 'u1' }),
+        video({ id: 'v2', user_id: 'u2', email: 'bob@example.com' }),
+      ]);
+      repo.recordNotice.mockRejectedValue(new Error('metrics table gone'));
+
+      const result = await service.runSweep({ dryRun: false });
+
+      // The emails are already out and the videos already stamped — a lost
+      // metric must not strand the rest of the batch.
+      expect(email.sendVideoRetentionWarning).toHaveBeenCalledTimes(2);
+      expect(result.usersWarned).toBe(2);
+    });
+
+    it('records no notices on a dry run', async () => {
+      repo.findVideosToWarn.mockResolvedValue([video()]);
+
+      await service.runSweep({ dryRun: true });
+
+      expect(repo.recordNotice).not.toHaveBeenCalled();
     });
 
     it('skips a profile with no email address', async () => {

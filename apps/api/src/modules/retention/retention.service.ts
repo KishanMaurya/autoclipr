@@ -175,6 +175,24 @@ export class RetentionService {
         userVideos.map((v) => v.id),
         new Date(),
       );
+
+      // Logged separately from the stamp above, which disappears with the
+      // video once it is deleted. Failures here must not stop the sweep: the
+      // email is already out and the videos are already stamped, so throwing
+      // would strand the rest of the batch over a lost metric.
+      try {
+        await this.repo.recordNotice({
+          user_id: first.user_id,
+          email: first.email,
+          video_count: userVideos.length,
+          deletion_date: deletionDate.toISOString().slice(0, 10),
+        });
+      } catch (err) {
+        this.logger.error(
+          `Failed to record retention notice for ${first.user_id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+
       users += 1;
       warnedVideos += userVideos.length;
     }
