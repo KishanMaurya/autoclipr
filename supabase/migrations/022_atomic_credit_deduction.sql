@@ -86,3 +86,30 @@ ALTER TABLE public.profiles
   DROP CONSTRAINT IF EXISTS profiles_credits_non_negative;
 ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_credits_non_negative CHECK (credits >= 0);
+
+-- Lock these two down in the same breath as creating them.
+--
+-- Postgres grants EXECUTE to PUBLIC by default and Supabase PostgREST exposes
+-- public-schema functions to anon/authenticated at /rest/v1/rpc/<name>. Left
+-- alone, refund_credits would let anyone holding the public anon key top up
+-- their own balance without limit — undoing the very loophole this migration
+-- exists to close — and deduct_credits_atomic would let them drain someone
+-- else's. Only the API's service_role should ever call either.
+--
+-- 025 repeats this for the affiliate functions; it is duplicated here so that
+-- applying 022 on its own can never leave the hole open.
+
+ALTER FUNCTION public.refund_credits(uuid, integer, text, uuid)
+  SET search_path = public, pg_temp;
+ALTER FUNCTION public.deduct_credits_atomic(uuid, integer, text, uuid)
+  SET search_path = public, pg_temp;
+
+REVOKE ALL ON FUNCTION public.refund_credits(uuid, integer, text, uuid)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.deduct_credits_atomic(uuid, integer, text, uuid)
+  FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.refund_credits(uuid, integer, text, uuid)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.deduct_credits_atomic(uuid, integer, text, uuid)
+  TO service_role;
