@@ -63,6 +63,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/setup/platforms";
 
+  // Phone/OTP is closed to new signups, but stays available on login: users
+  // who registered by phone have no email address on their account, so
+  // removing it from the login screen would lock them out entirely.
+  const phoneAuthEnabled = mode === "login";
+
   const [tab, setTab] = useState<AuthTab>("email");
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("enter");
 
@@ -374,7 +379,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Sign in to your AutoClipr dashboard"
-              : "Start your free trial — add email later in Settings if you use phone login"}
+              : "Start your free trial — no credit card required"}
           </p>
         </div>
 
@@ -394,6 +399,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <div className="absolute inset-x-0 top-1/2 h-px bg-white/[0.08]" />
         </div>
 
+        {phoneAuthEnabled && (
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-black/20 p-1">
           <button
             type="button"
@@ -430,6 +436,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             Mobile OTP
           </button>
         </div>
+        )}
 
         {tab === "email" ? (
           <form onSubmit={handleEmailAuth} className="space-y-4">
