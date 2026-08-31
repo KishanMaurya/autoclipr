@@ -11,5 +11,8 @@ import { VideosController } from './videos.controller';
   imports: [JobsModule, UsersModule],
   providers: [VideosRepository, VideosService, StorageService, ClipsRepository],
   controllers: [VideosController],
+  // Exported for the retention sweep, which reuses the same delete path so
+  // scheduled deletions clean up storage exactly like a user-initiated one.
+  exports: [VideosService],
 })
 export class VideosModule {}

@@ -17,3 +17,4 @@ export type { FeedbackConfirmationVars } from './templates/feedback-confirmation
 export type { ContactConfirmationVars } from './templates/contact-confirmation';
 export type { AccountDeletedVars } from './templates/account-deleted';
 export type { PlatformConnectedVars } from './templates/platform-connected';
+export type { VideoRetentionWarningVars } from './templates/video-retention-warning';

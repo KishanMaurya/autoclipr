@@ -5,6 +5,7 @@ import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { UsersRepository } from '../users/users.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 import { DodoService } from './dodo.service';
+import { RetentionService } from '../retention/retention.service';
 
 const PLAN_TIER: Record<string, string> = {
   starter: 'starter',
@@ -29,6 +30,7 @@ export class SubscriptionsService {
     private readonly email: EmailService,
     private readonly usersRepo: UsersRepository,
     private readonly affiliates: AffiliatesService,
+    private readonly retention: RetentionService,
   ) {}
 
   async createCheckoutUrl(userId: string, email: string, planId: string, billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<string> {
@@ -77,6 +79,11 @@ export class SubscriptionsService {
       .eq('id', userId);
     if (profileErr) this.logger.error(`Profile update failed: ${profileErr.message}`);
     else this.logger.log(`Profile updated: userId=${userId} tier=${tier} credits=${PLAN_CREDITS[planId]}`);
+
+    // Now paying — cancel any pending Starter deletion warnings.
+    if (tier !== 'starter') {
+      await this.retention.clearWarningsForUser(userId);
+    }
 
     // Compute amount based on plan + billing period
     const PLAN_AMOUNTS: Record<string, { monthly: string; yearly: string }> = {
@@ -195,6 +202,13 @@ export class SubscriptionsService {
 
     if (profileError) {
       this.logger.error(`Failed to update profile tier: ${profileError.message}`);
+    }
+
+    // Paying now: drop any pending Starter deletion warnings. Leaving them
+    // stamped would mean a later downgrade deletes their videos off a stale
+    // notice instead of starting a fresh window with a fresh warning.
+    if (status === 'active' && profileTier !== 'starter') {
+      await this.retention.clearWarningsForUser(userId);
     }
 
     // Award referral commission on every activation (new signup or renewal)

@@ -27,6 +27,21 @@ export default () => ({
   metaAppSecret: process.env.META_APP_SECRET ?? '',
   metaRedirectUri: process.env.META_REDIRECT_URI ?? '',
   jwtSecret: process.env.JWT_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '',
+  retention: {
+    // Off by default. The sweep emails real customers and permanently deletes
+    // their files, so arming it is a deliberate act, not a side effect of a
+    // deploy. Flip RETENTION_SWEEP_ENABLED=true once a dry run looks right.
+    enabled: process.env.RETENTION_SWEEP_ENABLED === 'true',
+    // How long a Starter-plan video lives, counted from when it was generated.
+    starterVideoDays: parseInt(process.env.RETENTION_STARTER_DAYS ?? '3', 10),
+    // Gap between the warning email and the deletion. Also decides how early
+    // the warning goes out: at (starterVideoDays - this).
+    warningGraceHours: parseInt(process.env.RETENTION_WARNING_GRACE_HOURS ?? '24', 10),
+    // Per-run ceilings, so a first run over a large backlog can't fire
+    // thousands of emails or deletions in one go.
+    maxWarnPerRun: parseInt(process.env.RETENTION_MAX_WARN_PER_RUN ?? '200', 10),
+    maxDeletePerRun: parseInt(process.env.RETENTION_MAX_DELETE_PER_RUN ?? '200', 10),
+  },
 });
 
 /** Strip accidental "DATABASE_URL=" prefix and trim (common .env typo). */

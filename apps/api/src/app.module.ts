@@ -3,6 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import configuration from './config/configuration';
 import { bullMqConnectionOptions } from './config/redis-connection';
 import { throttlerModuleOptions } from './config/throttle.config';
@@ -22,6 +23,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { AffiliatesModule } from './modules/affiliates/affiliates.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RetentionModule } from './modules/retention/retention.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { EmailModule } from '@autoclipr/emails';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
@@ -35,6 +37,9 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
       envFilePath: ['.env', '../../.env', '../../../.env'],
     }),
     ThrottlerModule.forRoot(throttlerModuleOptions),
+    // Drives the Starter-plan retention sweep. The sweep itself is gated on
+    // RETENTION_SWEEP_ENABLED, so registering this does not start deleting.
+    ScheduleModule.forRoot(),
     MonitoringModule,
     BullModule.forRootAsync({
       useFactory: () => ({
@@ -57,6 +62,7 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
     NewsletterModule,
     AffiliatesModule,
     AdminModule,
+    RetentionModule,
   ],
   providers: [
     RedisHealthService,

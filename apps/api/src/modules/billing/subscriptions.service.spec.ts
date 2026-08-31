@@ -6,6 +6,7 @@ import { DodoService } from './dodo.service';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { UsersRepository } from '../users/users.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
+import { RetentionService } from '../retention/retention.service';
 import { createQueryBuilderMock, createSupabaseAdminServiceMock } from '../../test-utils/supabase-mock';
 
 describe('SubscriptionsService', () => {
@@ -16,6 +17,7 @@ describe('SubscriptionsService', () => {
   let email: jest.Mocked<EmailService>;
   let usersRepo: jest.Mocked<UsersRepository>;
   let affiliates: jest.Mocked<AffiliatesService>;
+  let retention: jest.Mocked<RetentionService>;
 
   beforeEach(async () => {
     dodo = {
@@ -42,6 +44,10 @@ describe('SubscriptionsService', () => {
       awardCommission: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<AffiliatesService>;
 
+    retention = {
+      clearWarningsForUser: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<RetentionService>;
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         SubscriptionsService,
@@ -51,6 +57,7 @@ describe('SubscriptionsService', () => {
         { provide: EmailService, useValue: email },
         { provide: UsersRepository, useValue: usersRepo },
         { provide: AffiliatesService, useValue: affiliates },
+        { provide: RetentionService, useValue: retention },
       ],
     }).compile();
 

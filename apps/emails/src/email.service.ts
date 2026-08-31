@@ -18,6 +18,7 @@ import { contactConfirmationTemplate, type ContactConfirmationVars } from './tem
 import { accountDeletedTemplate, type AccountDeletedVars } from './templates/account-deleted';
 import { platformConnectedTemplate, type PlatformConnectedVars } from './templates/platform-connected';
 import { affiliateApplicationTemplate, affiliateInquiryTemplate } from './templates/affiliate-application';
+import { videoRetentionWarningTemplate, type VideoRetentionWarningVars } from './templates/video-retention-warning';
 
 @Injectable()
 export class EmailService {
@@ -167,6 +168,36 @@ export class EmailService {
       upgradeUrl: vars.upgradeUrl || `${this.config.appUrl}/billing`,
     });
     await this.sendSafe({ to, subject, html, text, from: this.fromField() });
+  }
+
+  /**
+   * Notice that Starter-plan videos are about to be deleted.
+   *
+   * Unlike every other send here this reports whether it worked, because the
+   * retention sweep only marks a video as warned once the notice is actually
+   * out. Swallowing the failure would let us delete someone's files having
+   * never told them.
+   */
+  async sendVideoRetentionWarning(
+    to: string,
+    vars: Omit<VideoRetentionWarningVars, 'appUrl' | 'supportEmail'>,
+  ): Promise<boolean> {
+    const { subject, html, text } = videoRetentionWarningTemplate({
+      ...vars,
+      userName: this.firstName(vars.userName),
+      appUrl: this.config.appUrl,
+      supportEmail: this.config.supportEmail,
+      upgradeUrl: vars.upgradeUrl || `${this.config.appUrl}/billing`,
+    });
+
+    try {
+      await this.dispatch({ to, subject, html, text, from: this.fromField() });
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send retention warning to ${to}: ${msg}`);
+      return false;
+    }
   }
 
   async sendRenewalSuccess(to: string, vars: Omit<RenewalSuccessVars, 'appUrl' | 'supportEmail'>): Promise<void> {
