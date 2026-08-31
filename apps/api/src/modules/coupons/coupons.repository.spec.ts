@@ -124,6 +124,24 @@ describe('CouponsRepository', () => {
     });
   });
 
+  describe('delete', () => {
+    it('deletes by id', async () => {
+      const builder = mockQueryBuilder({ data: null, error: null });
+      client.from.mockReturnValue(builder);
+
+      await repo.delete('c1');
+
+      expect(builder.delete).toHaveBeenCalled();
+      expect(builder.eq).toHaveBeenCalledWith('id', 'c1');
+    });
+
+    it('throws on a failed delete', async () => {
+      client.from.mockReturnValue(mockQueryBuilder({ data: null, error: { message: 'fk' } }));
+
+      await expect(repo.delete('c1')).rejects.toThrow('fk');
+    });
+  });
+
   describe('countUserRedemptions', () => {
     it('counts this user against this coupon', async () => {
       const builder = mockQueryBuilder({ count: 2 });

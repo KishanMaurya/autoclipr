@@ -260,4 +260,126 @@ export class CouponsService {
 
     return this.repo.update(id, { status });
   }
+
+  /**
+   * Edit a coupon.
+   *
+   * `code` and `type` are deliberately not editable. The code is the coupon's
+   * identity on both sides and is baked into links already in circulation;
+   * the type decides whether a Dodo discount exists at all, so changing it
+   * would mean creating or destroying the mirror underneath live redemptions.
+   *
+   * When a mirrored field changes, Dodo is updated **first**. If Dodo refuses,
+   * nothing has changed anywhere and the edit simply fails. The reverse order
+   * would leave us advertising a discount Dodo will not honour, which the user
+   * only discovers at the payment screen.
+   */
+  async update(
+    id: string,
+    patch: {
+      value?: number;
+      starts_at?: string | null;
+      expires_at?: string | null;
+      max_uses?: number | null;
+      max_uses_per_user?: number;
+      applicable_plans?: string[];
+      visibility?: string;
+      description?: string | null;
+      status?: string;
+    },
+  ) {
+    const coupon = await this.repo.findById(id);
+    if (!coupon) throw new NotFoundException('Coupon not found');
+
+    if (patch.value !== undefined && coupon.type === 'percentage') {
+      if (patch.value < 1 || patch.value > 100) {
+        throw new BadRequestException('A percentage coupon must be between 1 and 100.');
+      }
+    }
+
+    if (
+      patch.max_uses !== undefined &&
+      patch.max_uses !== null &&
+      patch.max_uses < coupon.used_count
+    ) {
+      throw new BadRequestException(
+        `This coupon has already been redeemed ${coupon.used_count} times; the cap cannot be lower than that.`,
+      );
+    }
+
+    const touchesDodo =
+      coupon.dodo_discount_id !== null &&
+      (patch.value !== undefined ||
+        patch.expires_at !== undefined ||
+        patch.max_uses !== undefined);
+
+    if (touchesDodo) {
+      try {
+        await this.dodo.updateDiscount(coupon.dodo_discount_id!, {
+          ...(patch.value !== undefined ? { amount: patch.value * 100 } : {}),
+          ...(patch.expires_at !== undefined ? { expiresAt: patch.expires_at } : {}),
+          ...(patch.max_uses !== undefined ? { usageLimit: patch.max_uses } : {}),
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Failed to update Dodo discount for ${coupon.code}: ${message}`);
+        throw new BadRequestException(
+          `Could not update this discount with the payment provider: ${message}`,
+        );
+      }
+    }
+
+    // A cap raised above the current usage makes an exhausted coupon usable
+    // again; without this it would stay dead with room left on it.
+    const status =
+      patch.status ??
+      (coupon.status === 'exhausted' &&
+      patch.max_uses !== undefined &&
+      (patch.max_uses === null || patch.max_uses > coupon.used_count)
+        ? 'active'
+        : undefined);
+
+    const { status: _ignored, visibility, ...rest } = patch;
+
+    return this.repo.update(id, {
+      ...rest,
+      ...(visibility ? { visibility: visibility as Coupon['visibility'] } : {}),
+      ...(status ? { status: status as Coupon['status'] } : {}),
+    });
+  }
+
+  /**
+   * Delete a coupon.
+   *
+   * Refused once it has been redeemed. coupon_redemptions cascades from this
+   * row, so deleting a used coupon would destroy the campaign's revenue
+   * history — the very thing the redemption table exists to record. Expiring
+   * it takes it out of circulation and keeps the numbers.
+   */
+  async delete(id: string) {
+    const coupon = await this.repo.findById(id);
+    if (!coupon) throw new NotFoundException('Coupon not found');
+
+    if (coupon.used_count > 0) {
+      throw new BadRequestException(
+        `This coupon has been redeemed ${coupon.used_count} time${coupon.used_count === 1 ? '' : 's'}. Deleting it would erase that history — set it to expired instead.`,
+      );
+    }
+
+    if (coupon.dodo_discount_id) {
+      try {
+        await this.dodo.deleteDiscount(coupon.dodo_discount_id);
+      } catch (err) {
+        // Log and continue: an orphaned Dodo discount whose code no longer
+        // exists here can never be validated, so it is inert. Blocking the
+        // delete would leave the admin stuck instead.
+        this.logger.error(
+          `Failed to delete Dodo discount for ${coupon.code}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    await this.repo.delete(id);
+    return { deleted: true, id };
+  }
 }

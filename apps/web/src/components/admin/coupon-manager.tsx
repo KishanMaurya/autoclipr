@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Pause, Play, Ticket } from "lucide-react";
 
@@ -146,7 +147,12 @@ export function CouponManager({
                       className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]"
                     >
                       <td className="px-5 py-4">
-                        <span className="font-mono font-medium text-white">{c.code}</span>
+                        <Link
+                          href={`/admin/coupons/${c.id}`}
+                          className="font-mono font-medium text-white underline-offset-4 hover:text-[#8ba0ff] hover:underline"
+                        >
+                          {c.code}
+                        </Link>
                         {c.applicable_plans.length > 0 && (
                           <span className="ml-2 text-xs text-white/30">
                             {c.applicable_plans.join(", ")}

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ApiResponse } from '../../common/api-response';
@@ -8,7 +8,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard';
 import { THROTTLE } from '../../config/throttle.config';
 import { CouponsService } from './coupons.service';
-import { CreateCouponDto, UpdateCouponStatusDto, ValidateCouponDto } from './dto/coupon.dto';
+import {
+  CreateCouponDto,
+  UpdateCouponDto,
+  UpdateCouponStatusDto,
+  ValidateCouponDto,
+} from './dto/coupon.dto';
 
 @ApiTags('Coupons')
 @ApiBearerAuth('JWT')
@@ -68,6 +73,28 @@ export class CouponsController {
   })
   async create(@CurrentUser() user: AuthUser, @Body() dto: CreateCouponDto) {
     return ApiResponse.ok(await this.service.create(dto, user.sub));
+  }
+
+  @Patch(':id')
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: 'Edit a coupon',
+    description:
+      'Code and type are immutable. Changing the value, expiry or usage cap of a percentage coupon updates the Dodo discount first, so a rejection there leaves nothing changed.',
+  })
+  async update(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
+    return ApiResponse.ok(await this.service.update(id, dto));
+  }
+
+  @Delete(':id')
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: 'Delete a coupon',
+    description:
+      'Refused once the coupon has been redeemed, since redemptions cascade from it and deleting would erase the campaign history. Expire it instead.',
+  })
+  async remove(@Param('id') id: string) {
+    return ApiResponse.ok(await this.service.delete(id));
   }
 
   @Patch(':id/status')

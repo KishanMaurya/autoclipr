@@ -16,6 +16,8 @@ describe('CouponsController', () => {
       getWithStats: jest.fn().mockResolvedValue({ coupon: { id: 'c1' }, redemptionCount: 3 }),
       create: jest.fn().mockResolvedValue({ id: 'c1' }),
       setStatus: jest.fn().mockResolvedValue({ id: 'c1', status: 'paused' }),
+      update: jest.fn().mockResolvedValue({ id: 'c1', value: 30 }),
+      delete: jest.fn().mockResolvedValue({ deleted: true, id: 'c1' }),
     } as unknown as jest.Mocked<CouponsService>;
 
     const moduleRef = await Test.createTestingModule({
@@ -79,6 +81,19 @@ describe('CouponsController', () => {
     );
   });
 
+  it('edits a coupon', async () => {
+    await controller.update('c1', { value: 30 });
+
+    expect(service.update).toHaveBeenCalledWith('c1', { value: 30 });
+  });
+
+  it('deletes a coupon', async () => {
+    const result = await controller.remove('c1');
+
+    expect(service.delete).toHaveBeenCalledWith('c1');
+    expect(result.data).toEqual({ deleted: true, id: 'c1' });
+  });
+
   it('changes a coupon status', async () => {
     await controller.setStatus('c1', { status: 'paused' });
 
@@ -96,6 +111,8 @@ describe('CouponsController', () => {
     ['detail', CouponsController.prototype.detail],
     ['create', CouponsController.prototype.create],
     ['setStatus', CouponsController.prototype.setStatus],
+    ['update', CouponsController.prototype.update],
+    ['remove', CouponsController.prototype.remove],
   ])('guards the admin route %s with AdminGuard', (_name, handler) => {
     const guards = Reflect.getMetadata('__guards__', handler) ?? [];
 

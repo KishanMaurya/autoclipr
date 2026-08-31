@@ -86,3 +86,53 @@ export class ValidateCouponDto {
   @IsIn(['monthly', 'yearly'])
   billingPeriod?: 'monthly' | 'yearly';
 }
+
+/**
+ * Every field optional — this is a partial edit. `code` and `type` are absent
+ * on purpose: the code is the coupon's identity on both our side and Dodo's,
+ * and the type decides whether a Dodo mirror exists at all.
+ */
+export class UpdateCouponDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  value?: number;
+
+  @IsOptional()
+  @IsISO8601()
+  starts_at?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  expires_at?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  max_uses?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  max_uses_per_user?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  applicable_plans?: string[];
+
+  @IsOptional()
+  @IsIn(['public', 'private'])
+  visibility?: 'public' | 'private';
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  description?: string;
+
+  @IsOptional()
+  @IsIn(['draft', 'active', 'paused', 'expired'])
+  status?: 'draft' | 'active' | 'paused' | 'expired';
+}

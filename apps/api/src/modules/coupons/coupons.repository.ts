@@ -101,6 +101,11 @@ export class CouponsRepository {
     return data as Coupon;
   }
 
+  async delete(id: string): Promise<void> {
+    const { error } = await this.db.from('coupons').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
   /** How many times this user has already redeemed this coupon. */
   async countUserRedemptions(couponId: string, userId: string): Promise<number> {
     const { count, error } = await this.db

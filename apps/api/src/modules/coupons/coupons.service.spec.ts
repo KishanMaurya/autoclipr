@@ -46,12 +46,15 @@ describe('CouponsService', () => {
       update: jest.fn().mockImplementation(async (_id, p) => ({ ...coupon(), ...p })),
       countUserRedemptions: jest.fn().mockResolvedValue(0),
       redeemAtomic: jest.fn().mockResolvedValue(11),
+      delete: jest.fn().mockResolvedValue(undefined),
       listRedemptions: jest.fn().mockResolvedValue([]),
       getRedemptionSummary: jest.fn().mockResolvedValue({ redemptions: 0, discountPaise: 0 }),
     } as unknown as jest.Mocked<CouponsRepository>;
 
     dodo = {
       createDiscount: jest.fn().mockResolvedValue({ discount_id: 'dis_new' }),
+      updateDiscount: jest.fn().mockResolvedValue({}),
+      deleteDiscount: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<DodoService>;
 
     const moduleRef = await Test.createTestingModule({
@@ -297,6 +300,157 @@ describe('CouponsService', () => {
           created_by: 'admin-1',
         }),
       );
+    });
+  });
+
+  describe('update', () => {
+    it('updates Dodo before the local row when a mirrored field changes', async () => {
+      const order: string[] = [];
+      dodo.updateDiscount.mockImplementation(async () => {
+        order.push('dodo');
+        return {} as never;
+      });
+      repo.update.mockImplementation(async () => {
+        order.push('local');
+        return coupon();
+      });
+
+      await service.update('c1', { value: 30 });
+
+      // Local-first would leave us advertising a discount Dodo may reject,
+      // which the user only discovers at the payment screen.
+      expect(order).toEqual(['dodo', 'local']);
+      expect(dodo.updateDiscount).toHaveBeenCalledWith('dis_1', { amount: 3000 });
+    });
+
+    it('sends only the fields that changed', async () => {
+      await service.update('c1', { expires_at: '2026-12-01T00:00:00.000Z' });
+
+      expect(dodo.updateDiscount).toHaveBeenCalledWith('dis_1', {
+        expiresAt: '2026-12-01T00:00:00.000Z',
+      });
+    });
+
+    it('leaves everything unchanged when Dodo rejects the edit', async () => {
+      dodo.updateDiscount.mockRejectedValue(new Error('dodo said no'));
+
+      await expect(service.update('c1', { value: 30 })).rejects.toThrow('dodo said no');
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+
+    it('does not call Dodo for fields it does not know about', async () => {
+      await service.update('c1', { description: 'Autumn campaign', max_uses_per_user: 3 });
+
+      expect(dodo.updateDiscount).not.toHaveBeenCalled();
+      expect(repo.update).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({ description: 'Autumn campaign', max_uses_per_user: 3 }),
+      );
+    });
+
+    it('does not call Dodo for an unmirrored coupon type', async () => {
+      repo.findById.mockResolvedValue(coupon({ type: 'free_credits', dodo_discount_id: null }));
+
+      await service.update('c1', { value: 750 });
+
+      expect(dodo.updateDiscount).not.toHaveBeenCalled();
+    });
+
+    it('refuses a usage cap below what has already been redeemed', async () => {
+      repo.findById.mockResolvedValue(coupon({ used_count: 40 }));
+
+      await expect(service.update('c1', { max_uses: 10 })).rejects.toThrow(
+        'already been redeemed 40 times',
+      );
+      expect(dodo.updateDiscount).not.toHaveBeenCalled();
+    });
+
+    it.each([0, 101])('refuses a percentage of %i', async (value) => {
+      await expect(service.update('c1', { value })).rejects.toThrow(BadRequestException);
+    });
+
+    it('revives an exhausted coupon when the cap is raised', async () => {
+      repo.findById.mockResolvedValue(coupon({ status: 'exhausted', max_uses: 50, used_count: 50 }));
+
+      await service.update('c1', { max_uses: 200 });
+
+      // Otherwise it would sit dead with room left on it.
+      expect(repo.update).toHaveBeenCalledWith('c1', expect.objectContaining({ status: 'active' }));
+    });
+
+    it('does not revive an exhausted coupon on an unrelated edit', async () => {
+      repo.findById.mockResolvedValue(coupon({ status: 'exhausted', max_uses: 50, used_count: 50 }));
+
+      await service.update('c1', { description: 'note' });
+
+      expect(repo.update).toHaveBeenCalledWith('c1', expect.not.objectContaining({ status: 'active' }));
+    });
+
+    it('honours an explicit status over the revive rule', async () => {
+      repo.findById.mockResolvedValue(coupon({ status: 'exhausted', max_uses: 50, used_count: 50 }));
+
+      await service.update('c1', { max_uses: 200, status: 'paused' });
+
+      expect(repo.update).toHaveBeenCalledWith('c1', expect.objectContaining({ status: 'paused' }));
+    });
+
+    it('throws for an unknown coupon', async () => {
+      repo.findById.mockResolvedValue(null);
+
+      await expect(service.update('nope', { value: 30 })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes an unused coupon and its Dodo mirror', async () => {
+      repo.findById.mockResolvedValue(coupon({ used_count: 0 }));
+
+      await expect(service.delete('c1')).resolves.toEqual({ deleted: true, id: 'c1' });
+      expect(dodo.deleteDiscount).toHaveBeenCalledWith('dis_1');
+      expect(repo.delete).toHaveBeenCalledWith('c1');
+    });
+
+    it('refuses to delete a coupon that has been redeemed', async () => {
+      repo.findById.mockResolvedValue(coupon({ used_count: 823 }));
+
+      // coupon_redemptions cascades from this row, so deleting would erase
+      // the campaign revenue history the table exists to record.
+      await expect(service.delete('c1')).rejects.toThrow('redeemed 823 times');
+      expect(repo.delete).not.toHaveBeenCalled();
+      expect(dodo.deleteDiscount).not.toHaveBeenCalled();
+    });
+
+    it('singularises the refusal for a single redemption', async () => {
+      repo.findById.mockResolvedValue(coupon({ used_count: 1 }));
+
+      await expect(service.delete('c1')).rejects.toThrow('redeemed 1 time.');
+    });
+
+    it('still deletes locally when the Dodo mirror cannot be removed', async () => {
+      repo.findById.mockResolvedValue(coupon({ used_count: 0 }));
+      dodo.deleteDiscount.mockRejectedValue(new Error('already gone'));
+
+      // An orphaned Dodo discount whose code no longer exists here can never
+      // be validated, so it is inert — better than leaving the admin stuck.
+      await expect(service.delete('c1')).resolves.toEqual({ deleted: true, id: 'c1' });
+      expect(repo.delete).toHaveBeenCalledWith('c1');
+    });
+
+    it('skips Dodo entirely for an unmirrored coupon', async () => {
+      repo.findById.mockResolvedValue(
+        coupon({ used_count: 0, type: 'free_credits', dodo_discount_id: null }),
+      );
+
+      await service.delete('c1');
+
+      expect(dodo.deleteDiscount).not.toHaveBeenCalled();
+      expect(repo.delete).toHaveBeenCalledWith('c1');
+    });
+
+    it('throws for an unknown coupon', async () => {
+      repo.findById.mockResolvedValue(null);
+
+      await expect(service.delete('nope')).rejects.toThrow(NotFoundException);
     });
   });
 

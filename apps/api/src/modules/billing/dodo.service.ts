@@ -102,6 +102,25 @@ export class DodoService {
     });
   }
 
+  /**
+   * Update a mirrored discount. Only the fields that change are sent, so a
+   * partial edit does not silently reset the others.
+   */
+  async updateDiscount(
+    discountId: string,
+    patch: { amount?: number; expiresAt?: string | null; usageLimit?: number | null },
+  ) {
+    return this.client.discounts.update(discountId, {
+      ...(patch.amount !== undefined ? { amount: patch.amount } : {}),
+      ...(patch.expiresAt !== undefined ? { expires_at: patch.expiresAt } : {}),
+      ...(patch.usageLimit !== undefined ? { usage_limit: patch.usageLimit } : {}),
+    });
+  }
+
+  async deleteDiscount(discountId: string) {
+    return this.client.discounts.delete(discountId);
+  }
+
   async getSubscription(subscriptionId: string) {
     return this.client.subscriptions.retrieve(subscriptionId);
   }
