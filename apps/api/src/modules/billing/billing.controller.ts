@@ -15,7 +15,7 @@ import {
 import type { Response } from 'express';
 import { InvoicePdfService } from '@autoclipr/emails';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString, Length } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponse } from '../../common/api-response';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -31,6 +31,12 @@ class CreateCheckoutDto {
 
   @IsString()
   billingPeriod?: 'monthly' | 'yearly';
+
+  /** Optional coupon. Re-validated server-side before the checkout is built. */
+  @IsOptional()
+  @IsString()
+  @Length(3, 16)
+  couponCode?: string;
 }
 
 class ActivatePlanDto {
@@ -84,7 +90,7 @@ export class BillingController {
         throw new BadRequestException('Could not determine user email for checkout');
       }
     }
-    const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId, dto.billingPeriod ?? 'yearly');
+    const url = await this.subscriptions.createCheckoutUrl(user.sub, email, dto.planId, dto.billingPeriod ?? 'yearly', dto.couponCode);
     return ApiResponse.ok({ url });
   }
 

@@ -33,6 +33,10 @@ export class DodoService {
     email: string;
     successUrl: string;
     cancelUrl: string;
+    /** Validated coupon code, mirrored to a Dodo discount. */
+    discountCode?: string | null;
+    /** Trial days from a free_trial coupon. */
+    trialPeriodDays?: number | null;
   }): Promise<string> {
     const planProducts = PRODUCT_IDS[opts.planId];
     if (!planProducts) throw new Error(`Unknown plan: ${opts.planId}`);
@@ -46,7 +50,16 @@ export class DodoService {
       quantity: 1,
       payment_link: true,
       return_url: opts.successUrl,
-      metadata: { user_id: opts.userId, plan_id: opts.planId, billing_period: opts.billingPeriod },
+      metadata: {
+        user_id: opts.userId,
+        plan_id: opts.planId,
+        billing_period: opts.billingPeriod,
+        // Carried through checkout so the activation path knows which coupon
+        // to claim once the payment is confirmed.
+        ...(opts.discountCode ? { coupon_code: opts.discountCode } : {}),
+      },
+      ...(opts.discountCode ? { discount_codes: [opts.discountCode] } : {}),
+      ...(opts.trialPeriodDays ? { trial_period_days: opts.trialPeriodDays } : {}),
     });
 
     const url = (session as any).payment_link ?? (session as any).url;
@@ -62,6 +75,31 @@ export class DodoService {
     }
 
     return url;
+  }
+
+  /**
+   * Register a percentage discount with Dodo.
+   *
+   * Dodo is the only place a discount can actually reduce what a customer is
+   * charged — the price comes from the product at its hosted checkout — so a
+   * percentage coupon has to exist on both sides.
+   *
+   * `amount` is in basis points (2000 = 20%), and codes are capped at 16
+   * characters; both are the caller's responsibility.
+   */
+  async createDiscount(opts: {
+    code: string;
+    amount: number;
+    expiresAt?: string | null;
+    usageLimit?: number | null;
+  }) {
+    return this.client.discounts.create({
+      code: opts.code,
+      amount: opts.amount,
+      type: 'percentage',
+      expires_at: opts.expiresAt ?? null,
+      usage_limit: opts.usageLimit ?? null,
+    });
   }
 
   async getSubscription(subscriptionId: string) {

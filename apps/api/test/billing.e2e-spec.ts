@@ -127,7 +127,7 @@ describe('BillingController (e2e)', () => {
         .send({ planId: 'creator', billingPeriod: 'yearly' })
         .expect(201);
 
-      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly');
+      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly', undefined);
       expect(response.body).toEqual({ success: true, data: { url: 'https://pay.dodo/session' } });
     });
 

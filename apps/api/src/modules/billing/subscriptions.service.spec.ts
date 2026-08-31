@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@autoclipr/emails';
 import { SubscriptionsService } from './subscriptions.service';
@@ -7,6 +8,7 @@ import { SupabaseAdminService } from '../../database/supabase-admin.service';
 import { UsersRepository } from '../users/users.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 import { RetentionService } from '../retention/retention.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { createQueryBuilderMock, createSupabaseAdminServiceMock } from '../../test-utils/supabase-mock';
 
 /**
@@ -35,6 +37,7 @@ describe('SubscriptionsService', () => {
   let usersRepo: jest.Mocked<UsersRepository>;
   let affiliates: jest.Mocked<AffiliatesService>;
   let retention: jest.Mocked<RetentionService>;
+  let coupons: jest.Mocked<CouponsService>;
 
   beforeEach(async () => {
     dodo = {
@@ -56,6 +59,7 @@ describe('SubscriptionsService', () => {
 
     usersRepo = {
       ensureProfile: jest.fn().mockResolvedValue(undefined),
+      refundCredits: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<UsersRepository>;
 
     affiliates = {
@@ -65,6 +69,11 @@ describe('SubscriptionsService', () => {
     retention = {
       clearWarningsForUser: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RetentionService>;
+
+    coupons = {
+      validate: jest.fn(),
+      redeem: jest.fn().mockResolvedValue(true),
+    } as unknown as jest.Mocked<CouponsService>;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -76,6 +85,7 @@ describe('SubscriptionsService', () => {
         { provide: UsersRepository, useValue: usersRepo },
         { provide: AffiliatesService, useValue: affiliates },
         { provide: RetentionService, useValue: retention },
+        { provide: CouponsService, useValue: coupons },
       ],
     }).compile();
 
@@ -100,6 +110,8 @@ describe('SubscriptionsService', () => {
         email: 'jane@example.com',
         successUrl: 'https://app.autoclipr.com/dashboard?payment=success&plan=creator&billing=yearly',
         cancelUrl: 'https://app.autoclipr.com/pricing?payment=cancelled',
+        discountCode: null,
+        trialPeriodDays: null,
       });
       expect(url).toBe('https://pay.dodo/session');
     });
@@ -234,6 +246,161 @@ describe('SubscriptionsService', () => {
     // These pin the fix for the activation bypass: a signed-in user could POST
     // {"planId":"business"} and be granted a paid plan, because nothing checked
     // with Dodo that a payment had happened.
+    describe('coupons', () => {
+      function arrangeActivation() {
+        const profileBuilder = createQueryBuilderMock({ data: { email: 'a@b.com' }, error: null });
+        supabaseMock.__client.from.mockImplementation((table: string) => {
+          if (table === 'profiles') return profileBuilder;
+          return createQueryBuilderMock({ data: null, error: null });
+        });
+        return profileBuilder;
+      }
+
+      it('claims the coupon Dodo recorded, not one from the request', async () => {
+        arrangeActivation();
+        dodo.getSubscription.mockResolvedValue({
+          ...paidSubscription('creator'),
+          metadata: {
+            user_id: 'user-1',
+            plan_id: 'creator',
+            billing_period: 'yearly',
+            coupon_code: 'CREATOR20',
+          },
+        } as never);
+        coupons.validate.mockResolvedValue({
+          id: 'c1', code: 'CREATOR20', type: 'percentage', value: 20,
+          discountPaise: 83_760, description: '20% off',
+        } as never);
+
+        await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+        expect(coupons.redeem).toHaveBeenCalledWith('c1', 'user-1', 'creator', 83_760);
+      });
+
+      it('grants bonus credits for a free_credits coupon', async () => {
+        arrangeActivation();
+        dodo.getSubscription.mockResolvedValue({
+          ...paidSubscription('creator'),
+          metadata: {
+            user_id: 'user-1', plan_id: 'creator', billing_period: 'yearly', coupon_code: 'BONUS',
+          },
+        } as never);
+        coupons.validate.mockResolvedValue({
+          id: 'c2', code: 'BONUS', type: 'free_credits', value: 500,
+          discountPaise: 0, description: '500 bonus credits',
+        } as never);
+
+        await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+        expect(usersRepo.refundCredits).toHaveBeenCalledWith(
+          'user-1', 500, 'coupon_bonus', undefined,
+        );
+      });
+
+      it('does not grant credits when the claim was refused', async () => {
+        arrangeActivation();
+        dodo.getSubscription.mockResolvedValue({
+          ...paidSubscription('creator'),
+          metadata: {
+            user_id: 'user-1', plan_id: 'creator', billing_period: 'yearly', coupon_code: 'BONUS',
+          },
+        } as never);
+        coupons.validate.mockResolvedValue({
+          id: 'c2', code: 'BONUS', type: 'free_credits', value: 500,
+          discountPaise: 0, description: '500 bonus credits',
+        } as never);
+        coupons.redeem.mockResolvedValue(false);
+
+        await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+        expect(usersRepo.refundCredits).not.toHaveBeenCalled();
+      });
+
+      it('still activates the plan when the coupon fails', async () => {
+        arrangeActivation();
+        dodo.getSubscription.mockResolvedValue({
+          ...paidSubscription('creator'),
+          metadata: {
+            user_id: 'user-1', plan_id: 'creator', billing_period: 'yearly', coupon_code: 'GONE',
+          },
+        } as never);
+        coupons.validate.mockRejectedValue(new Error('coupon exhausted'));
+
+        // The payment already succeeded — coupon bookkeeping must never undo
+        // the plan the user paid for.
+        await expect(
+          service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1'),
+        ).resolves.toBeUndefined();
+        expect(email.sendSubscriptionConfirmed).toHaveBeenCalled();
+      });
+
+      it('skips coupon handling entirely when none was used', async () => {
+        arrangeActivation();
+
+        await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+        expect(coupons.redeem).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('checkout with a coupon', () => {
+      it('passes a percentage code to Dodo as a discount', async () => {
+        coupons.validate.mockResolvedValue({
+          id: 'c1', code: 'CREATOR20', type: 'percentage', value: 20,
+          discountPaise: 83_760, description: '20% off',
+        } as never);
+
+        await service.createCheckoutUrl('u1', 'a@b.com', 'creator', 'yearly', 'CREATOR20');
+
+        expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ discountCode: 'CREATOR20', trialPeriodDays: null }),
+        );
+      });
+
+      it('passes a trial coupon as trial days, not a discount', async () => {
+        coupons.validate.mockResolvedValue({
+          id: 'c3', code: 'TRIAL30', type: 'free_trial', value: 30,
+          discountPaise: 0, description: '30 days free',
+        } as never);
+
+        await service.createCheckoutUrl('u1', 'a@b.com', 'creator', 'yearly', 'TRIAL30');
+
+        expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ discountCode: null, trialPeriodDays: 30 }),
+        );
+      });
+
+      it('sends neither for a credits coupon', async () => {
+        coupons.validate.mockResolvedValue({
+          id: 'c2', code: 'BONUS', type: 'free_credits', value: 500,
+          discountPaise: 0, description: '500 bonus credits',
+        } as never);
+
+        await service.createCheckoutUrl('u1', 'a@b.com', 'creator', 'yearly', 'BONUS');
+
+        expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ discountCode: null, trialPeriodDays: null }),
+        );
+      });
+
+      it('refuses checkout when the coupon is invalid', async () => {
+        coupons.validate.mockRejectedValue(new BadRequestException('That coupon has expired.'));
+
+        // Better to tell the user now than send them to a checkout that
+        // silently charges full price.
+        await expect(
+          service.createCheckoutUrl('u1', 'a@b.com', 'creator', 'yearly', 'OLD'),
+        ).rejects.toThrow('That coupon has expired.');
+        expect(dodo.createCheckoutUrl).not.toHaveBeenCalled();
+      });
+
+      it('ignores a blank coupon code', async () => {
+        await service.createCheckoutUrl('u1', 'a@b.com', 'creator', 'yearly', '   ');
+
+        expect(coupons.validate).not.toHaveBeenCalled();
+      });
+    });
+
     describe('payment verification', () => {
       it('refuses to activate without a subscription id', async () => {
         await expect(

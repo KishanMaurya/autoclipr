@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
@@ -6,6 +6,7 @@ import { UsersRepository } from '../users/users.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 import { DodoService } from './dodo.service';
 import { RetentionService } from '../retention/retention.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 const PLAN_TIER: Record<string, string> = {
   starter: 'starter',
@@ -31,6 +32,8 @@ export class SubscriptionsService {
     private readonly usersRepo: UsersRepository,
     private readonly affiliates: AffiliatesService,
     private readonly retention: RetentionService,
+    @Inject(forwardRef(() => CouponsService))
+    private readonly coupons: CouponsService,
   ) {}
 
   /**
@@ -45,7 +48,7 @@ export class SubscriptionsService {
   private async verifyPaidSubscription(
     userId: string,
     subscriptionId: string,
-  ): Promise<{ planId: string; billingPeriod: 'monthly' | 'yearly' }> {
+  ): Promise<{ planId: string; billingPeriod: 'monthly' | 'yearly'; couponCode: string | null }> {
     if (!subscriptionId) {
       throw new BadRequestException('A subscription id is required to activate a plan.');
     }
@@ -87,16 +90,40 @@ export class SubscriptionsService {
     }
 
     const billingPeriod = metadata.billing_period === 'monthly' ? 'monthly' : 'yearly';
-    return { planId, billingPeriod };
+    // Read back from Dodo rather than the request, so a user cannot claim a
+    // coupon they never actually checked out with.
+    return { planId, billingPeriod, couponCode: metadata.coupon_code ?? null };
   }
 
-  async createCheckoutUrl(userId: string, email: string, planId: string, billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<string> {
+  async createCheckoutUrl(
+    userId: string,
+    email: string,
+    planId: string,
+    billingPeriod: 'monthly' | 'yearly' = 'yearly',
+    couponCode?: string,
+  ): Promise<string> {
     const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
+
+    // Re-validated here rather than trusting whatever the client validated
+    // earlier: the coupon may have been exhausted or paused in between, and
+    // the request body is attacker-controlled either way. An invalid code
+    // throws, so the user is told before being sent to a checkout that would
+    // silently charge full price.
+    let discountCode: string | null = null;
+    let trialPeriodDays: number | null = null;
+    if (couponCode?.trim()) {
+      const coupon = await this.coupons.validate(couponCode, planId, billingPeriod, userId);
+      if (coupon.type === 'percentage') discountCode = coupon.code;
+      if (coupon.type === 'free_trial') trialPeriodDays = coupon.value;
+    }
+
     return this.dodo.createCheckoutUrl({
       planId,
       billingPeriod,
       userId,
       email,
+      discountCode,
+      trialPeriodDays,
       successUrl: `${appUrl}/dashboard?payment=success&plan=${planId}&billing=${billingPeriod}`,
       cancelUrl: `${appUrl}/pricing?payment=cancelled`,
     });
@@ -162,6 +189,13 @@ export class SubscriptionsService {
       await this.retention.clearWarningsForUser(userId);
     }
 
+    // Claim the coupon only now, with the payment confirmed. Claiming at
+    // checkout would burn a use for every abandoned cart, and a popular code
+    // would show as exhausted while having earned nothing.
+    if (verified.couponCode) {
+      await this.applyCoupon(userId, verified.couponCode, planId, billingPeriod);
+    }
+
     // Compute amount based on plan + billing period
     const PLAN_AMOUNTS: Record<string, { monthly: string; yearly: string }> = {
       creator:  { monthly: '₹399.00',   yearly: '₹4,188.00' },
@@ -199,6 +233,45 @@ export class SubscriptionsService {
     // Pass email directly so it works even when profile email is empty (OAuth users)
     await this.sendSubscriptionEmails(userId, planId, internalTxId, { payment_id: internalTxId, billing_period: billingPeriod, amount_override: amountPaid }, userEmail);
     this.logger.log(`Plan activated via success redirect: userId=${userId} plan=${planId}`);
+  }
+
+  /**
+   * Record the redemption and grant anything the coupon adds on our side.
+   *
+   * Never throws: the payment has already succeeded and the plan is already
+   * active, so a coupon bookkeeping failure must not fail the activation the
+   * user paid for. It is logged instead.
+   */
+  private async applyCoupon(
+    userId: string,
+    code: string,
+    planId: string,
+    billingPeriod: 'monthly' | 'yearly',
+  ): Promise<void> {
+    try {
+      const coupon = await this.coupons.validate(code, planId, billingPeriod, userId);
+      const redeemed = await this.coupons.redeem(
+        coupon.id,
+        userId,
+        planId,
+        coupon.discountPaise,
+      );
+
+      if (!redeemed) {
+        this.logger.warn(`Coupon ${code} could not be claimed for ${userId} after payment`);
+        return;
+      }
+
+      // Bonus credits are ours to grant — Dodo knows nothing about them.
+      if (coupon.type === 'free_credits') {
+        await this.usersRepo.refundCredits(userId, coupon.value, 'coupon_bonus', undefined);
+        this.logger.log(`Granted ${coupon.value} bonus credits to ${userId} from ${code}`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to apply coupon ${code} for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   async getTransactions(userId: string) {

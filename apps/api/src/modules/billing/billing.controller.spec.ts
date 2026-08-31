@@ -88,7 +88,7 @@ describe('BillingController', () => {
       const result = await controller.checkout(user, { planId: 'creator', billingPeriod: 'yearly' });
 
       expect(usersService.getMe).not.toHaveBeenCalled();
-      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly');
+      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly', undefined);
       expect(result).toEqual({ success: true, data: { url: 'https://pay.dodo/session' }, meta: undefined });
     });
 
@@ -97,7 +97,7 @@ describe('BillingController', () => {
 
       await controller.checkout(user, { planId: 'creator' } as any);
 
-      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly');
+      expect(subscriptions.createCheckoutUrl).toHaveBeenCalledWith('user-1', 'jane@example.com', 'creator', 'yearly', undefined);
     });
 
     it('falls back to the profile email when the JWT has none', async () => {
@@ -113,6 +113,7 @@ describe('BillingController', () => {
         'profile@example.com',
         'creator',
         'monthly',
+        undefined,
       );
     });
 
