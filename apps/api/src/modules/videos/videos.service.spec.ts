@@ -29,6 +29,7 @@ describe('VideosService', () => {
       updateStoragePath: jest.fn(),
       updateAfterImport: jest.fn(),
       deleteById: jest.fn(),
+      recordDeletion: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<VideosRepository>;
 
     clipsRepo = {
@@ -652,6 +653,87 @@ describe('VideosService', () => {
       );
       expect(videosRepo.deleteById).toHaveBeenCalledWith('v1', 'u1');
       expect(result).toEqual({ deleted: true, id: 'v1' });
+    });
+
+    describe('deletion audit trail', () => {
+      function arrangeDelete() {
+        videosRepo.getById.mockResolvedValue({
+          id: 'v1',
+          title: 'Podcast ep 4',
+          storage_path: 'videos/v1.mp4',
+          thumbnail_url: null,
+        } as never);
+        clipsRepo.listByVideoId.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }] as never);
+        config.get.mockImplementation((key: string) =>
+          key === 'buckets.clips' ? 'clips' : key === 'buckets.videos' ? 'videos' : undefined,
+        );
+        storage.clipThumbPath.mockImplementation((p: string) => `${p}_thumb`);
+        storage.parseObjectPathFromUrl.mockReturnValue(null);
+        storage.removeObjects.mockResolvedValue(undefined);
+        videosRepo.deleteById.mockResolvedValue(true);
+        videosRepo.recordDeletion.mockResolvedValue(undefined);
+      }
+
+      it('records the deletion, defaulting the reason to the user', async () => {
+        arrangeDelete();
+
+        await service.delete('u1', 'v1');
+
+        expect(videosRepo.recordDeletion).toHaveBeenCalledWith({
+          video_id: 'v1',
+          user_id: 'u1',
+          title: 'Podcast ep 4',
+          reason: 'user',
+          clip_count: 2,
+        });
+      });
+
+      it('records the caller-supplied reason', async () => {
+        arrangeDelete();
+
+        await service.delete('u1', 'v1', { reason: 'retention' });
+
+        expect(videosRepo.recordDeletion).toHaveBeenCalledWith(
+          expect.objectContaining({ reason: 'retention' }),
+        );
+      });
+
+      it('records only after the row is actually gone', async () => {
+        arrangeDelete();
+        const order: string[] = [];
+        videosRepo.deleteById.mockImplementation(async () => {
+          order.push('delete');
+          return true;
+        });
+        videosRepo.recordDeletion.mockImplementation(async () => {
+          order.push('record');
+        });
+
+        await service.delete('u1', 'v1');
+
+        // Recording first would leave a phantom entry if the delete failed.
+        expect(order).toEqual(['delete', 'record']);
+      });
+
+      it('does not record when storage removal blocks the delete', async () => {
+        arrangeDelete();
+        storage.removeObjects.mockRejectedValue(new Error('storage down'));
+
+        await expect(
+          service.delete('u1', 'v1', { requireStorageRemoval: true }),
+        ).rejects.toThrow('Storage removal failed');
+
+        expect(videosRepo.recordDeletion).not.toHaveBeenCalled();
+      });
+
+      it('still succeeds when writing the audit row fails', async () => {
+        arrangeDelete();
+        videosRepo.recordDeletion.mockRejectedValue(new Error('audit insert failed'));
+
+        // The video really is deleted by this point — losing the audit row
+        // must not turn that into an error for the caller.
+        await expect(service.delete('u1', 'v1')).resolves.toEqual({ deleted: true, id: 'v1' });
+      });
     });
 
     describe('requireStorageRemoval', () => {

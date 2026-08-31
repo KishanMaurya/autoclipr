@@ -260,8 +260,16 @@ describe('RetentionService', () => {
 
       // requireStorageRemoval is what stops a row being dropped while its
       // file survives in the bucket.
-      expect(videos.delete).toHaveBeenCalledWith('u1', 'v1', { requireStorageRemoval: true });
-      expect(videos.delete).toHaveBeenCalledWith('u2', 'v2', { requireStorageRemoval: true });
+      // reason tags the row in video_deletions so the admin panel can split
+      // sweep deletions from ones users did themselves.
+      expect(videos.delete).toHaveBeenCalledWith('u1', 'v1', {
+        requireStorageRemoval: true,
+        reason: 'retention',
+      });
+      expect(videos.delete).toHaveBeenCalledWith('u2', 'v2', {
+        requireStorageRemoval: true,
+        reason: 'retention',
+      });
       expect(result.videosDeleted).toBe(2);
       expect(result.deleteFailures).toBe(0);
     });

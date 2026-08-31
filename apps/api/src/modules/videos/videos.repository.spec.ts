@@ -198,6 +198,34 @@ describe('VideosRepository', () => {
     });
   });
 
+  describe('recordDeletion', () => {
+    it('inserts the audit row', async () => {
+      chain.__setResult({ data: null, error: null });
+      const entry = {
+        video_id: 'v1',
+        user_id: 'u1',
+        title: 'Ep 4',
+        reason: 'retention' as const,
+        clip_count: 3,
+      };
+
+      await repo.recordDeletion(entry);
+
+      expect(chain.from).toHaveBeenCalledWith('video_deletions');
+      expect(chain.insert).toHaveBeenCalledWith(entry);
+    });
+
+    it('throws when the insert fails', async () => {
+      chain.__setResult({ data: null, error: { message: 'insert denied' } });
+
+      await expect(
+        repo.recordDeletion({
+          video_id: 'v1', user_id: 'u1', title: null, reason: 'user', clip_count: 0,
+        }),
+      ).rejects.toThrow('insert denied');
+    });
+  });
+
   describe('deleteById', () => {
     it('returns true when a row was deleted', async () => {
       chain.__setResult({ data: { id: 'v1' }, error: null });

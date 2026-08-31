@@ -2,7 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   Users, DollarSign, Video, Scissors, Bot, CreditCard, TrendingUp,
-  Link2, Server, AlertCircle, Activity, Globe, ArrowUpRight, ArrowDownRight,
+  Link2, Server, AlertCircle, Activity, Globe, ArrowUpRight, ArrowDownRight, Trash2,
 } from "lucide-react";
 import {
   UserGrowthChart, RevenueBarChart, FreePaidPieChart, FunnelChart,
@@ -40,7 +40,7 @@ async function fetchStats() {
       recent: { id: string; invoice_number: string; plan_id: string; amount: string; billing_period: string; payment_date: string }[];
     };
     subscriptions: { active: number; cancelled: number; churnRate: number; renewalRate: number; refundRate: number };
-    videos: { total: number; today: number; avgDurationSecs: number; storageFormatted: string; storagePct: number };
+    videos: { total: number; today: number; avgDurationSecs: number; storageFormatted: string; storagePct: number; deleted: number; deletedToday: number; deletedByRetention: number; deletedByUser: number };
     clips: { total: number; today: number; avgPerVideo: number };
     ai: { hooksGenerated: number; titlesGenerated: number; captionsGenerated: number; scriptsGenerated: number; creditsConsumed: number };
     affiliates: { total: number; active: number; totalReferrals: number; totalRevenuePaise: number; top: { email: string; conversions: number; earningsPaise: number }[] };
@@ -172,9 +172,10 @@ export default async function AdminDashboardPage() {
       {/* KPI — Content & AI */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">Content &amp; AI</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           <KpiCard icon={Video}    label="Videos"        value={videos.total.toLocaleString()} sub={`+${videos.today} today`}  iconBg="#3B82F6" />
           <KpiCard icon={Scissors} label="Clips"         value={clips.total.toLocaleString()}  sub={`+${clips.today} today`}  iconBg="#8B5CF6" />
+          <KpiCard icon={Trash2}   label="Deleted"       value={videos.deleted.toLocaleString()} sub={`${videos.deletedByRetention} by retention · +${videos.deletedToday} today`} iconBg="#EF4444" />
           <KpiCard icon={Server}   label="Storage"       value={videos.storageFormatted}                                      iconBg="#F59E0B" />
           <KpiCard icon={Bot}      label="Hooks Gen."    value={ai.hooksGenerated.toLocaleString()}                           iconBg="#3C50E0" />
           <KpiCard icon={Bot}      label="Captions"      value={ai.captionsGenerated.toLocaleString()}                        iconBg="#8B5CF6" />

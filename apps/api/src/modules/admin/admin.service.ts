@@ -41,6 +41,7 @@ export class AdminService {
       recentTx,
       subscriptions,
       videoStats,
+      videoDeletions,
       clipStats,
       affiliateStats,
       creditStats,
@@ -53,6 +54,7 @@ export class AdminService {
       this.repo.getRecentTransactions(8),
       this.repo.getSubscriptionStats(),
       this.repo.getVideoStats(),
+      this.repo.getVideoDeletionStats(),
       this.repo.getClipStats(),
       this.repo.getAffiliateStats(),
       this.repo.getCreditUsageStats(),
@@ -151,6 +153,12 @@ export class AdminService {
       videos: {
         total: videoStats.total,
         today: videoStats.today,
+        // Counted from video_deletions — the videos row is hard-deleted, so
+        // nothing before that table existed can be included.
+        deleted: videoDeletions.total,
+        deletedToday: videoDeletions.today,
+        deletedByRetention: videoDeletions.byRetention,
+        deletedByUser: videoDeletions.byUser,
         avgDurationSecs: videoStats.avgDurationSecs,
         storageFormatted,
         storagePct: 18.2, // mock TB out of 100

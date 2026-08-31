@@ -7,7 +7,7 @@ import { JobsRepository } from '../jobs/jobs.repository';
 import { JobType } from '../jobs/jobs.constants';
 import { InsufficientCreditsError, UsersRepository } from '../users/users.repository';
 import { StorageService } from '../storage/storage.service';
-import { VideosRepository } from './videos.repository';
+import { VideosRepository, type VideoDeletionReason } from './videos.repository';
 import { InitUploadDto } from './dto/init-upload.dto';
 import { ImportUrlDto } from './dto/import-url.dto';
 import { getSourceLabel, parseVideoUrl } from './utils/video-url.util';
@@ -329,8 +329,15 @@ export class VideosService {
    * that. Retention turns it on, because there the whole point is that the
    * file is gone — dropping the row while the object survives would orphan it
    * in the bucket and make a liar of the notice we emailed the owner.
+   *
+   * `reason` is recorded in video_deletions, which is the only trace a deleted
+   * video leaves — the row itself is hard-deleted.
    */
-  async delete(userId: string, videoId: string, opts: { requireStorageRemoval?: boolean } = {}) {
+  async delete(
+    userId: string,
+    videoId: string,
+    opts: { requireStorageRemoval?: boolean; reason?: VideoDeletionReason } = {},
+  ) {
     const video = await this.videosRepo.getById(videoId, userId);
     if (!video) throw new NotFoundException('Video not found');
 
@@ -357,6 +364,24 @@ export class VideosService {
     }
 
     await this.videosRepo.deleteById(videoId, userId);
+
+    // Written after the row is gone, so we never record a deletion that did
+    // not happen. Failures are logged and swallowed: the video really is
+    // deleted at this point, and losing an audit row must not turn a
+    // successful delete into an error for the caller.
+    try {
+      await this.videosRepo.recordDeletion({
+        video_id: videoId,
+        user_id: userId,
+        title: video.title ?? null,
+        reason: opts.reason ?? 'user',
+        clip_count: clips.length,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to record deletion of video ${videoId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
 
     return { deleted: true, id: videoId };
   }

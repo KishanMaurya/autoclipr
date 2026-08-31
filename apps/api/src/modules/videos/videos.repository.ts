@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
 
+/** Who removed the video: the owner, or the Starter retention sweep. */
+export type VideoDeletionReason = 'user' | 'retention';
+
 export interface Video {
   id: string;
   user_id: string;
@@ -139,6 +142,25 @@ export class VideosRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  }
+
+  /**
+   * Record that a video was deleted. The videos row is hard-deleted, so this
+   * table is the only surviving trace and the only source of deletion counts.
+   */
+  async recordDeletion(entry: {
+    video_id: string;
+    user_id: string;
+    title: string | null;
+    reason: VideoDeletionReason;
+    clip_count: number;
+  }): Promise<void> {
+    const { error } = await this.supabase
+      .getClient()
+      .from('video_deletions')
+      .insert(entry);
 
     if (error) throw new Error(error.message);
   }

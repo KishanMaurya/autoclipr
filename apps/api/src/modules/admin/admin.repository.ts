@@ -150,6 +150,40 @@ export class AdminRepository {
     return { total: r1.count ?? 0, today: r2.count ?? 0, totalBytes, avgDurationSecs: avgDuration };
   }
 
+  /**
+   * Deletion counts, split by who did it.
+   *
+   * Read from video_deletions rather than videos: a deleted video's row is
+   * hard-deleted, so this table is the only surviving record. Anything removed
+   * before that table existed is not counted — there is no way to recover it.
+   */
+  async getVideoDeletionStats() {
+    const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+    const [totalRes, todayRes, retentionRes] = await Promise.all([
+      this.db.from('video_deletions').select('*', { count: 'exact', head: true }),
+      this.db
+        .from('video_deletions')
+        .select('*', { count: 'exact', head: true })
+        .gte('deleted_at', today),
+      this.db
+        .from('video_deletions')
+        .select('*', { count: 'exact', head: true })
+        .eq('reason', 'retention'),
+    ]);
+
+    const total = totalRes.count ?? 0;
+    const byRetention = retentionRes.count ?? 0;
+
+    return {
+      total,
+      today: todayRes.count ?? 0,
+      byRetention,
+      // Everything not attributed to the sweep was the owner's own doing.
+      byUser: Math.max(0, total - byRetention),
+    };
+  }
+
   async getClipStats() {
     const today = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
     const [r1, r2] = await Promise.all([

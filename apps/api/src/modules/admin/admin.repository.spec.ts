@@ -153,6 +153,44 @@ describe('AdminRepository', () => {
     });
   });
 
+  describe('getVideoDeletionStats', () => {
+    it('returns totals, today, and the split by reason', async () => {
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: 40 }))  // total
+        .mockReturnValueOnce(mockQueryBuilder({ count: 6 }))   // today
+        .mockReturnValueOnce(mockQueryBuilder({ count: 25 })); // retention
+
+      const result = await repo.getVideoDeletionStats();
+
+      expect(client.from).toHaveBeenCalledWith('video_deletions');
+      // byUser is derived, since anything not tagged 'retention' was the owner.
+      expect(result).toEqual({ total: 40, today: 6, byRetention: 25, byUser: 15 });
+    });
+
+    it('treats null counts as zero', async () => {
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: null }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: null }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: null }));
+
+      await expect(repo.getVideoDeletionStats()).resolves.toEqual({
+        total: 0, today: 0, byRetention: 0, byUser: 0,
+      });
+    });
+
+    it('never reports a negative user count when retention exceeds the total', async () => {
+      // Shouldn't happen, but a clamped 0 beats a nonsense negative on a dashboard.
+      client.from
+        .mockReturnValueOnce(mockQueryBuilder({ count: 5 }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: 0 }))
+        .mockReturnValueOnce(mockQueryBuilder({ count: 9 }));
+
+      const result = await repo.getVideoDeletionStats();
+
+      expect(result.byUser).toBe(0);
+    });
+  });
+
   describe('getVideoStats', () => {
     it('computes totals, byte sum and average duration', async () => {
       client.from

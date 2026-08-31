@@ -195,7 +195,10 @@ export class RetentionService {
         // so the next sweep retries. Dropping the row anyway would leave the
         // file orphaned in the bucket after we'd emailed the owner to say it
         // was deleted.
-        await this.videos.delete(video.user_id, video.id, { requireStorageRemoval: true });
+        await this.videos.delete(video.user_id, video.id, {
+          requireStorageRemoval: true,
+          reason: 'retention',
+        });
         ok += 1;
       } catch (err) {
         failed += 1;
