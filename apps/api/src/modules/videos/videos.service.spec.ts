@@ -654,6 +654,56 @@ describe('VideosService', () => {
       expect(result).toEqual({ deleted: true, id: 'v1' });
     });
 
+    describe('requireStorageRemoval', () => {
+      function arrangeDelete() {
+        videosRepo.getById.mockResolvedValue({
+          id: 'v1',
+          storage_path: 'videos/v1.mp4',
+          thumbnail_url: null,
+        } as never);
+        clipsRepo.listByVideoId.mockResolvedValue([] as never);
+        config.get.mockImplementation((key: string) =>
+          key === 'buckets.clips' ? 'clips' : key === 'buckets.videos' ? 'videos' : undefined,
+        );
+        storage.clipThumbPath.mockImplementation((p: string) => `${p}_thumb`);
+        storage.parseObjectPathFromUrl.mockReturnValue(null);
+        videosRepo.deleteById.mockResolvedValue(true);
+      }
+
+      it('keeps the row when Storage rejects the removal', async () => {
+        arrangeDelete();
+        storage.removeObjects.mockRejectedValue(new Error('storage unavailable'));
+
+        await expect(
+          service.delete('u1', 'v1', { requireStorageRemoval: true }),
+        ).rejects.toThrow('Storage removal failed for video v1');
+
+        // The row surviving is the point — an orphaned object with no row
+        // pointing at it can never be found or cleaned up again.
+        expect(videosRepo.deleteById).not.toHaveBeenCalled();
+      });
+
+      it('still deletes the row on a Storage failure when not required', async () => {
+        arrangeDelete();
+        storage.removeObjects.mockRejectedValue(new Error('storage unavailable'));
+
+        // A user clicking delete wants it gone from their dashboard; an
+        // already-missing file must not block that.
+        await expect(service.delete('u1', 'v1')).resolves.toEqual({ deleted: true, id: 'v1' });
+        expect(videosRepo.deleteById).toHaveBeenCalledWith('v1', 'u1');
+      });
+
+      it('deletes the row when removal succeeds and it is required', async () => {
+        arrangeDelete();
+        storage.removeObjects.mockResolvedValue(undefined);
+
+        await expect(
+          service.delete('u1', 'v1', { requireStorageRemoval: true }),
+        ).resolves.toEqual({ deleted: true, id: 'v1' });
+        expect(videosRepo.deleteById).toHaveBeenCalledWith('v1', 'u1');
+      });
+    });
+
     it('collects parsed clip thumbnail/subtitle paths, and skips clips with no storage_path', async () => {
       videosRepo.getById.mockResolvedValue({
         id: 'v1',

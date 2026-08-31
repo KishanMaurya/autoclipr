@@ -190,7 +190,12 @@ export class RetentionService {
       try {
         // Reuses the normal delete path so storage objects, clips, and the
         // row all go the same way they do for a user-initiated delete.
-        await this.videos.delete(video.user_id, video.id);
+        //
+        // requireStorageRemoval keeps the row if Storage rejects the removal,
+        // so the next sweep retries. Dropping the row anyway would leave the
+        // file orphaned in the bucket after we'd emailed the owner to say it
+        // was deleted.
+        await this.videos.delete(video.user_id, video.id, { requireStorageRemoval: true });
         ok += 1;
       } catch (err) {
         failed += 1;

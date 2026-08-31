@@ -258,10 +258,26 @@ describe('RetentionService', () => {
 
       const result = await service.runSweep({ dryRun: false });
 
-      expect(videos.delete).toHaveBeenCalledWith('u1', 'v1');
-      expect(videos.delete).toHaveBeenCalledWith('u2', 'v2');
+      // requireStorageRemoval is what stops a row being dropped while its
+      // file survives in the bucket.
+      expect(videos.delete).toHaveBeenCalledWith('u1', 'v1', { requireStorageRemoval: true });
+      expect(videos.delete).toHaveBeenCalledWith('u2', 'v2', { requireStorageRemoval: true });
       expect(result.videosDeleted).toBe(2);
       expect(result.deleteFailures).toBe(0);
+    });
+
+    it('counts a storage-removal failure as a failure, leaving the row to retry', async () => {
+      repo.findVideosToDelete.mockResolvedValue([video({ id: 'v1' })]);
+      // What videos.delete() throws when requireStorageRemoval is set and
+      // Supabase Storage rejected the removal.
+      videos.delete.mockRejectedValue(
+        new Error('Storage removal failed for video v1; keeping the row so it can be retried'),
+      );
+
+      const result = await service.runSweep({ dryRun: false });
+
+      expect(result.videosDeleted).toBe(0);
+      expect(result.deleteFailures).toBe(1);
     });
 
     it('keeps going and counts failures when one delete throws', async () => {

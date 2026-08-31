@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MonitoringService, NR_EVENTS } from '@autoclipr/monitoring';
 import { ClipsRepository, type Clip } from '../clips/clips.repository';
@@ -14,6 +14,8 @@ import { getSourceLabel, parseVideoUrl } from './utils/video-url.util';
 
 @Injectable()
 export class VideosService {
+  private readonly logger = new Logger(VideosService.name);
+
   constructor(
     private readonly videosRepo: VideosRepository,
     private readonly clipsRepo: ClipsRepository,
@@ -306,16 +308,29 @@ export class VideosService {
     return [...paths].filter(Boolean);
   }
 
-  private async removeStorageObjects(bucket: string, paths: string[]): Promise<void> {
-    if (!paths.length) return;
+  /** Returns false if Storage rejected the removal, so callers can decide. */
+  private async removeStorageObjects(bucket: string, paths: string[]): Promise<boolean> {
+    if (!paths.length) return true;
     try {
       await this.storage.removeObjects(bucket, paths);
-    } catch {
-      // Continue DB deletion if files are already gone.
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Storage removal failed for ${paths.length} object(s) in ${bucket}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return false;
     }
   }
 
-  async delete(userId: string, videoId: string) {
+  /**
+   * `requireStorageRemoval` keeps the database row when Storage removal fails,
+   * so the delete can be retried. Off by default: a user clicking delete wants
+   * it gone from their dashboard, and an already-missing file shouldn't block
+   * that. Retention turns it on, because there the whole point is that the
+   * file is gone — dropping the row while the object survives would orphan it
+   * in the bucket and make a liar of the notice we emailed the owner.
+   */
+  async delete(userId: string, videoId: string, opts: { requireStorageRemoval?: boolean } = {}) {
     const video = await this.videosRepo.getById(videoId, userId);
     if (!video) throw new NotFoundException('Video not found');
 
@@ -324,7 +339,7 @@ export class VideosService {
     // One remove call for every clip object rather than one per clip —
     // removeObjects already takes a list, so deleting a video with 20 clips
     // was making 20 sequential Storage round trips for no reason.
-    await Promise.all([
+    const [clipsRemoved, videoRemoved] = await Promise.all([
       this.removeStorageObjects(
         this.clipsBucket(),
         clips.flatMap((clip) => this.storagePathsForClip(clip)),
@@ -334,6 +349,12 @@ export class VideosService {
         this.storagePathsForVideo(video),
       ),
     ]);
+
+    if (opts.requireStorageRemoval && !(clipsRemoved && videoRemoved)) {
+      throw new Error(
+        `Storage removal failed for video ${videoId}; keeping the row so it can be retried`,
+      );
+    }
 
     await this.videosRepo.deleteById(videoId, userId);
 
