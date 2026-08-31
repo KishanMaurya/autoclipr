@@ -19,6 +19,7 @@ export type Coupon = {
   used_count: number;
   max_uses_per_user: number;
   applicable_plans: string[];
+  visibility: "public" | "private";
   description: string | null;
   created_at: string;
 };
@@ -244,6 +245,7 @@ function CreateCouponForm({
 
     const maxUses = String(form.get("max_uses") ?? "").trim();
     const expiresAt = String(form.get("expires_at") ?? "").trim();
+    const startsAt = String(form.get("starts_at") ?? "").trim();
 
     try {
       const res = await fetch(`${API}/coupons`, {
@@ -262,6 +264,8 @@ function CreateCouponForm({
           // datetime-local gives a local wall-clock string; send it as an
           // instant so the server is not guessing a timezone.
           ...(expiresAt ? { expires_at: new Date(expiresAt).toISOString() } : {}),
+          ...(startsAt ? { starts_at: new Date(startsAt).toISOString() } : {}),
+          visibility: form.get("visibility") || "public",
           ...(plans.length ? { applicable_plans: plans } : {}),
         }),
       });
@@ -351,6 +355,14 @@ function CreateCouponForm({
           />
         </Field>
 
+        <Field label="Starts" hint="Blank to start immediately">
+          <input
+            name="starts_at"
+            type="datetime-local"
+            className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"
+          />
+        </Field>
+
         <Field label="Expires" hint="Blank for no expiry">
           <input
             name="expires_at"
@@ -365,6 +377,17 @@ function CreateCouponForm({
             placeholder="creator, business"
             className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#3C50E0] focus:outline-none"
           />
+        </Field>
+
+        <Field label="Visibility" hint="Private codes are never listed to users">
+          <select
+            name="visibility"
+            defaultValue="public"
+            className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"
+          >
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
         </Field>
 
         <Field label="Start as" hint="Draft codes cannot be redeemed">

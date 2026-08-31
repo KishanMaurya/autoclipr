@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pause, Play, Pencil, Trash2, Users, IndianRupee, Ticket } from "lucide-react";
+import { Loader2, Pause, Play, Pencil, Trash2, Users, IndianRupee, Ticket, Archive } from "lucide-react";
 import type { Coupon } from "@/components/admin/coupon-manager";
 
 const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;
@@ -111,10 +111,32 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
     }
   }
 
+  /**
+   * Retiring a coupon that has already been used. Deletion is refused for
+   * those to protect the redemption history, so this is what that refusal
+   * points at — without it the advice would be unactionable.
+   */
+  async function expire() {
+    if (
+      !window.confirm(
+        `Expire ${coupon.code}? It stops working immediately and cannot be reactivated. Its redemption history is kept.`,
+      )
+    ) {
+      return;
+    }
+
+    if (await call(`/coupons/${coupon.id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "expired" }),
+    })) {
+      router.refresh();
+    }
+  }
+
   async function remove() {
     const warning =
       coupon.used_count > 0
-        ? `${coupon.code} has been redeemed ${coupon.used_count} times. Deleting is blocked to protect that history — expire it instead.`
+        ? `${coupon.code} has been redeemed ${coupon.used_count} times. Deleting is blocked to protect that history — use Expire instead.`
         : `Delete ${coupon.code}? This cannot be undone.`;
     if (!window.confirm(warning)) return;
 
@@ -179,6 +201,17 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
               </button>
             )}
 
+            {["active", "paused", "draft"].includes(coupon.status) && (
+              <button
+                type="button"
+                onClick={expire}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+              >
+                <Archive className="h-4 w-4" /> Expire
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setEditing((e) => !e)}
@@ -194,7 +227,7 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
               disabled={busy || coupon.used_count > 0}
               title={
                 coupon.used_count > 0
-                  ? "Redeemed coupons cannot be deleted — expire it instead"
+                  ? "Redeemed coupons cannot be deleted — use Expire instead"
                   : undefined
               }
               className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-30"
@@ -356,6 +389,7 @@ function EditCouponForm({
     const form = new FormData(e.currentTarget);
     const maxUses = String(form.get("max_uses") ?? "").trim();
     const expiresAt = String(form.get("expires_at") ?? "").trim();
+    const startsAt = String(form.get("starts_at") ?? "").trim();
     const plans = String(form.get("applicable_plans") ?? "")
       .split(",")
       .map((p) => p.trim())
@@ -373,8 +407,10 @@ function EditCouponForm({
           max_uses_per_user: Number(form.get("max_uses_per_user")),
           applicable_plans: plans,
           description: String(form.get("description") ?? ""),
+          visibility: form.get("visibility") || coupon.visibility,
           ...(maxUses ? { max_uses: Number(maxUses) } : {}),
           ...(expiresAt ? { expires_at: new Date(expiresAt).toISOString() } : {}),
+          ...(startsAt ? { starts_at: new Date(startsAt).toISOString() } : {}),
         }),
       });
 
@@ -395,11 +431,14 @@ function EditCouponForm({
   }
 
   // datetime-local wants a local wall-clock string, not an instant.
-  const expiresLocal = coupon.expires_at
-    ? new Date(new Date(coupon.expires_at).getTime() - new Date().getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16)
-    : "";
+  const toLocalInput = (iso: string | null) =>
+    iso
+      ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16)
+      : "";
+  const expiresLocal = toLocalInput(coupon.expires_at);
+  const startsLocal = toLocalInput(coupon.starts_at);
 
   const valueLabel =
     coupon.type === "percentage"
@@ -455,6 +494,15 @@ function EditCouponForm({
           />
         </Field>
 
+        <Field label="Starts" hint="Blank to start immediately">
+          <input
+            name="starts_at"
+            type="datetime-local"
+            defaultValue={startsLocal}
+            className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"
+          />
+        </Field>
+
         <Field label="Expires" hint="Blank for no expiry">
           <input
             name="expires_at"
@@ -471,6 +519,17 @@ function EditCouponForm({
             placeholder="creator, business"
             className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#3C50E0] focus:outline-none"
           />
+        </Field>
+
+        <Field label="Visibility" hint="Private codes are never listed to users">
+          <select
+            name="visibility"
+            defaultValue={coupon.visibility}
+            className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"
+          >
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
         </Field>
 
         <Field label="Description">
