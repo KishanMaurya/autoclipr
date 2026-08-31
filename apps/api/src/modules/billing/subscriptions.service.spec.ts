@@ -9,6 +9,23 @@ import { AffiliatesService } from '../affiliates/affiliates.service';
 import { RetentionService } from '../retention/retention.service';
 import { createQueryBuilderMock, createSupabaseAdminServiceMock } from '../../test-utils/supabase-mock';
 
+/**
+ * A subscription as Dodo would report it for a real, completed payment.
+ * Only the fields the verification reads are populated — the SDK's full
+ * Subscription type has ~25 more that are irrelevant here.
+ */
+function paidSubscription(
+  planId: string,
+  billingPeriod: 'monthly' | 'yearly' = 'yearly',
+  userId = 'user-1',
+): any {
+  return {
+    subscription_id: 'sub_1',
+    status: 'active',
+    metadata: { user_id: userId, plan_id: planId, billing_period: billingPeriod },
+  };
+}
+
 describe('SubscriptionsService', () => {
   let service: SubscriptionsService;
   let dodo: jest.Mocked<DodoService>;
@@ -22,6 +39,7 @@ describe('SubscriptionsService', () => {
   beforeEach(async () => {
     dodo = {
       createCheckoutUrl: jest.fn(),
+      getSubscription: jest.fn().mockResolvedValue(paidSubscription('creator')),
     } as unknown as jest.Mocked<DodoService>;
 
     supabaseMock = createSupabaseAdminServiceMock();
@@ -102,8 +120,12 @@ describe('SubscriptionsService', () => {
   });
 
   describe('activatePlanForUser', () => {
-    it('throws for an unknown plan id', async () => {
-      await expect(service.activatePlanForUser('user-1', 'nonexistent')).rejects.toThrow('Unknown plan: nonexistent');
+    it('rejects a subscription whose plan is not one we sell', async () => {
+      dodo.getSubscription.mockResolvedValue(paidSubscription('nonexistent'));
+
+      await expect(service.activatePlanForUser('user-1', 'nonexistent', '', 'sub_1')).rejects.toThrow(
+        'This subscription is not for a known plan.',
+      );
       expect(usersRepo.ensureProfile).not.toHaveBeenCalled();
     });
 
@@ -121,7 +143,9 @@ describe('SubscriptionsService', () => {
         return createQueryBuilderMock({ data: null, error: null });
       });
 
-      await service.activatePlanForUser('user-1', planId, 'jane@example.com', 'txn-1', 'monthly');
+      dodo.getSubscription.mockResolvedValue(paidSubscription(planId, 'monthly'));
+
+      await service.activatePlanForUser('user-1', planId, 'jane@example.com', 'sub_1', 'monthly');
 
       expect(usersRepo.ensureProfile).toHaveBeenCalledWith('user-1', 'jane@example.com');
       // Two separate `.update({ credits, subscription_tier })` calls touch 'profiles':
@@ -139,7 +163,9 @@ describe('SubscriptionsService', () => {
         return createQueryBuilderMock({ data: null, error: null });
       });
 
-      await service.activatePlanForUser('user-1', 'business', 'jane@example.com');
+      dodo.getSubscription.mockResolvedValue(paidSubscription('business'));
+
+      await service.activatePlanForUser('user-1', 'business', 'jane@example.com', 'sub_1');
 
       const profileUpdateCall = profileBuilder.update.mock.calls.find((c: any[]) => 'credits' in c[0]);
       expect(profileUpdateCall[0].subscription_tier).toBe('business');
@@ -153,7 +179,9 @@ describe('SubscriptionsService', () => {
       });
       const before = Date.now();
 
-      await service.activatePlanForUser('user-1', 'creator', 'jane@example.com', '', 'monthly');
+      dodo.getSubscription.mockResolvedValue(paidSubscription('creator', 'monthly'));
+
+      await service.activatePlanForUser('user-1', 'creator', 'jane@example.com', 'sub_1', 'monthly');
 
       const upsertArg = subBuilder.upsert.mock.calls[0][0];
       const periodEndMs = new Date(upsertArg.current_period_end).getTime();
@@ -174,7 +202,7 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        service.activatePlanForUser('user-1', 'creator', 'jane@example.com'),
+        service.activatePlanForUser('user-1', 'creator', 'jane@example.com', 'sub_1'),
       ).resolves.toBeUndefined();
     });
 
@@ -188,7 +216,7 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        service.activatePlanForUser('user-1', 'creator', 'jane@example.com'),
+        service.activatePlanForUser('user-1', 'creator', 'jane@example.com', 'sub_1'),
       ).resolves.toBeUndefined();
     });
 
@@ -199,14 +227,81 @@ describe('SubscriptionsService', () => {
       );
 
       await expect(
-        service.activatePlanForUser('user-1', 'creator', 'jane@example.com'),
+        service.activatePlanForUser('user-1', 'creator', 'jane@example.com', 'sub_1'),
       ).resolves.toBeUndefined();
+    });
+
+    // These pin the fix for the activation bypass: a signed-in user could POST
+    // {"planId":"business"} and be granted a paid plan, because nothing checked
+    // with Dodo that a payment had happened.
+    describe('payment verification', () => {
+      it('refuses to activate without a subscription id', async () => {
+        await expect(
+          service.activatePlanForUser('attacker', 'business', 'a@b.com'),
+        ).rejects.toThrow('A subscription id is required to activate a plan.');
+
+        expect(dodo.getSubscription).not.toHaveBeenCalled();
+        expect(usersRepo.ensureProfile).not.toHaveBeenCalled();
+      });
+
+      it('refuses a subscription belonging to a different user', async () => {
+        dodo.getSubscription.mockResolvedValue(paidSubscription('business', 'yearly', 'victim'));
+
+        await expect(
+          service.activatePlanForUser('attacker', 'business', 'a@b.com', 'sub_1'),
+        ).rejects.toThrow('This payment does not belong to your account.');
+
+        expect(usersRepo.ensureProfile).not.toHaveBeenCalled();
+      });
+
+      it.each(['pending', 'cancelled', 'failed', 'expired', 'on_hold'])(
+        'refuses a subscription in %s status',
+        async (status) => {
+          dodo.getSubscription.mockResolvedValue({ ...paidSubscription('business'), status });
+
+          await expect(
+            service.activatePlanForUser('user-1', 'business', 'a@b.com', 'sub_1'),
+          ).rejects.toThrow('This subscription is not active.');
+        },
+      );
+
+      it('fails closed when Dodo cannot be reached', async () => {
+        dodo.getSubscription.mockRejectedValue(new Error('dodo timeout'));
+
+        await expect(
+          service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1'),
+        ).rejects.toThrow('Could not verify this payment.');
+
+        expect(usersRepo.ensureProfile).not.toHaveBeenCalled();
+      });
+
+      it('grants the plan Dodo reports, not the one the request claimed', async () => {
+        // The attack: ask for business, having only paid for creator.
+        dodo.getSubscription.mockResolvedValue(paidSubscription('creator', 'monthly'));
+        const profileBuilder = createQueryBuilderMock({ data: { email: 'a@b.com' }, error: null });
+        supabaseMock.__client.from.mockImplementation((table: string) => {
+          if (table === 'profiles') return profileBuilder;
+          return createQueryBuilderMock({ data: null, error: null });
+        });
+
+        await service.activatePlanForUser('user-1', 'business', 'a@b.com', 'sub_1', 'yearly');
+
+        const update = profileBuilder.update.mock.calls.find((c: any[]) => 'credits' in c[0]);
+        expect(update[0].subscription_tier).toBe('creator');
+        expect(update[0].credits).toBe(500);
+      });
+
+      it('looks the subscription up by the id the caller supplied', async () => {
+        await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_xyz');
+
+        expect(dodo.getSubscription).toHaveBeenCalledWith('sub_xyz');
+      });
     });
 
     it('skips subscription emails when no email can be resolved', async () => {
       supabaseMock.__client.from.mockImplementation(() => createQueryBuilderMock({ data: { email: null }, error: null }));
 
-      await service.activatePlanForUser('user-1', 'creator', '');
+      await service.activatePlanForUser('user-1', 'creator', '', 'sub_1');
 
       expect(email.sendSubscriptionConfirmed).not.toHaveBeenCalled();
       expect(email.sendInvoice).not.toHaveBeenCalled();

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@autoclipr/emails';
 import { SupabaseAdminService } from '../../database/supabase-admin.service';
@@ -33,6 +33,63 @@ export class SubscriptionsService {
     private readonly retention: RetentionService,
   ) {}
 
+  /**
+   * Confirm with Dodo that this subscription is real, paid, and belongs to
+   * this user — then report what was actually bought.
+   *
+   * The ownership check is the load-bearing one. Without it a user could
+   * replay somebody else's subscription id (they appear in redirect URLs) and
+   * inherit their plan. `user_id` is stamped into the subscription metadata by
+   * createCheckoutUrl, so Dodo is the one telling us who paid.
+   */
+  private async verifyPaidSubscription(
+    userId: string,
+    subscriptionId: string,
+  ): Promise<{ planId: string; billingPeriod: 'monthly' | 'yearly' }> {
+    if (!subscriptionId) {
+      throw new BadRequestException('A subscription id is required to activate a plan.');
+    }
+
+    let subscription: {
+      status?: string;
+      metadata?: Record<string, string>;
+      subscription_id?: string;
+    };
+    try {
+      subscription = (await this.dodo.getSubscription(subscriptionId)) as typeof subscription;
+    } catch (err) {
+      // Fail closed: an unverifiable subscription grants nothing.
+      this.logger.error(
+        `Dodo lookup failed for subscription ${subscriptionId} (userId=${userId}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw new ForbiddenException('Could not verify this payment.');
+    }
+
+    const metadata = subscription?.metadata ?? {};
+
+    if (metadata.user_id !== userId) {
+      this.logger.warn(
+        `Rejected activation: subscription ${subscriptionId} belongs to ${metadata.user_id ?? 'unknown'}, not ${userId}`,
+      );
+      throw new ForbiddenException('This payment does not belong to your account.');
+    }
+
+    if (subscription?.status !== 'active') {
+      this.logger.warn(
+        `Rejected activation: subscription ${subscriptionId} has status ${subscription?.status ?? 'unknown'}`,
+      );
+      throw new ForbiddenException('This subscription is not active.');
+    }
+
+    const planId = metadata.plan_id ?? '';
+    if (!PLAN_TIER[planId]) {
+      throw new ForbiddenException('This subscription is not for a known plan.');
+    }
+
+    const billingPeriod = metadata.billing_period === 'monthly' ? 'monthly' : 'yearly';
+    return { planId, billingPeriod };
+  }
+
   async createCheckoutUrl(userId: string, email: string, planId: string, billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<string> {
     const appUrl = this.config.get<string>('WEB_APP_URL') ?? 'https://autoclipr.com';
     return this.dodo.createCheckoutUrl({
@@ -45,9 +102,29 @@ export class SubscriptionsService {
     });
   }
 
-  // Called on payment success redirect as a reliable fallback to webhooks
+  /**
+   * Called on the payment-success redirect as a fallback when the webhook is
+   * delayed or missing.
+   *
+   * Everything that decides what the user gets is read back from Dodo, never
+   * from the caller. The request only supplies a subscription id; the plan,
+   * the billing period and the fact that money changed hands all come from
+   * `verifyPaidSubscription`. Trusting a `planId` in the request body here
+   * would let any signed-in user hand themselves a paid plan.
+   */
   async activatePlanForUser(userId: string, planId: string, userEmail = '', transactionId = '', billingPeriod: 'monthly' | 'yearly' = 'yearly'): Promise<void> {
-    this.logger.log(`activatePlanForUser: userId=${userId} email=${userEmail} plan=${planId} billing=${billingPeriod} txId=${transactionId}`);
+    this.logger.log(`activatePlanForUser: userId=${userId} email=${userEmail} claimedPlan=${planId} txId=${transactionId}`);
+
+    const verified = await this.verifyPaidSubscription(userId, transactionId);
+    // The claimed values are logged for diagnostics but never used.
+    if (verified.planId !== planId || verified.billingPeriod !== billingPeriod) {
+      this.logger.warn(
+        `Claimed plan/period did not match Dodo for userId=${userId}: claimed=${planId}/${billingPeriod} actual=${verified.planId}/${verified.billingPeriod}`,
+      );
+    }
+    planId = verified.planId;
+    billingPeriod = verified.billingPeriod;
+
     const tier = PLAN_TIER[planId];
     if (!tier) throw new Error(`Unknown plan: ${planId}`);
 
