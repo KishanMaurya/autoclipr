@@ -7,6 +7,7 @@ import { AffiliatesService } from '../affiliates/affiliates.service';
 import { DodoService } from './dodo.service';
 import { RetentionService } from '../retention/retention.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
 
 const PLAN_TIER: Record<string, string> = {
   starter: 'starter',
@@ -34,6 +35,8 @@ export class SubscriptionsService {
     private readonly retention: RetentionService,
     @Inject(forwardRef(() => CouponsService))
     private readonly coupons: CouponsService,
+    @Inject(forwardRef(() => CampaignsService))
+    private readonly campaigns: CampaignsService,
   ) {}
 
   /**
@@ -261,6 +264,11 @@ export class SubscriptionsService {
         this.logger.warn(`Coupon ${code} could not be claimed for ${userId} after payment`);
         return;
       }
+
+      // Credit the campaign email that drove this, if there was one. Without
+      // it a campaign's redeemed/converted counts stay at zero however well it
+      // performed.
+      await this.campaigns.recordRedemption(userId);
 
       // Bonus credits are ours to grant — Dodo knows nothing about them.
       if (coupon.type === 'free_credits') {

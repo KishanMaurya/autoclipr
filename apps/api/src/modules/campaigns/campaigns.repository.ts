@@ -201,6 +201,62 @@ export class CampaignsRepository {
     });
   }
 
+  /**
+   * Attribute a redemption back to the email that drove it.
+   *
+   * Matched on the most recent campaign the user was actually sent, rather
+   * than any campaign row: crediting a campaign that never reached them would
+   * inflate its conversion rate.
+   */
+  async markRedeemed(userId: string, converted: boolean): Promise<void> {
+    const { data, error: readErr } = await this.db
+      .from('email_campaign_recipients')
+      .select('id')
+      .eq('user_id', userId)
+      .not('sent_at', 'is', null)
+      .is('redeemed_at', null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (readErr) throw new Error(readErr.message);
+    if (!data) return;
+
+    const now = new Date().toISOString();
+    const { error } = await this.db
+      .from('email_campaign_recipients')
+      .update({ redeemed_at: now, ...(converted ? { converted_at: now } : {}) })
+      .eq('id', (data as { id: string }).id);
+
+    if (error) throw new Error(error.message);
+  }
+
+  /** Stamp delivery/open state reported by the email provider's webhook. */
+  async markProviderEvent(
+    email: string,
+    field: 'delivered_at' | 'opened_at',
+  ): Promise<void> {
+    const { data, error: readErr } = await this.db
+      .from('email_campaign_recipients')
+      .select('id')
+      .ilike('email', email)
+      .not('sent_at', 'is', null)
+      .is(field, null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (readErr) throw new Error(readErr.message);
+    if (!data) return;
+
+    const { error } = await this.db
+      .from('email_campaign_recipients')
+      .update({ [field]: new Date().toISOString() })
+      .eq('id', (data as { id: string }).id);
+
+    if (error) throw new Error(error.message);
+  }
+
   async markClicked(campaignId: string, userId: string): Promise<void> {
     const { error } = await this.db
       .from('email_campaign_recipients')

@@ -273,6 +273,33 @@ export class CampaignsService {
     }
   }
 
+  /**
+   * Called once a coupon redemption has been confirmed by payment.
+   *
+   * Never throws: the user has already paid and their plan is already active,
+   * so an attribution failure must not surface as an error on that path.
+   */
+  async recordRedemption(userId: string): Promise<void> {
+    try {
+      await this.repo.markRedeemed(userId, true);
+    } catch (err) {
+      this.logger.error(
+        `Could not attribute redemption for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /** Delivery and open events reported by the email provider. */
+  async recordProviderEvent(email: string, type: 'delivered' | 'opened'): Promise<void> {
+    try {
+      await this.repo.markProviderEvent(email, type === 'delivered' ? 'delivered_at' : 'opened_at');
+    } catch (err) {
+      this.logger.error(
+        `Could not record ${type} for ${email}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   async list() {
     return this.repo.listCampaigns();
   }

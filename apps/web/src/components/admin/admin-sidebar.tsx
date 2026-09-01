@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Video, Trophy, DollarSign, CreditCard,
   Link2, Bot, BarChart2, Globe, Activity, XCircle, Bell,
-  ClipboardList, Settings, ShieldCheck, ChevronDown, Zap, Ticket,
+  ClipboardList, Settings, ShieldCheck, ChevronDown, Zap, Ticket, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -22,6 +22,7 @@ const SECTIONS = [
       { href: "/admin/subscriptions", icon: CreditCard,      label: "Subscriptions" },
       { href: "/admin/affiliates",    icon: Link2,           label: "Affiliates" },
       { href: "/admin/coupons",       icon: Ticket,          label: "Coupons",       badge: "NEW" },
+      { href: "/admin/campaigns",     icon: Mail,            label: "Campaigns",     badge: "NEW" },
       { href: "/admin/ai-usage",      icon: Bot,             label: "AI Usage",      badge: "NEW" },
       { href: "/admin/analytics",     icon: BarChart2,       label: "Analytics" },
       { href: "/admin/countries",     icon: Globe,           label: "Countries" },

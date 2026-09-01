@@ -9,6 +9,7 @@ import { UsersRepository } from '../users/users.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 import { RetentionService } from '../retention/retention.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
 import { createQueryBuilderMock, createSupabaseAdminServiceMock } from '../../test-utils/supabase-mock';
 
 /**
@@ -38,6 +39,7 @@ describe('SubscriptionsService', () => {
   let affiliates: jest.Mocked<AffiliatesService>;
   let retention: jest.Mocked<RetentionService>;
   let coupons: jest.Mocked<CouponsService>;
+  let campaigns: jest.Mocked<CampaignsService>;
 
   beforeEach(async () => {
     dodo = {
@@ -75,6 +77,10 @@ describe('SubscriptionsService', () => {
       redeem: jest.fn().mockResolvedValue(true),
     } as unknown as jest.Mocked<CouponsService>;
 
+    campaigns = {
+      recordRedemption: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<CampaignsService>;
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         SubscriptionsService,
@@ -86,6 +92,7 @@ describe('SubscriptionsService', () => {
         { provide: AffiliatesService, useValue: affiliates },
         { provide: RetentionService, useValue: retention },
         { provide: CouponsService, useValue: coupons },
+        { provide: CampaignsService, useValue: campaigns },
       ],
     }).compile();
 
@@ -531,6 +538,31 @@ describe('SubscriptionsService', () => {
 
       expect(email.sendSubscriptionConfirmed).not.toHaveBeenCalled();
       expect(email.sendInvoice).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('campaign attribution', () => {
+    it('credits the campaign email that drove a coupon redemption', async () => {
+      coupons.validate.mockResolvedValue({
+        id: 'c1', code: 'SATURDAY25', type: 'percentage', value: 25,
+        discountPaise: 9975, description: '25% off',
+      } as never);
+      dodo.getSubscription.mockResolvedValue({
+        ...paidSubscription('creator'),
+        metadata: { user_id: 'user-1', plan_id: 'creator', billing_period: 'yearly', coupon_code: 'SATURDAY25' },
+      });
+
+      await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+      // Without this a campaign's redeemed/converted counts stay at zero no
+      // matter how well it performed.
+      expect(campaigns.recordRedemption).toHaveBeenCalledWith('user-1');
+    });
+
+    it('does not credit a campaign when no coupon was used', async () => {
+      await service.activatePlanForUser('user-1', 'creator', 'a@b.com', 'sub_1');
+
+      expect(campaigns.recordRedemption).not.toHaveBeenCalled();
     });
   });
 

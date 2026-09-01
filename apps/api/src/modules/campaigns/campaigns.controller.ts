@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
@@ -86,5 +87,78 @@ export class CampaignClickController {
     // domain while wearing our link.
     const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/pricing';
     return res.redirect(`${appUrl}${safeNext}`);
+  }
+}
+
+@ApiTags('Campaigns')
+@Controller('webhooks')
+export class EmailWebhookController {
+  constructor(
+    private readonly service: CampaignsService,
+    private readonly config: ConfigService,
+  ) {}
+
+  /**
+   * Delivery and open events from Resend.
+   *
+   * These two states cannot be known any other way — nothing we control is
+   * involved once the email leaves. Clicks are tracked by our own redirect
+   * instead, which is why they need no webhook.
+   *
+   * Public because Resend has no session, but the signature is verified: an
+   * unauthenticated endpoint that writes analytics is an endpoint anyone can
+   * use to fabricate them.
+   */
+  @Public()
+  @Post('resend')
+  @ApiOperation({ summary: 'Resend delivery and open events' })
+  async resend(
+    @Headers('svix-signature') signature: string,
+    @Headers('svix-id') messageId: string,
+    @Headers('svix-timestamp') timestamp: string,
+    @Body() body: { type?: string; data?: { to?: string | string[] } },
+  ) {
+    const secret = this.config.get<string>('RESEND_WEBHOOK_SECRET') ?? process.env.RESEND_WEBHOOK_SECRET ?? '';
+
+    // Fail closed. Without a configured secret there is no way to tell a real
+    // event from a forged one, so nothing is recorded.
+    if (!secret) throw new UnauthorizedException('Webhook secret not configured');
+    if (!this.verify(secret, messageId, timestamp, JSON.stringify(body), signature)) {
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+
+    const type = body?.type ?? '';
+    const to = Array.isArray(body?.data?.to) ? body.data.to[0] : body?.data?.to;
+    if (!to) return { received: true };
+
+    if (type === 'email.delivered') await this.service.recordProviderEvent(to, 'delivered');
+    else if (type === 'email.opened') await this.service.recordProviderEvent(to, 'opened');
+
+    return { received: true };
+  }
+
+  /** Svix scheme, which Resend uses: HMAC-SHA256 over id.timestamp.payload. */
+  private verify(
+    secret: string,
+    id: string,
+    timestamp: string,
+    payload: string,
+    header: string,
+  ): boolean {
+    if (!id || !timestamp || !header) return false;
+
+    const key = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
+    const expected = createHmac('sha256', key)
+      .update(`${id}.${timestamp}.${payload}`)
+      .digest('base64');
+
+    // The header carries space-separated "v1,<sig>" entries.
+    return header.split(' ').some((part) => {
+      const sig = part.split(',')[1] ?? '';
+      const a = Buffer.from(sig);
+      const b = Buffer.from(expected);
+      // Length check first: timingSafeEqual throws on a mismatch.
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
   }
 }
