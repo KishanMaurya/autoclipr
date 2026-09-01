@@ -1,6 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DodoService } from '../billing/dodo.service';
 import { Coupon, CouponsRepository, CouponType } from './coupons.repository';
+import {
+  CouponRejectedError,
+  MAX_DISCOUNT_PERCENTAGE,
+  MIN_DISCOUNT_PERCENTAGE,
+} from './coupon-errors';
 
 /** Plan list prices in paise, used to value a percentage discount. */
 const PLAN_PRICE_PAISE: Record<string, { monthly: number; yearly: number }> = {
@@ -10,12 +15,22 @@ const PLAN_PRICE_PAISE: Record<string, { monthly: number; yearly: number }> = {
 };
 
 export interface ValidatedCoupon {
+  valid: true;
   id: string;
   code: string;
   type: CouponType;
+  /** Spec-facing alias of `type`, e.g. 'PERCENTAGE'. */
+  discountType: string;
   value: number;
+  /** 0 for coupon types that do not reduce the price. */
+  discountPercentage: number;
+  /** List price before the discount, in paise. */
+  originalPaise: number;
   /** What the user saves, in paise. Zero for non-monetary coupon types. */
   discountPaise: number;
+  /** What they actually pay. Computed server-side, never trusted from a client. */
+  finalPaise: number;
+  currency: string;
   /** Human-readable summary for the checkout UI. */
   description: string;
 }
@@ -46,44 +61,48 @@ export class CouponsService {
     userId: string,
   ): Promise<ValidatedCoupon> {
     const coupon = await this.repo.findByCode(code);
-    if (!coupon) {
-      throw new BadRequestException('That coupon code is not valid.');
-    }
+    if (!coupon) throw new CouponRejectedError('COUPON_NOT_FOUND');
 
-    // Deliberately vague past this point: confirming that a code exists but is
-    // exhausted or paused tells someone probing for codes that they guessed a
-    // real one.
-    if (coupon.status !== 'active') {
-      throw new BadRequestException('That coupon code is not valid.');
-    }
+    if (coupon.status !== 'active') throw new CouponRejectedError('COUPON_INACTIVE');
 
     const now = Date.now();
     if (coupon.starts_at && Date.parse(coupon.starts_at) > now) {
-      throw new BadRequestException('That coupon is not active yet.');
+      throw new CouponRejectedError('COUPON_NOT_STARTED');
     }
     if (coupon.expires_at && Date.parse(coupon.expires_at) <= now) {
-      throw new BadRequestException('That coupon has expired.');
+      throw new CouponRejectedError('COUPON_EXPIRED');
     }
 
     if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) {
-      throw new BadRequestException('That coupon has been fully redeemed.');
+      throw new CouponRejectedError('COUPON_EXHAUSTED');
     }
 
     if (coupon.applicable_plans.length > 0 && !coupon.applicable_plans.includes(planId)) {
-      throw new BadRequestException('That coupon does not apply to this plan.');
+      throw new CouponRejectedError('COUPON_PLAN_NOT_ELIGIBLE');
     }
 
     const alreadyUsed = await this.repo.countUserRedemptions(coupon.id, userId);
     if (alreadyUsed >= coupon.max_uses_per_user) {
-      throw new BadRequestException('You have already used this coupon.');
+      throw new CouponRejectedError('COUPON_USER_LIMIT_REACHED');
     }
 
+    const originalPaise = PLAN_PRICE_PAISE[planId]?.[billingPeriod] ?? 0;
+    const discountPaise = this.discountPaiseFor(coupon, planId, billingPeriod);
+
     return {
+      valid: true,
       id: coupon.id,
       code: coupon.code,
       type: coupon.type,
+      discountType: coupon.type === 'percentage' ? 'PERCENTAGE' : coupon.type.toUpperCase(),
       value: coupon.value,
-      discountPaise: this.discountPaiseFor(coupon, planId, billingPeriod),
+      discountPercentage: coupon.type === 'percentage' ? coupon.value : 0,
+      originalPaise,
+      discountPaise,
+      // The backend is the only place this arithmetic happens. A price the
+      // browser computes is a price the browser can forge.
+      finalPaise: Math.max(0, originalPaise - discountPaise),
+      currency: 'INR',
       description: this.describe(coupon),
     };
   }
@@ -105,6 +124,22 @@ export class CouponsService {
 
     const price = PLAN_PRICE_PAISE[planId]?.[billingPeriod] ?? 0;
     return Math.round((price * coupon.value) / 100);
+  }
+
+  /**
+   * The discount floor, enforced here as well as by the database's
+   * coupons_min_percentage constraint. Applies only to percentage coupons —
+   * `value` means days for free_trial and credits for free_credits, where a
+   * 25 floor would be meaningless.
+   */
+  private assertPercentageInRange(type: CouponType, value: number): void {
+    if (type !== 'percentage') return;
+
+    if (value < MIN_DISCOUNT_PERCENTAGE || value > MAX_DISCOUNT_PERCENTAGE) {
+      throw new BadRequestException(
+        `A percentage coupon must be between ${MIN_DISCOUNT_PERCENTAGE}% and ${MAX_DISCOUNT_PERCENTAGE}%.`,
+      );
+    }
   }
 
   private describe(coupon: Coupon): string {
@@ -174,6 +209,44 @@ export class CouponsService {
     };
   }
 
+  /**
+   * Suggest unique codes an admin can use as-is.
+   *
+   * Ambiguous characters (0/O, 1/I/L) are excluded: these get read aloud,
+   * printed on cards and typed by hand, and a code that cannot be transcribed
+   * reliably costs support time.
+   */
+  async generateCodes(count: number, prefix?: string): Promise<string[]> {
+    const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+    const taken = await this.repo.existingCodes();
+    const clean = (prefix ?? 'AC').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    // Dodo caps codes at 16 characters, and the suffix plus separator needs
+    // room, so the prefix cannot eat the whole budget.
+    const head = clean.slice(0, 9) || 'AC';
+    const out: string[] = [];
+
+    // Bounded rather than while(true): with a large existing set and a short
+    // alphabet, an unlucky run should give up rather than spin.
+    for (let attempt = 0; attempt < count * 50 && out.length < count; attempt += 1) {
+      let suffix = '';
+      for (let i = 0; i < 6; i += 1) {
+        suffix += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      }
+      const code = `${head}-${suffix}`;
+      if (taken.has(code) || out.includes(code)) continue;
+      out.push(code);
+    }
+
+    if (out.length < count) {
+      throw new BadRequestException(
+        'Could not generate enough unique codes. Try a different prefix.',
+      );
+    }
+
+    return out;
+  }
+
   async getWithStats(id: string) {
     const coupon = await this.repo.findById(id);
     if (!coupon) throw new NotFoundException('Coupon not found');
@@ -225,9 +298,7 @@ export class CouponsService {
       throw new BadRequestException(`Coupon code ${code} already exists.`);
     }
 
-    if (input.type === 'percentage' && (input.value < 1 || input.value > 100)) {
-      throw new BadRequestException('A percentage coupon must be between 1 and 100.');
-    }
+    this.assertPercentageInRange(input.type, input.value);
 
     let dodoDiscountId: string | null = null;
     if (input.type === 'percentage') {
@@ -315,10 +386,8 @@ export class CouponsService {
     const coupon = await this.repo.findById(id);
     if (!coupon) throw new NotFoundException('Coupon not found');
 
-    if (patch.value !== undefined && coupon.type === 'percentage') {
-      if (patch.value < 1 || patch.value > 100) {
-        throw new BadRequestException('A percentage coupon must be between 1 and 100.');
-      }
+    if (patch.value !== undefined) {
+      this.assertPercentageInRange(coupon.type, patch.value);
     }
 
     if (

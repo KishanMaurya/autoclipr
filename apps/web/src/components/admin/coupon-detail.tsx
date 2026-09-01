@@ -103,7 +103,7 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
 
   async function toggleStatus() {
     const next = coupon.status === "active" ? "paused" : "active";
-    if (await call(`/coupons/${coupon.id}/status`, {
+    if (await call(`/admin/coupons/${coupon.id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: next }),
     })) {
@@ -125,7 +125,7 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
       return;
     }
 
-    if (await call(`/coupons/${coupon.id}/status`, {
+    if (await call(`/admin/coupons/${coupon.id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: "expired" }),
     })) {
@@ -140,7 +140,7 @@ export function CouponDetail({ data, token }: { data: CouponDetailData; token: s
         : `Delete ${coupon.code}? This cannot be undone.`;
     if (!window.confirm(warning)) return;
 
-    if (await call(`/coupons/${coupon.id}`, { method: "DELETE" })) {
+    if (await call(`/admin/coupons/${coupon.id}`, { method: "DELETE" })) {
       router.push("/admin/coupons");
       router.refresh();
     }
@@ -396,7 +396,7 @@ function EditCouponForm({
       .filter(Boolean);
 
     try {
-      const res = await fetch(`${API}/coupons/${coupon.id}`, {
+      const res = await fetch(`${API}/admin/coupons/${coupon.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -461,12 +461,12 @@ function EditCouponForm({
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label={valueLabel}>
+        <Field label={valueLabel} hint={coupon.type === "percentage" ? "Minimum 25%" : undefined}>
           <input
             name="value"
             type="number"
             required
-            min={1}
+            min={coupon.type === "percentage" ? 25 : 1}
             max={coupon.type === "percentage" ? 100 : undefined}
             defaultValue={coupon.value}
             className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"

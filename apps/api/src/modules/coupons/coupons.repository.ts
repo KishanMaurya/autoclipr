@@ -131,6 +131,13 @@ export class CouponsRepository {
     return data as Coupon;
   }
 
+  /** Codes already taken, for generation to avoid. Cheap: codes are short. */
+  async existingCodes(): Promise<Set<string>> {
+    const { data, error } = await this.db.from('coupons').select('code');
+    if (error) throw new Error(error.message);
+    return new Set((data ?? []).map((r) => String(r.code).toUpperCase()));
+  }
+
   async delete(id: string): Promise<void> {
     const { error } = await this.db.from('coupons').delete().eq('id', id);
     if (error) throw new Error(error.message);

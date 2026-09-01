@@ -136,3 +136,17 @@ export class UpdateCouponDto {
   @IsIn(['draft', 'active', 'paused', 'expired'])
   status?: 'draft' | 'active' | 'paused' | 'expired';
 }
+
+export class GenerateCodesDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  count?: number;
+
+  /** Prepended to each code, e.g. "CREATOR" -> CREATOR-7XK92P. */
+  @IsOptional()
+  @IsString()
+  @Length(1, 9)
+  prefix?: string;
+}

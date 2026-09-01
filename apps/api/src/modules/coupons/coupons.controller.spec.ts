@@ -1,11 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
-import { CouponsController } from './coupons.controller';
+import { AdminCouponsController, CouponsController } from './coupons.controller';
 import { CouponsService } from './coupons.service';
 
 describe('CouponsController', () => {
   let controller: CouponsController;
+  let admin: AdminCouponsController;
   let service: jest.Mocked<CouponsService>;
   const user = { sub: 'u1', email: 'jane@example.com' };
 
@@ -13,7 +14,8 @@ describe('CouponsController', () => {
     service = {
       validate: jest.fn().mockResolvedValue({ id: 'c1', code: 'CREATOR20', discountPaise: 8376 }),
       list: jest.fn().mockResolvedValue([]),
-      getFeatured: jest.fn().mockResolvedValue({ code: 'WELCOME20', value: 20 }),
+      getFeatured: jest.fn().mockResolvedValue({ code: 'SATURDAY25', value: 25 }),
+      generateCodes: jest.fn().mockResolvedValue(['AC-7XK92P', 'AC-M4Q8ZT']),
       getWithStats: jest.fn().mockResolvedValue({ coupon: { id: 'c1' }, redemptionCount: 3 }),
       create: jest.fn().mockResolvedValue({ id: 'c1' }),
       setStatus: jest.fn().mockResolvedValue({ id: 'c1', status: 'paused' }),
@@ -22,7 +24,7 @@ describe('CouponsController', () => {
     } as unknown as jest.Mocked<CouponsService>;
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [CouponsController],
+      controllers: [CouponsController, AdminCouponsController],
       providers: [{ provide: CouponsService, useValue: service }],
     })
       .overrideGuard(JwtAuthGuard)
@@ -32,6 +34,7 @@ describe('CouponsController', () => {
       .compile();
 
     controller = moduleRef.get(CouponsController);
+    admin = moduleRef.get(AdminCouponsController);
   });
 
   describe('validate', () => {
@@ -56,21 +59,21 @@ describe('CouponsController', () => {
   });
 
   it('lists coupons', async () => {
-    const result = await controller.list();
+    const result = await admin.list();
 
     expect(service.list).toHaveBeenCalled();
     expect(result.success).toBe(true);
   });
 
   it('returns detail with redemption stats', async () => {
-    const result = await controller.detail('c1');
+    const result = await admin.detail('c1');
 
     expect(service.getWithStats).toHaveBeenCalledWith('c1');
     expect(result.data).toMatchObject({ redemptionCount: 3 });
   });
 
   it('creates a coupon attributed to the calling admin', async () => {
-    await controller.create(user as never, {
+    await admin.create(user as never, {
       code: 'SUMMER20',
       type: 'percentage',
       value: 20,
@@ -85,7 +88,7 @@ describe('CouponsController', () => {
   it('returns the featured coupon', async () => {
     const result = await controller.featured();
 
-    expect(result.data).toMatchObject({ code: 'WELCOME20' });
+    expect(result.data).toMatchObject({ code: 'SATURDAY25' });
   });
 
   it('does not put AdminGuard on featured — every signed-in user needs it', () => {
@@ -95,20 +98,20 @@ describe('CouponsController', () => {
   });
 
   it('edits a coupon', async () => {
-    await controller.update('c1', { value: 30 });
+    await admin.update('c1', { value: 30 });
 
     expect(service.update).toHaveBeenCalledWith('c1', { value: 30 });
   });
 
   it('deletes a coupon', async () => {
-    const result = await controller.remove('c1');
+    const result = await admin.remove('c1');
 
     expect(service.delete).toHaveBeenCalledWith('c1');
     expect(result.data).toEqual({ deleted: true, id: 'c1' });
   });
 
   it('changes a coupon status', async () => {
-    await controller.setStatus('c1', { status: 'paused' });
+    await admin.setStatus('c1', { status: 'paused' });
 
     expect(service.setStatus).toHaveBeenCalledWith('c1', 'paused');
   });
@@ -119,22 +122,56 @@ describe('CouponsController', () => {
     expect(guards).toEqual([JwtAuthGuard]);
   });
 
-  it.each([
-    ['list', CouponsController.prototype.list],
-    ['detail', CouponsController.prototype.detail],
-    ['create', CouponsController.prototype.create],
-    ['setStatus', CouponsController.prototype.setStatus],
-    ['update', CouponsController.prototype.update],
-    ['remove', CouponsController.prototype.remove],
-  ])('guards the admin route %s with AdminGuard', (_name, handler) => {
-    const guards = Reflect.getMetadata('__guards__', handler) ?? [];
-
-    expect(guards).toContain(AdminGuard);
-  });
 
   it('does not put AdminGuard on validate — ordinary users apply coupons', () => {
     const guards = Reflect.getMetadata('__guards__', CouponsController.prototype.validate) ?? [];
 
     expect(guards).not.toContain(AdminGuard);
+  });
+
+  it('guards every admin route at the class level', () => {
+    // Class-level rather than per-method: a route added later cannot ship
+    // unauthorised because someone forgot a decorator.
+    const guards = Reflect.getMetadata('__guards__', AdminCouponsController) ?? [];
+
+    expect(guards).toEqual([JwtAuthGuard, AdminGuard]);
+  });
+
+  it('leaves the user controller without AdminGuard', () => {
+    const guards = Reflect.getMetadata('__guards__', CouponsController) ?? [];
+
+    expect(guards).toEqual([JwtAuthGuard]);
+  });
+
+  it('activates a coupon', async () => {
+    await admin.activate('c1');
+
+    expect(service.setStatus).toHaveBeenCalledWith('c1', 'active');
+  });
+
+  it('pauses a coupon', async () => {
+    await admin.pause('c1');
+
+    expect(service.setStatus).toHaveBeenCalledWith('c1', 'paused');
+  });
+
+  it('returns redemption history', async () => {
+    const result = await admin.redemptions('c1');
+
+    expect(service.getWithStats).toHaveBeenCalledWith('c1');
+    expect(result.data).toHaveProperty('redemptions');
+  });
+
+  it('generates codes, defaulting the count', async () => {
+    const result = await admin.generateCodes({});
+
+    expect(service.generateCodes).toHaveBeenCalledWith(5, undefined);
+    expect(result.data?.codes).toHaveLength(2);
+  });
+
+  it('passes a prefix and count through to generation', async () => {
+    await admin.generateCodes({ count: 20, prefix: 'CREATOR' });
+
+    expect(service.generateCodes).toHaveBeenCalledWith(20, 'CREATOR');
   });
 });

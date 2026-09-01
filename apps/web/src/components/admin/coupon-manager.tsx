@@ -68,7 +68,7 @@ export function CouponManager({
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch(`${API}/coupons/${id}/status`, {
+      const res = await fetch(`${API}/admin/coupons/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -252,7 +252,7 @@ function CreateCouponForm({
     const startsAt = String(form.get("starts_at") ?? "").trim();
 
     try {
-      const res = await fetch(`${API}/coupons`, {
+      const res = await fetch(`${API}/admin/coupons`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -327,14 +327,14 @@ function CreateCouponForm({
           </select>
         </Field>
 
-        <Field label={valueLabel}>
+        <Field label={valueLabel} hint={type === "percentage" ? "Minimum 25%" : undefined}>
           <input
             name="value"
             type="number"
             required
-            min={1}
+            min={type === "percentage" ? 25 : 1}
             max={type === "percentage" ? 100 : undefined}
-            defaultValue={type === "percentage" ? 20 : undefined}
+            defaultValue={type === "percentage" ? 25 : undefined}
             className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-[#3C50E0] focus:outline-none"
           />
         </Field>

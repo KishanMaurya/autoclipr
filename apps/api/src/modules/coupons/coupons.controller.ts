@@ -9,6 +9,7 @@ import type { AuthUser } from '../../common/guards/jwt-auth.guard';
 import { THROTTLE } from '../../config/throttle.config';
 import { CouponsService } from './coupons.service';
 import {
+  GenerateCodesDto,
   CreateCouponDto,
   UpdateCouponDto,
   UpdateCouponStatusDto,
@@ -45,23 +46,11 @@ export class CouponsController {
     return ApiResponse.ok(result);
   }
 
-  // ─── Admin ──────────────────────────────────────────────────────────────
-
-  @Get()
-  @UseGuards(AdminGuard)
-  @ApiOperation({ summary: 'List all coupons' })
-  async list() {
-    return ApiResponse.ok(await this.service.list());
-  }
-
   /**
    * The coupon advertised in the promo banner, or null.
    *
-   * Declared above @Get(':id') deliberately: Nest matches routes in
-   * declaration order, so the wildcard would otherwise swallow /featured and
-   * hand it to the admin-guarded handler.
-   *
-   * No AdminGuard — any signed-in user needs this to see the banner. Only
+   * Lives on the user controller, not the admin one: the promo banner needs
+   * it for any signed-in user. Only
    * public, active, in-window, unexhausted coupons are ever returned, so a
    * private code can never leak here.
    */
@@ -74,8 +63,30 @@ export class CouponsController {
     return ApiResponse.ok(await this.service.getFeatured());
   }
 
+}
+
+
+/**
+ * Admin coupon management.
+ *
+ * Guards are declared on the class, not per method: a new route added here
+ * cannot accidentally ship unauthorised by someone forgetting a decorator.
+ */
+@ApiTags('Admin')
+@ApiBearerAuth('JWT')
+@Controller('admin/coupons')
+@UseGuards(JwtAuthGuard, AdminGuard)
+export class AdminCouponsController {
+  constructor(private readonly service: CouponsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List all coupons' })
+  async list() {
+    return ApiResponse.ok(await this.service.list());
+  }
+
+
   @Get(':id')
-  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Coupon detail with redemption history',
     description: 'Includes redemption count and total discount given, for campaign ROI.',
@@ -85,7 +96,6 @@ export class CouponsController {
   }
 
   @Post()
-  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Create a coupon',
     description:
@@ -96,7 +106,6 @@ export class CouponsController {
   }
 
   @Patch(':id')
-  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Edit a coupon',
     description:
@@ -107,7 +116,6 @@ export class CouponsController {
   }
 
   @Delete(':id')
-  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Delete a coupon',
     description:
@@ -118,7 +126,6 @@ export class CouponsController {
   }
 
   @Patch(':id/status')
-  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Change a coupon status',
     description:
@@ -126,5 +133,44 @@ export class CouponsController {
   })
   async setStatus(@Param('id') id: string, @Body() dto: UpdateCouponStatusDto) {
     return ApiResponse.ok(await this.service.setStatus(id, dto.status));
+  }
+
+  @Post(':id/activate')
+  @ApiOperation({ summary: 'Activate a coupon' })
+  async activate(@Param('id') id: string) {
+    return ApiResponse.ok(await this.service.setStatus(id, 'active'));
+  }
+
+  @Post(':id/pause')
+  @ApiOperation({
+    summary: 'Pause a coupon',
+    description: 'The kill switch — redemptions stop immediately, with no deploy.',
+  })
+  async pause(@Param('id') id: string) {
+    return ApiResponse.ok(await this.service.setStatus(id, 'paused'));
+  }
+
+  @Get(':id/redemptions')
+  @ApiOperation({
+    summary: 'Redemption history for a coupon',
+    description: 'Who redeemed it, against which plan, and what the discount was worth.',
+  })
+  async redemptions(@Param('id') id: string) {
+    const data = await this.service.getWithStats(id);
+    return ApiResponse.ok({
+      redemptionCount: data.redemptionCount,
+      discountPaise: data.discountPaise,
+      redemptions: data.redemptions,
+    });
+  }
+
+  @Post('generate-codes')
+  @ApiOperation({
+    summary: 'Suggest unique coupon codes',
+    description:
+      'Generates codes that do not collide with existing ones. Ambiguous characters (0/O, 1/I/L) are excluded so codes survive being read aloud or typed by hand.',
+  })
+  async generateCodes(@Body() dto: GenerateCodesDto) {
+    return ApiResponse.ok({ codes: await this.service.generateCodes(dto.count ?? 5, dto.prefix) });
   }
 }

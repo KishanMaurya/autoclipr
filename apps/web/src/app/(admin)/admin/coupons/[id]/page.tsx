@@ -21,7 +21,7 @@ async function fetchCoupon(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const res = await fetch(`${API}/coupons/${id}`, {
+  const res = await fetch(`${API}/admin/coupons/${id}`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
     // Never cached — the page is read straight after mutating from it.
     cache: "no-store",

@@ -16,7 +16,7 @@ async function fetchCoupons(): Promise<{ coupons: Coupon[]; token: string } | nu
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const res = await fetch(`${API}/coupons`, {
+  const res = await fetch(`${API}/admin/coupons`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
     // Never cached: an admin who just paused a coupon must see it paused.
     // A revalidate window would serve the pre-mutation response back to them.
