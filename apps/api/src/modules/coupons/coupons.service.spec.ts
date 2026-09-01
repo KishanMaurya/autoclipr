@@ -46,6 +46,7 @@ describe('CouponsService', () => {
       update: jest.fn().mockImplementation(async (_id, p) => ({ ...coupon(), ...p })),
       countUserRedemptions: jest.fn().mockResolvedValue(0),
       redeemAtomic: jest.fn().mockResolvedValue(11),
+      findFeatured: jest.fn().mockResolvedValue(null),
       delete: jest.fn().mockResolvedValue(undefined),
       listRedemptions: jest.fn().mockResolvedValue([]),
       getRedemptionSummary: jest.fn().mockResolvedValue({ redemptions: 0, discountPaise: 0 }),
@@ -300,6 +301,37 @@ describe('CouponsService', () => {
           created_by: 'admin-1',
         }),
       );
+    });
+  });
+
+  describe('getFeatured', () => {
+    it('returns just what the banner needs', async () => {
+      repo.findFeatured.mockResolvedValue(
+        coupon({ code: 'WELCOME20', type: 'percentage', value: 20, applicable_plans: ['creator'] }),
+      );
+
+      await expect(service.getFeatured()).resolves.toEqual({
+        code: 'WELCOME20',
+        type: 'percentage',
+        value: 20,
+        description: '20% off',
+        applicablePlans: ['creator'],
+      });
+    });
+
+    it('returns null when there is nothing to advertise', async () => {
+      repo.findFeatured.mockResolvedValue(null);
+
+      await expect(service.getFeatured()).resolves.toBeNull();
+    });
+
+    it.each([
+      ['free_trial', 14, '14 days free'],
+      ['free_credits', 500, '500 bonus credits'],
+    ])('describes a %s coupon', async (type, value, expected) => {
+      repo.findFeatured.mockResolvedValue(coupon({ type: type as never, value }));
+
+      await expect(service.getFeatured()).resolves.toMatchObject({ description: expected });
     });
   });
 

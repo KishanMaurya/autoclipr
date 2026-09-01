@@ -150,6 +150,30 @@ export class CouponsService {
     return this.repo.list();
   }
 
+  /**
+   * The coupon to advertise in the promo banner, reduced to just what the
+   * banner needs. Returns null when there is nothing worth showing, which the
+   * banner treats as "render nothing".
+   */
+  async getFeatured(): Promise<{
+    code: string;
+    type: CouponType;
+    value: number;
+    description: string;
+    applicablePlans: string[];
+  } | null> {
+    const coupon = await this.repo.findFeatured();
+    if (!coupon) return null;
+
+    return {
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      description: this.describe(coupon),
+      applicablePlans: coupon.applicable_plans,
+    };
+  }
+
   async getWithStats(id: string) {
     const coupon = await this.repo.findById(id);
     if (!coupon) throw new NotFoundException('Coupon not found');

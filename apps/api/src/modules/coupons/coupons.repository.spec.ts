@@ -88,6 +88,66 @@ describe('CouponsRepository', () => {
     });
   });
 
+  describe('findFeatured', () => {
+    it('only considers active public coupons inside their window', async () => {
+      const builder = mockQueryBuilder({ data: [{ id: 'c1', max_uses: null, used_count: 0 }], error: null });
+      client.from.mockReturnValue(builder);
+
+      await repo.findFeatured();
+
+      expect(builder.eq).toHaveBeenCalledWith('status', 'active');
+      // Private codes are handed out deliberately and must never be broadcast.
+      expect(builder.eq).toHaveBeenCalledWith('visibility', 'public');
+      expect(builder.order).toHaveBeenCalledWith('value', { ascending: false });
+    });
+
+    it('skips an exhausted coupon and takes the next usable one', async () => {
+      client.from.mockReturnValue(
+        mockQueryBuilder({
+          data: [
+            { id: 'spent', max_uses: 100, used_count: 100 },
+            { id: 'usable', max_uses: 100, used_count: 4 },
+          ],
+          error: null,
+        }),
+      );
+
+      const result = await repo.findFeatured();
+
+      // Advertising a code that would be rejected at checkout is worse than
+      // showing nothing.
+      expect(result?.id).toBe('usable');
+    });
+
+    it('accepts an uncapped coupon', async () => {
+      client.from.mockReturnValue(
+        mockQueryBuilder({ data: [{ id: 'c1', max_uses: null, used_count: 9999 }], error: null }),
+      );
+
+      await expect(repo.findFeatured()).resolves.toMatchObject({ id: 'c1' });
+    });
+
+    it('returns null when every candidate is exhausted', async () => {
+      client.from.mockReturnValue(
+        mockQueryBuilder({ data: [{ id: 'spent', max_uses: 5, used_count: 5 }], error: null }),
+      );
+
+      await expect(repo.findFeatured()).resolves.toBeNull();
+    });
+
+    it('returns null when there are no candidates', async () => {
+      client.from.mockReturnValue(mockQueryBuilder({ data: null, error: null }));
+
+      await expect(repo.findFeatured()).resolves.toBeNull();
+    });
+
+    it('throws on a query error', async () => {
+      client.from.mockReturnValue(mockQueryBuilder({ data: null, error: { message: 'boom' } }));
+
+      await expect(repo.findFeatured()).rejects.toThrow('boom');
+    });
+  });
+
   describe('create', () => {
     it('inserts and returns the row', async () => {
       const builder = mockQueryBuilder({ data: { id: 'c1', code: 'X' }, error: null });

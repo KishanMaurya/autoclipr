@@ -78,6 +78,36 @@ export class CouponsRepository {
     return (data as Coupon[]) ?? [];
   }
 
+  /**
+   * The best coupon worth advertising publicly, or null.
+   *
+   * Private codes are excluded on purpose — the whole point of that flag is
+   * that they are handed out deliberately, never broadcast. Exhausted and
+   * out-of-window coupons are excluded too, so a banner never offers a code
+   * that will be rejected at checkout.
+   */
+  async findFeatured(): Promise<Coupon | null> {
+    const now = new Date().toISOString();
+
+    const { data, error } = await this.db
+      .from('coupons')
+      .select('*')
+      .eq('status', 'active')
+      .eq('visibility', 'public')
+      .or(`starts_at.is.null,starts_at.lte.${now}`)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      // Best offer first, so a 30% code outranks a 10% one.
+      .order('value', { ascending: false })
+      .limit(10);
+
+    if (error) throw new Error(error.message);
+
+    const usable = (data as Coupon[] | null)?.find(
+      (c) => c.max_uses === null || c.used_count < c.max_uses,
+    );
+    return usable ?? null;
+  }
+
   async create(entry: Partial<Coupon>): Promise<Coupon> {
     const { data, error } = await this.db
       .from('coupons')

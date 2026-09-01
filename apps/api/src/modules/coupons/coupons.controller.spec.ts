@@ -13,6 +13,7 @@ describe('CouponsController', () => {
     service = {
       validate: jest.fn().mockResolvedValue({ id: 'c1', code: 'CREATOR20', discountPaise: 8376 }),
       list: jest.fn().mockResolvedValue([]),
+      getFeatured: jest.fn().mockResolvedValue({ code: 'WELCOME20', value: 20 }),
       getWithStats: jest.fn().mockResolvedValue({ coupon: { id: 'c1' }, redemptionCount: 3 }),
       create: jest.fn().mockResolvedValue({ id: 'c1' }),
       setStatus: jest.fn().mockResolvedValue({ id: 'c1', status: 'paused' }),
@@ -79,6 +80,18 @@ describe('CouponsController', () => {
       expect.objectContaining({ code: 'SUMMER20' }),
       'u1',
     );
+  });
+
+  it('returns the featured coupon', async () => {
+    const result = await controller.featured();
+
+    expect(result.data).toMatchObject({ code: 'WELCOME20' });
+  });
+
+  it('does not put AdminGuard on featured — every signed-in user needs it', () => {
+    const guards = Reflect.getMetadata('__guards__', CouponsController.prototype.featured) ?? [];
+
+    expect(guards).not.toContain(AdminGuard);
   });
 
   it('edits a coupon', async () => {

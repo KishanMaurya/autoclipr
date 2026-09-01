@@ -54,6 +54,26 @@ export class CouponsController {
     return ApiResponse.ok(await this.service.list());
   }
 
+  /**
+   * The coupon advertised in the promo banner, or null.
+   *
+   * Declared above @Get(':id') deliberately: Nest matches routes in
+   * declaration order, so the wildcard would otherwise swallow /featured and
+   * hand it to the admin-guarded handler.
+   *
+   * No AdminGuard — any signed-in user needs this to see the banner. Only
+   * public, active, in-window, unexhausted coupons are ever returned, so a
+   * private code can never leak here.
+   */
+  @Get('featured')
+  @ApiOperation({
+    summary: 'The coupon currently being promoted',
+    description: 'Returns null when there is nothing to advertise.',
+  })
+  async featured() {
+    return ApiResponse.ok(await this.service.getFeatured());
+  }
+
   @Get(':id')
   @UseGuards(AdminGuard)
   @ApiOperation({
