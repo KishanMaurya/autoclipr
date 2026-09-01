@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { CouponManager, type Coupon } from "@/components/admin/coupon-manager";
 
+// Rendered per request, never prerendered or cached at the edge. These pages
+// are read immediately after mutating from them, so a cached RSC payload would
+// hand the admin back the state they just changed.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Coupons" };
 
 const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;

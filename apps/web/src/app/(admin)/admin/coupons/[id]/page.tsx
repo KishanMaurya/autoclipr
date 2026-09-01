@@ -5,6 +5,11 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CouponDetail, type CouponDetailData } from "@/components/admin/coupon-detail";
 
+// Rendered per request, never prerendered or cached at the edge. These pages
+// are read immediately after mutating from them, so a cached RSC payload would
+// hand the admin back the state they just changed.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Coupon" };
 
 const API = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1`;
