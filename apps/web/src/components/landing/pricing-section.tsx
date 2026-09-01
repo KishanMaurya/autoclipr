@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { CouponField, type AppliedCoupon } from "@/components/landing/coupon-field";
 import { type CurrencyCode, PLAN_PRICES, formatPrice, CURRENCY_SYMBOLS } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -149,7 +150,7 @@ const accentMap: Record<string, { badge: string; icon: string; ring: string; glo
   },
 };
 
-function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; currency: CurrencyCode }) {
+function PricingCard({ plan, yearly, currency, coupon }: { plan: Plan; yearly: boolean; currency: CurrencyCode; coupon: AppliedCoupon | null }) {
   const Icon = plan.icon;
   const ac = accentMap[plan.accentColor];
   const planPrices = PLAN_PRICES[plan.id]?.[currency];
@@ -170,7 +171,12 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
 
       if (!session) {
         // Not logged in — redirect to login, then back to pricing to trigger checkout
-        window.location.href = `/login?redirect=/pricing?checkout=${plan.id}&billing=${yearly ? "yearly" : "monthly"}`;
+        const back = `/pricing?checkout=${plan.id}&billing=${yearly ? "yearly" : "monthly"}${
+          coupon ? `&coupon=${encodeURIComponent(coupon.code)}` : ""
+        }`;
+        // Encoded: unencoded, everything after the first & became a param of
+        // /login instead of the redirect, losing the billing period.
+        window.location.href = `/login?redirect=${encodeURIComponent(back)}`;
         return;
       }
 
@@ -181,7 +187,14 @@ function PricingCard({ plan, yearly, currency }: { plan: Plan; yearly: boolean; 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ planId: plan.id, billingPeriod: yearly ? "yearly" : "monthly" }),
+        // The coupon has to travel with the checkout request: Dodo's hosted
+        // page has no discount field, so the code is attached when the
+        // subscription is created or not at all.
+        body: JSON.stringify({
+          planId: plan.id,
+          billingPeriod: yearly ? "yearly" : "monthly",
+          ...(coupon ? { couponCode: coupon.code } : {}),
+        }),
       });
       const data = await res.json();
       if (data?.data?.url) {
@@ -328,6 +341,7 @@ type PricingSectionProps = {
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
   const [yearly, setYearly] = useState(true);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [currency, setCurrency] = useState<CurrencyCode>("INR");
   const [country, setCountry] = useState<string>("");
   const searchParams = useSearchParams();
@@ -361,7 +375,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ planId: checkoutPlan, billingPeriod: searchParams?.get("billing") ?? "yearly" }),
+          body: JSON.stringify({
+            planId: checkoutPlan,
+            billingPeriod: searchParams?.get("billing") ?? "yearly",
+            ...(searchParams?.get("coupon") ? { couponCode: searchParams.get("coupon") } : {}),
+          }),
         });
         const data = await res.json();
         if (data?.data?.url) window.location.href = data.data.url;
@@ -430,9 +448,17 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </p>
         )}
 
+        <CouponField
+          planId="creator"
+          billingPeriod={yearly ? "yearly" : "monthly"}
+          applied={coupon}
+          onApply={setCoupon}
+          onClear={() => setCoupon(null)}
+        />
+
         <Stagger className="grid items-start gap-5 lg:grid-cols-3" amount={0.15}>
           {plans.map((plan) => (
-            <PricingCard key={plan.id} plan={plan} yearly={yearly} currency={currency} />
+            <PricingCard key={plan.id} plan={plan} yearly={yearly} currency={currency} coupon={coupon} />
           ))}
         </Stagger>
 

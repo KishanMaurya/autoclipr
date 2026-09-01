@@ -116,6 +116,65 @@ describe('SubscriptionsService', () => {
       expect(url).toBe('https://pay.dodo/session');
     });
 
+    it('passes a validated percentage coupon through as a Dodo discount code', async () => {
+      coupons.validate.mockResolvedValue({
+        id: 'c1', code: 'CREATOR15', type: 'percentage', value: 15,
+        discountPaise: 6282, description: '15% off',
+      } as never);
+      dodo.createCheckoutUrl.mockResolvedValue('https://pay.dodo/session');
+
+      await service.createCheckoutUrl('user-1', 'a@b.com', 'creator', 'monthly', 'CREATOR15');
+
+      // Dodo's hosted page has no discount field, so this is the only moment
+      // the code can affect what the customer is charged.
+      expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+        expect.objectContaining({ discountCode: 'CREATOR15', trialPeriodDays: null }),
+      );
+    });
+
+    it('turns a free_trial coupon into trial days, not a discount code', async () => {
+      coupons.validate.mockResolvedValue({
+        id: 'c2', code: 'TRY30', type: 'free_trial', value: 30,
+        discountPaise: 0, description: '30 days free',
+      } as never);
+
+      await service.createCheckoutUrl('user-1', 'a@b.com', 'creator', 'monthly', 'TRY30');
+
+      expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+        expect.objectContaining({ discountCode: null, trialPeriodDays: 30 }),
+      );
+    });
+
+    it('sends neither for a free_credits coupon — Dodo knows nothing about those', async () => {
+      coupons.validate.mockResolvedValue({
+        id: 'c3', code: 'BONUS500', type: 'free_credits', value: 500,
+        discountPaise: 0, description: '500 bonus credits',
+      } as never);
+
+      await service.createCheckoutUrl('user-1', 'a@b.com', 'creator', 'monthly', 'BONUS500');
+
+      expect(dodo.createCheckoutUrl).toHaveBeenCalledWith(
+        expect.objectContaining({ discountCode: null, trialPeriodDays: null }),
+      );
+    });
+
+    it('re-validates the code rather than trusting the request', async () => {
+      coupons.validate.mockRejectedValue(new BadRequestException('That coupon has expired.'));
+
+      // Better to fail here than send the user to a checkout that silently
+      // charges full price.
+      await expect(
+        service.createCheckoutUrl('user-1', 'a@b.com', 'creator', 'monthly', 'STALE'),
+      ).rejects.toThrow('That coupon has expired.');
+      expect(dodo.createCheckoutUrl).not.toHaveBeenCalled();
+    });
+
+    it('ignores a blank coupon code', async () => {
+      await service.createCheckoutUrl('user-1', 'a@b.com', 'creator', 'monthly', '   ');
+
+      expect(coupons.validate).not.toHaveBeenCalled();
+    });
+
     it('falls back to the default web app URL when unconfigured', async () => {
       config.get.mockReturnValue(undefined);
       dodo.createCheckoutUrl.mockResolvedValue('https://pay.dodo/session');
