@@ -27,6 +27,16 @@ export default () => ({
   metaAppSecret: process.env.META_APP_SECRET ?? '',
   metaRedirectUri: process.env.META_REDIRECT_URI ?? '',
   jwtSecret: process.env.JWT_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '',
+  campaigns: {
+    // Off by default: this emails real customers in bulk. Preview it first,
+    // then set CAMPAIGN_SATURDAY_ENABLED=true.
+    saturdayEnabled: process.env.CAMPAIGN_SATURDAY_ENABLED === 'true',
+    // Users are walked in pages rather than loaded whole.
+    batchSize: parseInt(process.env.CAMPAIGN_BATCH_SIZE ?? '500', 10),
+    // Ceiling per run, so a first run over a large user base cannot fire
+    // unlimited email in one go.
+    maxPerRun: parseInt(process.env.CAMPAIGN_MAX_PER_RUN ?? '5000', 10),
+  },
   retention: {
     // Off by default. The sweep emails real customers and permanently deletes
     // their files, so arming it is a deliberate act, not a side effect of a

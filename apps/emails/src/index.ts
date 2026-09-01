@@ -18,3 +18,4 @@ export type { ContactConfirmationVars } from './templates/contact-confirmation';
 export type { AccountDeletedVars } from './templates/account-deleted';
 export type { PlatformConnectedVars } from './templates/platform-connected';
 export type { VideoRetentionWarningVars } from './templates/video-retention-warning';
+export type { WeekendOfferVars } from './templates/weekend-offer';

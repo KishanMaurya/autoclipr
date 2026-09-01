@@ -19,6 +19,7 @@ import { accountDeletedTemplate, type AccountDeletedVars } from './templates/acc
 import { platformConnectedTemplate, type PlatformConnectedVars } from './templates/platform-connected';
 import { affiliateApplicationTemplate, affiliateInquiryTemplate } from './templates/affiliate-application';
 import { videoRetentionWarningTemplate, type VideoRetentionWarningVars } from './templates/video-retention-warning';
+import { weekendOfferTemplate, type WeekendOfferVars } from './templates/weekend-offer';
 
 @Injectable()
 export class EmailService {
@@ -196,6 +197,36 @@ export class EmailService {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to send retention warning to ${to}: ${msg}`);
+      return false;
+    }
+  }
+
+  /**
+   * Weekend discount offer.
+   *
+   * Reports success like the retention warning does, rather than using
+   * sendSafe: the campaign only stamps a recipient as sent once the email is
+   * genuinely out, so a swallowed failure would mark someone contacted who
+   * never heard from us — and they would never be retried.
+   */
+  async sendWeekendOffer(
+    to: string,
+    vars: Omit<WeekendOfferVars, 'appUrl' | 'supportEmail'>,
+  ): Promise<boolean> {
+    const { subject, html, text } = weekendOfferTemplate({
+      ...vars,
+      userName: this.firstName(vars.userName),
+      appUrl: this.config.appUrl,
+      supportEmail: this.config.supportEmail,
+      upgradeUrl: vars.upgradeUrl || `${this.config.appUrl}/pricing`,
+    });
+
+    try {
+      await this.dispatch({ to, subject, html, text, from: this.fromField() });
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send weekend offer to ${to}: ${msg}`);
       return false;
     }
   }
