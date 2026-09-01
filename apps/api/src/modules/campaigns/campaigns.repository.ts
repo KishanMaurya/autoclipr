@@ -117,6 +117,26 @@ export class CampaignsRepository {
     return (data as EligibleUser[]) ?? [];
   }
 
+  /**
+   * How many users are eligible in total.
+   *
+   * A COUNT rather than walking the pages: the wave's completion check only
+   * needs the number, and re-scanning every profile on each run to learn it
+   * would transfer the whole table for a single integer.
+   */
+  async countEligibleUsers(): Promise<number> {
+    const { count, error } = await this.db
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('subscription_tier', [...FREE_TIERS])
+      .not('email', 'is', null)
+      .neq('email', '')
+      .or('email_notifications_enabled.is.null,email_notifications_enabled.eq.true');
+
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }
+
   /** Emails that have opted out of the newsletter, lowercased for comparison. */
   async unsubscribedEmails(): Promise<Set<string>> {
     const { data, error } = await this.db
@@ -176,6 +196,36 @@ export class CampaignsRepository {
       .eq('id', recipientId);
 
     if (error) throw new Error(error.message);
+  }
+
+  /**
+   * How many emails this campaign has already sent today.
+   *
+   * The provider's quota is per calendar day, so the cap has to be measured
+   * against sends rather than runs — a manual send followed by the cron on the
+   * same day must not add up to twice the quota.
+   */
+  async countSentOnDate(campaignId: string, dayStartIso: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('email_campaign_recipients')
+      .select('*', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .gte('sent_at', dayStartIso);
+
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }
+
+  /** Total already sent for this campaign, across every day of the wave. */
+  async countSentTotal(campaignId: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('email_campaign_recipients')
+      .select('*', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .not('sent_at', 'is', null);
+
+    if (error) throw new Error(error.message);
+    return count ?? 0;
   }
 
   /** Rows claimed by an earlier run that never got their email. */

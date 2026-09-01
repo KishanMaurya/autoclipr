@@ -42,6 +42,7 @@ describe('CampaignsService', () => {
       'campaigns.saturdayEnabled': true,
       'campaigns.batchSize': 2,
       'campaigns.maxPerRun': 10,
+      'campaigns.dailyCap': 100,
       webAppUrl: 'https://autoclipr.com',
       apiPublicUrl: 'https://api.autoclipr.com',
     };
@@ -63,6 +64,9 @@ describe('CampaignsService', () => {
       markSent: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined),
       findUnsent: jest.fn().mockResolvedValue([]),
+      countSentOnDate: jest.fn().mockResolvedValue(0),
+      countSentTotal: jest.fn().mockResolvedValue(0),
+      countEligibleUsers: jest.fn().mockResolvedValue(0),
       markClicked: jest.fn().mockResolvedValue(undefined),
       getStats: jest.fn(),
     } as unknown as jest.Mocked<CampaignsRepository>;
@@ -325,6 +329,148 @@ describe('CampaignsService', () => {
       });
 
       await expect(service.getStats('camp-1')).resolves.toMatchObject({ conversionRate: 0 });
+    });
+  });
+
+  describe('wave identity', () => {
+    it('maps every day of one weekend to the same Friday', () => {
+      // Keying on "today" instead would make Friday and Saturday separate
+      // campaigns, and the UNIQUE (campaign_id, user_id) guard that stops
+      // duplicates only works within one campaign — everyone emailed Friday
+      // would be emailed again Saturday.
+      const wave = '2026-09-04';
+      for (const iso of [
+        '2026-09-04T09:00:00Z',
+        '2026-09-05T09:00:00Z',
+        '2026-09-06T09:00:00Z',
+        '2026-09-07T09:00:00Z',
+      ]) {
+        expect(CampaignsService.waveStartDate(new Date(iso))).toBe(wave);
+      }
+    });
+
+    it('returns null midweek', () => {
+      expect(CampaignsService.waveStartDate(new Date('2026-09-09T09:00:00Z'))).toBeNull();
+    });
+
+    it('starts a new wave the following Friday', () => {
+      expect(CampaignsService.waveStartDate(new Date('2026-09-11T09:00:00Z'))).toBe('2026-09-11');
+    });
+  });
+
+  describe('daily cap', () => {
+    function manyUsers(n: number) {
+      return Array.from({ length: n }, (_, i) => user(i));
+    }
+
+    it('sends no more than the daily cap in one run', async () => {
+      settings['campaigns.dailyCap'] = 3;
+      settings['campaigns.batchSize'] = 10;
+      settings['campaigns.maxPerRun'] = 100;
+      repo.findEligibleUsers
+        .mockResolvedValueOnce(manyUsers(10))
+        .mockResolvedValue([]);
+
+      const result = await service.run({ dryRun: false });
+
+      expect(result.sent).toBe(3);
+      expect(email.sendWeekendOffer).toHaveBeenCalledTimes(3);
+    });
+
+    it('claims only what it can actually send', async () => {
+      settings['campaigns.dailyCap'] = 2;
+      settings['campaigns.batchSize'] = 10;
+      repo.findEligibleUsers.mockResolvedValueOnce(manyUsers(10)).mockResolvedValue([]);
+
+      await service.run({ dryRun: false });
+
+      // Over-claiming would enrol users without emailing them, and the next
+      // day would treat them as already handled.
+      const claimedWith = repo.claimRecipients.mock.calls[0][1];
+      expect(claimedWith).toHaveLength(2);
+    });
+
+    it('budgets against what already went out today, not per run', async () => {
+      settings['campaigns.dailyCap'] = 100;
+      repo.countSentOnDate.mockResolvedValue(98);
+      repo.findEligibleUsers.mockResolvedValueOnce(manyUsers(10)).mockResolvedValue([]);
+
+      const result = await service.run({ dryRun: false });
+
+      // A manual send followed by the cron on the same day must not add up to
+      // twice the provider's quota.
+      expect(result.sent).toBe(2);
+    });
+
+    it('sends nothing once the day is spent', async () => {
+      repo.countSentOnDate.mockResolvedValue(100);
+      repo.findEligibleUsers.mockResolvedValue(manyUsers(10));
+
+      const result = await service.run({ dryRun: false });
+
+      expect(result.capReached).toBe(true);
+      expect(result.sent).toBe(0);
+      expect(email.sendWeekendOffer).not.toHaveBeenCalled();
+    });
+
+    it('spends the budget on unsent leftovers before new users', async () => {
+      settings['campaigns.dailyCap'] = 2;
+      repo.findUnsent.mockResolvedValue([
+        { id: 'r1', user_id: 'u1', email: 'a@b.com', full_name: 'A' },
+        { id: 'r2', user_id: 'u2', email: 'c@d.com', full_name: 'C' },
+      ]);
+      repo.findEligibleUsers.mockResolvedValue(manyUsers(10));
+
+      const result = await service.run({ dryRun: false });
+
+      // A retry should finish what it started rather than starting over.
+      expect(result.sent).toBe(2);
+      expect(repo.claimRecipients).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('wave completion', () => {
+    it('stays running while people are still unemailed', async () => {
+      settings['campaigns.dailyCap'] = 100;
+      repo.countSentTotal.mockResolvedValue(100);
+      repo.countEligibleUsers.mockResolvedValue(316);
+      repo.findEligibleUsers.mockResolvedValueOnce([user(1)]).mockResolvedValue([]);
+
+      const result = await service.run({ dryRun: false });
+
+      // Closing the campaign after Friday's slice would leave Saturday looking
+      // at a completed wave with people still to reach.
+      expect(repo.updateCampaign).toHaveBeenLastCalledWith(
+        CAMPAIGN.id,
+        expect.objectContaining({ status: 'running' }),
+      );
+      expect(result.remaining).toBeGreaterThan(0);
+    });
+
+    it('completes once nobody is left', async () => {
+      repo.countSentTotal.mockResolvedValue(1);
+      repo.countEligibleUsers.mockResolvedValue(1);
+      repo.findEligibleUsers.mockResolvedValueOnce([user(1)]).mockResolvedValue([]);
+
+      const result = await service.run({ dryRun: false });
+
+      expect(result.remaining).toBe(0);
+      expect(repo.updateCampaign).toHaveBeenLastCalledWith(
+        CAMPAIGN.id,
+        expect.objectContaining({ status: 'completed' }),
+      );
+    });
+
+    it('reports how many more days the wave needs', async () => {
+      settings['campaigns.dailyCap'] = 100;
+      repo.countSentTotal.mockResolvedValue(0);
+      // 316 eligible, none sent -> 4 days at 100/day.
+      repo.countEligibleUsers.mockResolvedValue(316);
+      repo.findEligibleUsers.mockResolvedValue([]);
+
+      const result = await service.run({ dryRun: false });
+
+      expect(result.daysRemaining).toBe(4);
     });
   });
 });

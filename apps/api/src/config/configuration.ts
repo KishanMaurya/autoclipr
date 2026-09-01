@@ -36,6 +36,10 @@ export default () => ({
     // Ceiling per run, so a first run over a large user base cannot fire
     // unlimited email in one go.
     maxPerRun: parseInt(process.env.CAMPAIGN_MAX_PER_RUN ?? '5000', 10),
+    // Hard limit on emails per calendar day, matching the provider's quota.
+    // Resend's free tier allows 100/day; exceeding it does not queue, it
+    // simply stops delivering. One wave therefore spreads across Fri-Mon.
+    dailyCap: parseInt(process.env.CAMPAIGN_DAILY_CAP ?? '100', 10),
   },
   retention: {
     // Off by default. The sweep emails real customers and permanently deletes

@@ -15,6 +15,15 @@ export interface CampaignRunResult {
   failed: number;
   skippedUnsubscribed: number;
   skipReason?: string;
+  /** Already sent today before this run, and the provider's daily quota. */
+  sentToday?: number;
+  dailyCap?: number;
+  /** True when today's quota was already spent, so nothing more went out. */
+  capReached?: boolean;
+  /** Still waiting for a later day of this wave. */
+  remaining?: number;
+  /** Which days are still needed to finish, given the cap. */
+  daysRemaining?: number;
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -46,6 +55,7 @@ export class CampaignsService {
       enabled: this.config.get<boolean>('campaigns.saturdayEnabled') ?? false,
       batchSize: this.config.get<number>('campaigns.batchSize') ?? 500,
       maxPerRun: this.config.get<number>('campaigns.maxPerRun') ?? 5000,
+      dailyCap: this.config.get<number>('campaigns.dailyCap') ?? 100,
       appUrl: this.config.get<string>('webAppUrl') ?? 'https://autoclipr.com',
       // The click route lives on the API, behind its api/v1 global prefix —
       // pointing this at the web app would 404 every tracked link.
@@ -54,15 +64,40 @@ export class CampaignsService {
   }
 
   /**
-   * Saturday 09:00 UTC, matching the retention sweep's UTC convention rather
-   * than assuming a local timezone inside business logic.
+   * The Friday a given day's wave belongs to, or null outside the send window.
+   *
+   * One wave spans Friday to Monday and is identified by its Friday. That
+   * matters for more than tidiness: campaigns are keyed by (type,
+   * scheduled_for), so keying on "today" would make Friday and Saturday two
+   * separate campaigns — and the UNIQUE (campaign_id, user_id) guard that
+   * stops duplicates only works within a single campaign. Everyone emailed on
+   * Friday would be emailed again on Saturday.
+   *
+   * getUTCDay: Sun=0, Mon=1, Fri=5, Sat=6.
    */
-  // 09:00 UTC on Saturdays. Written out rather than using a CronExpression
-  // constant because none covers a specific weekday at a specific hour.
-  @Cron('0 9 * * 6', { name: 'saturday-offer-campaign', timeZone: 'UTC' })
+  static waveStartDate(now: Date): string | null {
+    const daysSinceFriday: Record<number, number> = { 5: 0, 6: 1, 0: 2, 1: 3 };
+    const offset = daysSinceFriday[now.getUTCDay()];
+    if (offset === undefined) return null;
+
+    const friday = new Date(now);
+    friday.setUTCDate(friday.getUTCDate() - offset);
+    return friday.toISOString().slice(0, 10);
+  }
+
+  /**
+   * 09:00 UTC on Friday, Saturday, Sunday and Monday.
+   *
+   * Four days because the provider's daily quota is smaller than the audience:
+   * at 100/day a few hundred eligible users cannot be reached in one sitting.
+   * Each day sends the next slice of the same wave; Monday mops up whatever is
+   * left. UTC throughout, matching the retention sweep, rather than assuming a
+   * local timezone inside business logic.
+   */
+  @Cron('0 9 * * 5,6,0,1', { name: 'weekend-offer-campaign', timeZone: 'UTC' })
   async scheduledRun(): Promise<void> {
     if (!this.cfg().enabled) {
-      this.logger.debug('Saturday campaign disabled (CAMPAIGN_SATURDAY_ENABLED != true)');
+      this.logger.debug('Weekend campaign disabled (CAMPAIGN_SATURDAY_ENABLED != true)');
       return;
     }
 
@@ -82,8 +117,12 @@ export class CampaignsService {
   }
 
   async run({ dryRun }: { dryRun: boolean }): Promise<CampaignRunResult> {
-    const { batchSize, maxPerRun, apiUrl } = this.cfg();
-    const scheduledFor = new Date().toISOString().slice(0, 10);
+    const { batchSize, maxPerRun, dailyCap, apiUrl } = this.cfg();
+    const now = new Date();
+
+    // Outside Fri-Mon there is no wave to add to. A manual run still works —
+    // it joins the most recent wave rather than starting a stray one.
+    const scheduledFor = CampaignsService.waveStartDate(now) ?? lastFriday(now);
 
     const empty: CampaignRunResult = {
       dryRun,
@@ -154,16 +193,38 @@ export class CampaignsService {
     const unsubscribed = await this.repo.unsubscribedEmails();
     const result: CampaignRunResult = { ...empty, campaignId: campaign.id, couponCode: coupon.code };
 
+    // The provider's quota is per calendar day, so budget against what has
+    // already gone out today rather than per run — a manual send followed by
+    // the cron on the same day must not add up to twice the quota.
+    const dayStart = new Date(now);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const sentToday = await this.repo.countSentOnDate(campaign.id, dayStart.toISOString());
+    let budget = Math.max(0, dailyCap - sentToday);
+
+    result.sentToday = sentToday;
+    result.dailyCap = dailyCap;
+
+    if (budget === 0) {
+      this.logger.log(
+        `Daily cap reached for campaign ${campaign.id}: ${sentToday}/${dailyCap} already sent today`,
+      );
+      result.capReached = true;
+      await this.repo.updateCampaign(campaign.id, { status: 'running' });
+      return result;
+    }
+
     // Anything claimed by an earlier run that crashed before sending. Handled
     // first so a retry finishes what it started rather than starting over.
-    const leftovers = await this.repo.findUnsent(campaign.id, maxPerRun);
+    const leftovers = await this.repo.findUnsent(campaign.id, budget);
     for (const r of leftovers) {
+      if (budget <= 0) break;
       await this.deliver(campaign.id, r, coupon.code, offerLabel, planName, apiUrl, result);
+      budget -= 1;
     }
 
     // Then walk the user table in pages — it grows with the user base and must
     // not be loaded whole.
-    for (let offset = 0; offset < maxPerRun; offset += batchSize) {
+    for (let offset = 0; offset < maxPerRun && budget > 0; offset += batchSize) {
       const users = await this.repo.findEligibleUsers(offset, batchSize);
       if (!users.length) break;
       result.scanned += users.length;
@@ -176,19 +237,34 @@ export class CampaignsService {
         return true;
       });
 
-      // Claim first, send second. Only rows this call created come back, so
-      // users enrolled by an earlier run are never emailed twice.
-      const claimed = await this.repo.claimRecipients(campaign.id, sendable);
+      // Claim only what today's remaining quota can actually deliver. Claiming
+      // more would mark users as enrolled without emailing them, and the next
+      // day would treat them as already handled.
+      const claimed = await this.repo.claimRecipients(campaign.id, sendable.slice(0, budget));
       result.claimed += claimed.length;
 
       for (const r of claimed) {
+        if (budget <= 0) break;
         await this.deliver(campaign.id, r, coupon.code, offerLabel, planName, apiUrl, result);
+        budget -= 1;
       }
     }
 
+    // A wave spans four days, so completion is not "this run finished" — it is
+    // "nobody is left". Closing it after Friday's slice would leave Saturday
+    // looking at a completed campaign with 200 people still unemailed.
+    const [totalSent, totalEligible] = await Promise.all([
+      this.repo.countSentTotal(campaign.id),
+      this.repo.countEligibleUsers(),
+    ]);
+    const remaining = Math.max(0, totalEligible - totalSent);
+
+    result.remaining = remaining;
+    result.daysRemaining = dailyCap > 0 ? Math.ceil(remaining / dailyCap) : 0;
+
     await this.repo.updateCampaign(campaign.id, {
-      status: 'completed',
-      completed_at: new Date().toISOString(),
+      status: remaining === 0 ? 'completed' : 'running',
+      ...(remaining === 0 ? { completed_at: new Date().toISOString() } : {}),
     });
 
     return result;
@@ -311,4 +387,17 @@ export class CampaignsService {
 
     return { ...stats, conversionRate };
   }
+}
+
+/**
+ * The most recent Friday on or before `now`.
+ *
+ * Used when a run is triggered by hand midweek: it joins the wave that just
+ * ended rather than opening a stray one on, say, a Wednesday.
+ */
+function lastFriday(now: Date): string {
+  const d = new Date(now);
+  // getUTCDay: Sun=0 ... Fri=5, Sat=6. Days back to the previous Friday.
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 2) % 7));
+  return d.toISOString().slice(0, 10);
 }
