@@ -55,7 +55,11 @@ export function CouponManager({
   token: string;
 }) {
   const router = useRouter();
-  const [coupons] = useState(initialCoupons);
+  // Read straight from props. Copying these into useState would freeze the
+  // first render's value: router.refresh() re-runs the server component and
+  // passes fresh coupons down, but useState ignores its argument after mount,
+  // so a paused coupon carried on rendering as active.
+  const coupons = initialCoupons;
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

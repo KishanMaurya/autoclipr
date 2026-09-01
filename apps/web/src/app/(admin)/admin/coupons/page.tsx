@@ -13,9 +13,9 @@ async function fetchCoupons(): Promise<{ coupons: Coupon[]; token: string } | nu
 
   const res = await fetch(`${API}/coupons`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
-    // Short revalidate: usage counts move as people redeem, and an admin
-    // watching a campaign wants to see that.
-    next: { revalidate: 15 },
+    // Never cached: an admin who just paused a coupon must see it paused.
+    // A revalidate window would serve the pre-mutation response back to them.
+    cache: "no-store",
   });
   if (!res.ok) return null;
 

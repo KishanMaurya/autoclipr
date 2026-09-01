@@ -18,8 +18,8 @@ async function fetchCoupon(
 
   const res = await fetch(`${API}/coupons/${id}`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
-    // Usage and redemptions move while a campaign runs.
-    next: { revalidate: 15 },
+    // Never cached — the page is read straight after mutating from it.
+    cache: "no-store",
   });
   if (!res.ok) return null;
 
