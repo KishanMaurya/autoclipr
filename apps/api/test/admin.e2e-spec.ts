@@ -43,7 +43,11 @@ describe('AdminController (e2e)', () => {
   });
 
   afterAll(async () => {
-    process.env.ADMIN_EMAILS = ORIGINAL_ADMIN_EMAILS;
+    // Assigning undefined would set the *string* "undefined" rather than
+    // unsetting the variable, leaking a bogus admin list into whichever spec
+    // shares this Jest worker next.
+    if (ORIGINAL_ADMIN_EMAILS === undefined) delete process.env.ADMIN_EMAILS;
+    else process.env.ADMIN_EMAILS = ORIGINAL_ADMIN_EMAILS;
     await app.close();
   });
 

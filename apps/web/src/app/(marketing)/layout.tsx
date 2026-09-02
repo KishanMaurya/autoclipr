@@ -1,6 +1,7 @@
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { CouponBanner } from "@/components/layout/coupon-banner";
+import { AssistantWidget } from "@/components/assistant/assistant-widget";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { PageBackground } from "@/components/ui/page-background";
 
@@ -27,6 +28,7 @@ export default function MarketingLayout({
       <main>{children}</main>
       <Footer />
       <AnnouncementBanner />
+      <AssistantWidget />
     </div>
   );
 }
