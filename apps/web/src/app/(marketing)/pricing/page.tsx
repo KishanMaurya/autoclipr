@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PricingSection } from "@/components/landing/pricing-section";
+import { PricingSkeleton } from "@/components/landing/pricing-skeleton";
 import { FAQ } from "@/components/landing/faq";
 import { pageMetadata } from "@/lib/seo";
 import { Check, Zap, Shield, HeadphonesIcon } from "lucide-react";
@@ -84,7 +85,7 @@ export default function PricingPage() {
       </div>
 
       {/* Pricing cards */}
-      <Suspense>
+      <Suspense fallback={<PricingSkeleton showHeader={false} />}>
         <PricingSection showHeader={false} />
       </Suspense>
 

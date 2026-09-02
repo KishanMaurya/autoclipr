@@ -21,6 +21,7 @@ import { HowItWorks } from "@/components/landing/how-it-works";
 import { Testimonials } from "@/components/landing/testimonials";
 import { Suspense } from "react";
 import { PricingSection } from "@/components/landing/pricing-section";
+import { PricingSkeleton } from "@/components/landing/pricing-skeleton";
 import { CTA } from "@/components/landing/cta";
 import { Comparison } from "@/components/landing/comparison";
 import { PlatformMarquee } from "@/components/landing/platform-marquee";
@@ -48,7 +49,7 @@ export default function HomePage() {
       <PublishDirectly />
       <Comparison />
       <Testimonials />
-      <Suspense>
+      <Suspense fallback={<PricingSkeleton />}>
         <PricingSection />
       </Suspense>
       <CTA />

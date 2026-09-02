@@ -239,3 +239,16 @@
     animation: none;
   }
 }
+
+/* Visible keyboard focus, applied once rather than per component.
+   Seventeen landing sections had no focus styling at all, which leaves anyone
+   navigating by keyboard with no idea where they are. :focus-visible targets
+   keyboard and programmatic focus only, so pointer users never see a ring. */
+:where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid theme("colors.emerald.400");
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Components that already define their own ring keep it — :where() carries
+   zero specificity, so any explicit focus-visible rule wins. */

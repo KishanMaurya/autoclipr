@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { apiFetch, type Clip, type PlatformConnection, type Video, type YoutubeChannel } from "@/lib/api";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 
 export const metadata = { title: "Dashboard" };
 
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <Suspense>
+    <Suspense fallback={<DashboardSkeleton />}>
       <DashboardView
         initialChannels={channelsRes.data ?? []}
         initialClips={clipsRes.data ?? []}
