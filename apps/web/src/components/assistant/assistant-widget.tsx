@@ -302,9 +302,7 @@ export function AssistantWidget() {
               </div>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                <span className="text-xs text-white/70">
-                  AI assistant · {FOUNDER_NAME.split(" ")[0]} reads escalations
-                </span>
+                <span className="text-xs text-white/70">AI assistant</span>
               </div>
               </div>
             </div>
