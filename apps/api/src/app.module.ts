@@ -26,6 +26,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { RetentionModule } from './modules/retention/retention.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { EmailModule } from '@autoclipr/emails';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
@@ -67,6 +68,7 @@ import { ActionLoggingInterceptor } from './common/interceptors/action-logging.i
     RetentionModule,
     CouponsModule,
     CampaignsModule,
+    AssistantModule,
   ],
   providers: [
     RedisHealthService,
