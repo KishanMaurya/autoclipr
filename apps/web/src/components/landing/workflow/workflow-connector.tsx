@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
 /**
  * The link between two cards.
  *
- * Horizontal on desktop, vertical on mobile — the same component either way,
- * because the flow logic is identical and only the axis changes. Squeezing
- * four cards into a row on a phone is what the layout switch exists to avoid.
+ * Rail, fill and particle all live inside one relatively-positioned track,
+ * and that track is what gets centred. Absolutely positioning them against
+ * the outer flex box instead put them at its top-left corner, which is why
+ * the line sat against the top edge of the cards rather than running through
+ * their middle.
  *
- * The rail is always visible at low opacity so the shape of the whole pipeline
- * reads even before the animation reaches it; only the fill and the travelling
- * particle are stateful.
+ * Horizontal from lg, vertical below it — the same component either way,
+ * since only the axis changes.
  */
 export function WorkflowConnector({
   flowing,
@@ -24,64 +25,64 @@ export function WorkflowConnector({
   /** Tailwind gradient stops, e.g. "from-violet-500 to-sky-500". */
   accent: string;
 }) {
+  const lit = flowing || completed;
+
   return (
     <div
       aria-hidden
-      className="relative flex shrink-0 items-center justify-center lg:h-full lg:w-10 lg:flex-none"
+      className="flex shrink-0 items-center justify-center py-1 lg:w-14 lg:flex-none lg:self-center lg:py-0"
     >
-      {/* Rail */}
-      <div className="h-8 w-px bg-white/10 lg:h-px lg:w-full" />
+      {/* The track. Everything else is positioned against this, so the whole
+          assembly stays centred on both axes. */}
+      <div className="relative h-10 w-[3px] lg:h-[3px] lg:w-full">
+        {/* Rail — always visible, so the shape of the pipeline reads before
+            the animation ever reaches this connector. */}
+        <div className="absolute inset-0 rounded-full bg-white/[0.13]" />
 
-      {/* Progressive fill. scaleY/scaleX rather than height/width so the
-          browser can composite it without laying the section out again. */}
-      <motion.div
-        className={cn(
-          "absolute h-8 w-px origin-top bg-gradient-to-b lg:h-px lg:w-full lg:origin-left lg:bg-gradient-to-r",
-          accent,
+        {/* Progressive fill. scaleX/scaleY rather than width/height keeps it
+            on the compositor instead of relaying out the row each frame. */}
+        <motion.div
+          className={cn(
+            "absolute inset-0 origin-top rounded-full bg-gradient-to-b lg:origin-left lg:bg-gradient-to-r",
+            accent,
+          )}
+          initial={false}
+          animate={{
+            scaleY: lit ? 1 : 0,
+            scaleX: lit ? 1 : 0,
+            opacity: completed && !flowing ? 0.6 : 1,
+          }}
+          transition={{ duration: flowing ? 0.6 : 0.3, ease: [0.4, 0, 0.2, 1] }}
+        />
+
+        {/* Soft bloom under the lit segment. */}
+        <motion.div
+          className={cn("absolute -inset-y-1 inset-x-0 rounded-full bg-gradient-to-r blur-[6px]", accent)}
+          initial={false}
+          animate={{ opacity: flowing ? 0.55 : 0 }}
+          transition={{ duration: 0.35 }}
+        />
+
+        {/* Travelling packet — mounted only while this connector is firing. */}
+        {flowing && (
+          <>
+            {/* Vertical track, below lg. */}
+            <motion.span
+              className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_12px_3px_rgba(255,255,255,0.55)] lg:hidden"
+              initial={{ top: "-6%", opacity: 0 }}
+              animate={{ top: ["-6%", "106%"], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 0.6, ease: "easeInOut", times: [0, 0.18, 0.82, 1] }}
+            />
+            {/* Horizontal track, lg and up. */}
+            <motion.span
+              className="absolute top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_12px_3px_rgba(255,255,255,0.55)] lg:block"
+              initial={{ left: "-6%", opacity: 0 }}
+              animate={{ left: ["-6%", "106%"], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 0.6, ease: "easeInOut", times: [0, 0.18, 0.82, 1] }}
+            />
+          </>
         )}
-        initial={false}
-        animate={{
-          scaleY: flowing || completed ? 1 : 0,
-          scaleX: flowing || completed ? 1 : 0,
-          opacity: completed ? 0.55 : 1,
-        }}
-        transition={{
-          duration: flowing ? 0.65 : 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        }}
-        style={{ scaleY: 0, scaleX: 0 }}
-      />
-
-      {/* Travelling packet. Only mounted while the connector is firing, so
-          nothing animates off-screen once the flow has moved on. */}
-      {flowing && (
-        <motion.span
-          className={cn(
-            "absolute h-1.5 w-1.5 rounded-full bg-gradient-to-r shadow-[0_0_10px_2px_rgba(255,255,255,0.35)]",
-            accent,
-          )}
-          initial={{ offsetDistance: "0%" }}
-          animate={{
-            y: ["-14px", "14px"],
-            x: 0,
-            opacity: [0, 1, 1, 0],
-          }}
-          transition={{ duration: 0.65, ease: "easeInOut", times: [0, 0.15, 0.85, 1] }}
-        />
-      )}
-      {flowing && (
-        <motion.span
-          className={cn(
-            "absolute hidden h-1.5 w-1.5 rounded-full bg-gradient-to-r shadow-[0_0_10px_2px_rgba(255,255,255,0.35)] lg:block",
-            accent,
-          )}
-          animate={{
-            x: ["-18px", "18px"],
-            opacity: [0, 1, 1, 0],
-          }}
-          transition={{ duration: 0.65, ease: "easeInOut", times: [0, 0.15, 0.85, 1] }}
-        />
-      )}
+      </div>
     </div>
   );
 }
