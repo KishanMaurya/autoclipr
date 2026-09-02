@@ -33,6 +33,15 @@ type Message = {
   failed?: boolean;
 };
 
+/**
+ * The person actually behind support. Named rather than a generic "team":
+ * AutoClipr is founder-run, so this is both warmer and true.
+ * Drop a square photo at the path below to replace the initials.
+ */
+const FOUNDER_NAME = "Kishan Maurya";
+const FOUNDER_INITIALS = "KM";
+const FOUNDER_PHOTO = "/assets/brand/founder.jpg";
+
 const SUGGESTIONS = [
   "How do I create a clip?",
   "How do credits work?",
@@ -69,11 +78,15 @@ export function AssistantWidget() {
   // losing the answer they are reading — going back is a view change here,
   // not a reset.
   const [showingWelcome, setShowingWelcome] = useState(false);
+  // The photo is optional: until one is added the header shows initials
+  // rather than a broken image icon.
+  const [avatarBroken, setAvatarBroken] = useState(false);
   const [rated, setRated] = useState<Record<string, "up" | "down">>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const avatarRef = useRef<HTMLImageElement>(null);
   // Kept in a ref so Regenerate can replay the last question without it being
   // re-rendered state.
   const lastQuestion = useRef<string>("");
@@ -96,6 +109,14 @@ export function AssistantWidget() {
 
   // Stop an in-flight stream if the widget unmounts mid-answer.
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // onError alone is not enough: an image that fails before React hydrates
+  // never fires it, leaving a broken-image icon where the fallback should be.
+  // A finished load with zero width is the reliable signal.
+  useEffect(() => {
+    const img = avatarRef.current;
+    if (img?.complete && img.naturalWidth === 0) setAvatarBroken(true);
+  }, [open]);
 
   const ask = useCallback(
     async (question: string) => {
@@ -283,18 +304,41 @@ export function AssistantWidget() {
               </div>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                <span className="text-xs text-white/70">Online</span>
+                <span className="text-xs text-white/70">
+                  AI assistant · {FOUNDER_NAME.split(" ")[0]} reads escalations
+                </span>
               </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close assistant"
-              className="rounded-full p-1.5 text-white/80 transition-colors hover:bg-black/15 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* A real person, not a stock support team: the assistant is a
+                  bot, and implying human agents who do not exist backfires the
+                  moment someone asks for one. */}
+              {avatarBroken ? (
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white ring-2 ring-white/30"
+                >
+                  {FOUNDER_INITIALS}
+                </span>
+              ) : (
+                <img
+                  ref={avatarRef}
+                  src={FOUNDER_PHOTO}
+                  alt={FOUNDER_NAME}
+                  onError={() => setAvatarBroken(true)}
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-white/30"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close assistant"
+                className="rounded-full p-1.5 text-white/80 transition-colors hover:bg-black/15 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -309,6 +353,12 @@ export function AssistantWidget() {
                 <p className="mt-0.5 text-sm text-white/50">
                   How can I help you with AutoClipr?
                 </p>
+                {!hasConversation && (
+                  <p className="mt-2 text-xs text-white/35">
+                    I&apos;m AutoClipr&apos;s AI assistant. Anything I can&apos;t answer goes
+                    to {FOUNDER_NAME.split(" ")[0]}.
+                  </p>
+                )}
               </div>
 
               {hasConversation && (
