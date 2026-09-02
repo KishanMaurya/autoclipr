@@ -45,9 +45,9 @@ type Message = {
  * never broken by an absent image.
  */
 const SUPPORT_FACES = [
-  { src: "/assets/brand/support/1.jpg", initials: "A" },
-  { src: "/assets/brand/support/2.jpg", initials: "B" },
-  { src: "/assets/brand/support/3.jpg", initials: "C" },
+  { src: "/assets/brand/support/1.png", initials: "A" },
+  { src: "/assets/brand/support/2.webp", initials: "B" },
+  { src: "/assets/brand/support/3.png", initials: "C" },
 ];
 
 const FOUNDER_NAME = "Kishan Maurya";
@@ -570,7 +570,10 @@ function Face({ src, initials }: { src: string; initials: string }) {
       src={src}
       alt=""
       onError={() => setBroken(true)}
-      className="h-8 w-8 rounded-full object-cover ring-2 ring-emerald-600"
+      // object-top, not centre: these sources are landscape and portrait
+      // rather than square, and centring a portrait crop lands on the chest
+      // instead of the face.
+      className="h-8 w-8 rounded-full object-cover object-top ring-2 ring-emerald-600"
     />
   );
 }

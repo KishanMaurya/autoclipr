@@ -1,14 +1,13 @@
 # Assistant header faces
 
-Drop three square images here:
+Three images render as overlapping circles in the assistant header. The
+filenames are listed in `SUPPORT_FACES` (see below) — change them there if you
+use different ones.
 
-```
-1.jpg   2.jpg   3.jpg
-```
-
-They render as overlapping circles in the assistant header. Square crops work
-best — anything else is centre-cropped by `object-fit: cover`. 128×128 or
-larger.
+Square crops work best. Anything else is cropped by `object-fit: cover`, and
+because the crop is anchored to the top (`object-top`) a portrait photo keeps
+the face rather than centring on the torso. Check the result at the real 32px
+size: what reads fine full-size can be unrecognisable in a circle that small.
 
 Any file that is missing falls back to a lettered circle, so the header is
 never broken by an absent image. That also means you can add them one at a
