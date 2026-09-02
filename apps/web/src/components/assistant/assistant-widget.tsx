@@ -523,9 +523,6 @@ export function AssistantWidget() {
               <Send className="h-4 w-4" />
             </button>
           </form>
-          <p className="mt-1.5 text-center text-[10px] text-white/25">
-            AI can make mistakes — check important details.
-          </p>
         </div>
       </div>
     </>
