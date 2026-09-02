@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { apiFetch, type Profile } from "@/lib/api";
 
@@ -131,7 +131,11 @@ export function CouponBanner() {
         />
 
         <div className="relative mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6">
-          <Sparkles className="hidden h-4 w-4 shrink-0 text-white/90 sm:block" />
+          {/* Shown at every width, unlike the icon it replaces: it carries the
+              tone of the bar, and on mobile that is the part worth keeping. */}
+          <span className="coupon-pop shrink-0 text-base leading-none sm:text-lg" aria-hidden>
+            🎉
+          </span>
 
           <p className="min-w-0 flex-1 text-[13px] leading-tight text-white sm:text-sm">
             <span className="font-semibold">{headline(coupon)}</span>
