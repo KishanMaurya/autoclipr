@@ -50,7 +50,6 @@ const SUPPORT_FACES = [
   { src: "/assets/brand/support/3.png", initials: "C" },
 ];
 
-const FOUNDER_NAME = "Kishan Maurya";
 
 const SUGGESTIONS = [
   "How do I create a clip?",
@@ -335,12 +334,7 @@ export function AssistantWidget() {
                 <p className="mt-0.5 text-sm text-white/50">
                   How can I help you with AutoClipr?
                 </p>
-                {!hasConversation && (
-                  <p className="mt-2 text-xs text-white/35">
-                    I&apos;m AutoClipr&apos;s AI assistant. Anything I can&apos;t answer goes
-                    to {FOUNDER_NAME.split(" ")[0]}.
-                  </p>
-                )}
+
               </div>
 
               {hasConversation && (
