@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   Copy,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   ThumbsDown,
   ThumbsUp,
+  Plus,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -63,6 +65,10 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Lets the user return to the suggestions to ask something else without
+  // losing the answer they are reading — going back is a view change here,
+  // not a reset.
+  const [showingWelcome, setShowingWelcome] = useState(false);
   const [rated, setRated] = useState<Record<string, "up" | "down">>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -99,6 +105,7 @@ export function AssistantWidget() {
       lastQuestion.current = text;
       setInput("");
       setStreaming(true);
+      setShowingWelcome(false);
 
       const userMsg: Message = { id: `u${Date.now()}`, role: "user", content: text };
       const replyId = `a${Date.now()}`;
@@ -224,7 +231,8 @@ export function AssistantWidget() {
   }
 
   const hint = pageHint(pathname);
-  const empty = messages.length === 0;
+  const hasConversation = messages.length > 0;
+  const empty = !hasConversation || showingWelcome;
 
   return (
     <>
@@ -257,7 +265,18 @@ export function AssistantWidget() {
         {/* Header */}
         <div className="relative shrink-0 border-b border-white/10 bg-gradient-to-br from-emerald-600 to-teal-700 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="flex items-start gap-2">
+              {hasConversation && !showingWelcome && (
+                <button
+                  type="button"
+                  onClick={() => setShowingWelcome(true)}
+                  aria-label="Back to suggestions"
+                  className="-ml-1 mt-0.5 rounded-full p-1 text-white/80 transition-colors hover:bg-black/15 hover:text-white"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              )}
+              <div>
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-white" />
                 <span className="text-sm font-semibold text-white">AutoClipr Assistant</span>
@@ -265,6 +284,7 @@ export function AssistantWidget() {
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
                 <span className="text-xs text-white/70">Online</span>
+              </div>
               </div>
             </div>
             <button
@@ -283,11 +303,38 @@ export function AssistantWidget() {
           {empty ? (
             <div className="space-y-4">
               <div>
-                <p className="text-lg font-semibold text-white">Hi there 👋</p>
+                <p className="text-lg font-semibold text-white">
+                  {hasConversation ? "Ask something else" : "Hi there 👋"}
+                </p>
                 <p className="mt-0.5 text-sm text-white/50">
                   How can I help you with AutoClipr?
                 </p>
               </div>
+
+              {hasConversation && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowingWelcome(false)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/15"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to conversation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMessages([]);
+                      setShowingWelcome(false);
+                      lastQuestion.current = "";
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/15"
+                  >
+                    <Plus className="h-3 w-3" />
+                    New chat
+                  </button>
+                </div>
+              )}
 
               {hint && (
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] text-emerald-200">
