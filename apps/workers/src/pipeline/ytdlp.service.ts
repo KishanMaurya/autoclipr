@@ -9,14 +9,18 @@ import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
 /**
  * Player clients to try, in order, when no override is configured.
  *
- * `tv` leads because YouTube has progressively hardened `android` and `ios`
- * against anonymous playback, which is what a bot check on a working proxy
- * usually means. Ordering matters: each failed variant costs a full round
- * trip before the next is attempted.
+ * `android` leads on evidence, not theory: probing the production proxy with
+ * yt-dlp 2026.08.19 and the pipeline's own format string, android was the only
+ * client that resolved a stream. tv returned "The page needs to be reloaded"
+ * and ios/mweb/web all returned "Requested format is not available".
+ *
+ * Ordering matters — each failed variant costs a full round trip before the
+ * next is tried — so the others stay as fallbacks for videos or exit IPs where
+ * android is the one that fails.
  */
 const DEFAULT_EXTRACTOR_VARIANTS = [
-  'youtube:player_client=tv',
   'youtube:player_client=android',
+  'youtube:player_client=tv',
   'youtube:player_client=ios',
   'youtube:player_client=mweb',
 ];
@@ -132,8 +136,8 @@ export class YtdlpService implements OnModuleInit {
 
     if (this.cookiesFile) {
       return [
-        'youtube:player_client=tv',
         'youtube:player_client=android',
+        'youtube:player_client=tv',
         'youtube:player_client=ios',
         'youtube:player_client=web',
         'youtube:player_client=mweb',
