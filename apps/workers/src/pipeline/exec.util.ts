@@ -4,7 +4,10 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 
 const ERROR_KEYWORD =
-  /error|invalid|unable|failed|not found|no such|fontconfig|libass|subtitle|permission denied|conversion failed|cannot open|no decoder|warning|no streams|matches no streams|unrecognized option/i;
+  /error|invalid|unable|failed|not found|no such|fontconfig|libass|subtitle|permission denied|conversion failed|cannot open|no decoder|no streams|matches no streams|unrecognized option/i;
+
+/** yt-dlp and ffmpeg both prefix non-fatal notices this way. */
+const WARNING_LINE = /^\s*WARNING:/i;
 
 function extractMeaningfulError(detail: string): string {
   const normalized = detail.replace(/\r\n/g, '\n').trim();
@@ -14,13 +17,26 @@ function extractMeaningfulError(detail: string): string {
     '',
   );
 
-  const errorLines = bannerStripped
+  const lines = bannerStripped
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0 && ERROR_KEYWORD.test(line));
+    .filter(Boolean);
 
-  if (errorLines.length > 0) {
-    return errorLines.join(' ');
+  // Real errors first. yt-dlp emits warnings early and errors late, so
+  // treating both alike meant a non-fatal notice — a stale cookie jar, say —
+  // consumed the whole 500-character budget and the actual cause was cut off
+  // before it could be shown.
+  const hardErrors = lines.filter(
+    (line) => !WARNING_LINE.test(line) && ERROR_KEYWORD.test(line),
+  );
+  if (hardErrors.length > 0) {
+    return hardErrors.join(' ');
+  }
+
+  // Nothing fatal was printed, so a warning is the best signal available.
+  const warnings = lines.filter((line) => WARNING_LINE.test(line));
+  if (warnings.length > 0) {
+    return warnings.join(' ');
   }
 
   const configStripped = bannerStripped
