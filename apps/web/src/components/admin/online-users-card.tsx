@@ -2,19 +2,24 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Radio } from "lucide-react";
+import { getAccessToken } from "@/lib/auth-token";
 
 interface Props {
-  token: string;
   apiBase: string;
   initialCount: number;
 }
 
-export function OnlineUsersCard({ token, apiBase, initialCount }: Props) {
+export function OnlineUsersCard({ apiBase, initialCount }: Props) {
   const [count, setCount] = useState(initialCount);
   const [updated, setUpdated] = useState<Date>(new Date());
 
   const refresh = useCallback(async () => {
     try {
+      // Fresh per poll. A token captured when the page rendered
+      // starts 401'ing an hour later and never recovers.
+      const token = await getAccessToken();
+      if (!token) return;
+
       const res = await fetch(`${apiBase}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
@@ -24,7 +29,7 @@ export function OnlineUsersCard({ token, apiBase, initialCount }: Props) {
       setCount(json.data?.users?.online ?? 0);
       setUpdated(new Date());
     } catch {}
-  }, [token, apiBase]);
+  }, [apiBase]);
 
   useEffect(() => {
     const id = setInterval(refresh, 30_000);

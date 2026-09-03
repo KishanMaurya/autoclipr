@@ -22,7 +22,7 @@ export async function DashboardShell({
   return (
     <div className="relative min-h-screen">
       <ReferralTracker token={token} />
-      <Heartbeat token={token} />
+      <Heartbeat />
       <PageBackground variant="dashboard" />
       <Navbar />
       <DashboardSidebar credits={credits} />

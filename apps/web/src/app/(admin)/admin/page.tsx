@@ -153,7 +153,7 @@ export default async function AdminDashboardPage() {
           <KpiCard icon={Users}      label="Free Users"     value={users.free.toLocaleString()}                                                         iconBg="#3B82F6" />
           <KpiCard icon={TrendingUp} label="Conversion"     value={`${users.conversionRate}%`}                                                          iconBg="#8B5CF6" />
           <KpiCard icon={Activity}   label="Active Subs"    value={subscriptions.active.toLocaleString()}                                               iconBg="#F59E0B" />
-          <OnlineUsersCard token={_token} apiBase={API} initialCount={(users as { online?: number }).online ?? 0} />
+          <OnlineUsersCard apiBase={API} initialCount={(users as { online?: number }).online ?? 0} />
         </div>
       </div>
 
