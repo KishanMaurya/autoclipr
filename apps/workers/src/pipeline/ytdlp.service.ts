@@ -6,7 +6,16 @@ import { runCommand } from './exec.util';
 import { resolveBinary } from './resolve-binary.util';
 import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
 
+/**
+ * Player clients to try, in order, when no override is configured.
+ *
+ * `tv` leads because YouTube has progressively hardened `android` and `ios`
+ * against anonymous playback, which is what a bot check on a working proxy
+ * usually means. Ordering matters: each failed variant costs a full round
+ * trip before the next is attempted.
+ */
 const DEFAULT_EXTRACTOR_VARIANTS = [
+  'youtube:player_client=tv',
   'youtube:player_client=android',
   'youtube:player_client=ios',
   'youtube:player_client=mweb',
@@ -28,7 +37,30 @@ export class YtdlpService implements OnModuleInit {
     this.logger.log(`yt-dlp binary: ${this.ytdlp}`);
   }
 
+  /**
+   * Log the yt-dlp version at startup.
+   *
+   * The image installs yt-dlp unpinned, so the binary is only as fresh as the
+   * last Docker build — and a cached layer can leave it months behind.
+   * YouTube changes its bot detection constantly and yt-dlp ships fixes for it
+   * weekly, so a stale binary looks exactly like an IP problem: every player
+   * client fails a bot check while the proxy is demonstrably fine. Without
+   * this line there is no way to tell those two apart from the logs.
+   */
+  private async logVersion(): Promise<void> {
+    try {
+      const { stdout } = await runCommand(this.ytdlp, ['--version'], { timeoutMs: 15_000 });
+      this.logger.log(`yt-dlp version: ${stdout.trim()}`);
+    } catch (err) {
+      this.logger.warn(
+        `Could not read the yt-dlp version: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   async onModuleInit(): Promise<void> {
+    await this.logVersion();
+
     this.validateProxyConfig();
 
     try {
@@ -100,6 +132,7 @@ export class YtdlpService implements OnModuleInit {
 
     if (this.cookiesFile) {
       return [
+        'youtube:player_client=tv',
         'youtube:player_client=android',
         'youtube:player_client=ios',
         'youtube:player_client=web',
