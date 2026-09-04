@@ -9,18 +9,34 @@ import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
 /**
  * Player clients to try, in order, when no override is configured.
  *
- * `android` leads on evidence, not theory: probing the production proxy with
- * yt-dlp 2026.08.19 and the pipeline's own format string, android was the only
- * client that resolved a stream. tv returned "The page needs to be reloaded"
- * and ios/mweb/web all returned "Requested format is not available".
+ * Ordered on measurement, not theory. Resolving six videos with yt-dlp
+ * 2026.08.19 and the pipeline's own format string, height picked per client:
  *
- * Ordering matters — each failed variant costs a full round trip before the
- * next is tried — so the others stay as fallbacks for videos or exit IPs where
- * android is the one that fails.
+ *   video          tv_embedded  android_testsuite  android
+ *   dQw4w9WgXcQ    2160p        2160p              360p
+ *   aircAruvnKk    1080p        1080p              360p
+ *   9bZkp7q19f0    1080p        1080p              360p
+ *   5MgBikgcWnY    1080p        1080p              360p
+ *   8jPQjjsBbIc     720p         720p              360p
+ *   jNQXAC9IVRw     240p         240p              240p   (240p source)
+ *
+ * android is not wrong, it is capped: YouTube's SABR rollout hands it adaptive
+ * formats with no URL, leaving only legacy progressive 18 at 640x360. Leading
+ * with android therefore silently held every import to 360p while the app
+ * offers HD and 4K export. The clients that still receive real adaptive URLs
+ * go first; android stays beneath them as the permissive fallback.
+ *
+ * The rest fail rather than degrade: tv returns "The page needs to be
+ * reloaded", and ios/mweb/web/web_safari/tv_simply return no video formats at
+ * all ("Only images are available for download").
+ *
+ * Ordering has a cost — each failed variant is a full round trip — so the tail
+ * is kept short and only holds clients that fail differently from the head.
  */
 const DEFAULT_EXTRACTOR_VARIANTS = [
+  'youtube:player_client=tv_embedded',
+  'youtube:player_client=android_testsuite',
   'youtube:player_client=android',
-  'youtube:player_client=tv',
   'youtube:player_client=ios',
   'youtube:player_client=mweb',
 ];
@@ -35,6 +51,8 @@ export class YtdlpService implements OnModuleInit {
   private readonly logger = new Logger(YtdlpService.name);
   private readonly ytdlp: string;
   private cookiesFile?: string;
+  /** `--js-runtimes node`, or empty when this yt-dlp predates the option. */
+  private jsRuntimeArgs: string[] = [];
 
   constructor(private readonly config: ConfigService) {
     this.ytdlp = resolveBinary(this.config.get<string>('ytdlpPath'), 'yt-dlp');
@@ -62,8 +80,37 @@ export class YtdlpService implements OnModuleInit {
     }
   }
 
+  /**
+   * Point yt-dlp at Node as its JavaScript runtime.
+   *
+   * yt-dlp needs a JS engine to run YouTube's player script, and only Deno is
+   * enabled by default — the image has no Deno, so extraction ran in the
+   * deprecated no-runtime mode and warned "some formats may be missing". It
+   * does not have to be Deno: this image is built on node:22-alpine, so a
+   * supported runtime is already installed and only needs naming.
+   *
+   * Probed rather than passed blindly. The option is recent, and a pinned
+   * older YTDLP_VERSION would reject it as an unknown argument — which would
+   * fail every download, a far worse outcome than the warning this removes.
+   */
+  private async detectJsRuntime(): Promise<void> {
+    try {
+      await runCommand(this.ytdlp, ['--js-runtimes', 'node', '--version'], {
+        timeoutMs: 15_000,
+      });
+      this.jsRuntimeArgs = ['--js-runtimes', 'node'];
+      this.logger.log('yt-dlp JavaScript runtime: node');
+    } catch {
+      this.logger.warn(
+        'This yt-dlp does not accept --js-runtimes; continuing without an explicit ' +
+          'JS runtime. Some YouTube formats may be missing.',
+      );
+    }
+  }
+
   async onModuleInit(): Promise<void> {
     await this.logVersion();
+    await this.detectJsRuntime();
 
     this.validateProxyConfig();
 
@@ -134,12 +181,16 @@ export class YtdlpService implements OnModuleInit {
     const custom = this.config.get<string>('ytdlpExtractorArgs')?.trim();
     if (custom) return [custom];
 
+    // With cookies the web clients become worth trying: an authenticated
+    // session is what satisfies the check they otherwise fail. They stay
+    // behind the two that return adaptive URLs unauthenticated.
     if (this.cookiesFile) {
       return [
-        'youtube:player_client=android',
-        'youtube:player_client=tv',
-        'youtube:player_client=ios',
+        'youtube:player_client=tv_embedded',
+        'youtube:player_client=android_testsuite',
         'youtube:player_client=web',
+        'youtube:player_client=android',
+        'youtube:player_client=ios',
         'youtube:player_client=mweb',
       ];
     }
@@ -153,6 +204,7 @@ export class YtdlpService implements OnModuleInit {
     extractorArgs: string,
   ): string[] {
     const args = [
+      ...this.jsRuntimeArgs,
       '--no-playlist',
       '--geo-bypass',
       '--retries',
@@ -218,11 +270,15 @@ export class YtdlpService implements OnModuleInit {
 
     const variants = this.getExtractorVariants();
     let lastError: Error | null = null;
+    // Which client actually worked. The title lookup reuses it rather than
+    // always asking variants[0], which by then may be the one that just failed.
+    let workingVariant = variants[0];
 
     for (let i = 0; i < variants.length; i++) {
       const extractorArgs = variants[i];
       try {
         await this.runDownload(url, outDir, outTemplate, format, maxDuration, extractorArgs);
+        workingVariant = extractorArgs;
         break;
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
@@ -242,7 +298,7 @@ export class YtdlpService implements OnModuleInit {
 
     let title: string | undefined;
     try {
-      title = await this.fetchTitle(url, variants[0]);
+      title = await this.fetchTitle(url, workingVariant);
     } catch {
       // optional metadata
     }
@@ -291,7 +347,14 @@ export class YtdlpService implements OnModuleInit {
   }
 
   private async fetchTitle(url: string, extractorArgs: string): Promise<string | undefined> {
-    const args = ['--print', '%(title)s', '--no-download', '--extractor-args', extractorArgs];
+    const args = [
+      ...this.jsRuntimeArgs,
+      '--print',
+      '%(title)s',
+      '--no-download',
+      '--extractor-args',
+      extractorArgs,
+    ];
     if (this.cookiesFile) {
       args.push('--cookies', this.cookiesFile);
     }
@@ -313,6 +376,20 @@ export class YtdlpService implements OnModuleInit {
       )
     ) {
       return false;
+    }
+
+    // Client-specific refusals. These are not "this video cannot be
+    // downloaded" — they are "not by this player client", which is exactly
+    // when the next variant is worth a try. tv_embedded in particular refuses
+    // videos whose owner disabled embedding, and it now leads the list, so
+    // without these the loop would abort on the first variant for every such
+    // video instead of falling through to android.
+    if (
+      /playback on other websites has been disabled|not available on this app|the page needs to be reloaded|only images are available/i.test(
+        message,
+      )
+    ) {
+      return true;
     }
 
     return /sign in to confirm|not a bot|http error 403|http error 429|unable to extract|login required|confirm your age|bot check|requested format is not available|format is not available/i.test(
@@ -345,6 +422,23 @@ export class YtdlpService implements OnModuleInit {
         : 'No proxy configured. YouTube is blocking downloads from this server\'s IP. Set YTDLP_PROXY in Railway environment variables (e.g. http://user:pass@host:port).';
     }
     if (/sign in to confirm|not a bot|bot check/i.test(normalized)) {
+      // Every player client has now been tried and all of them were
+      // challenged, so this is not a client-selection problem — the exit IP
+      // itself is flagged. Naming that IP is the whole point of the line: the
+      // user-facing copy is deliberately vague, which left the logs saying
+      // only "bot check" and gave no way to tell a burned proxy apart from a
+      // stale yt-dlp or a bad client order without reproducing it by hand.
+      const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+      this.logger.error(
+        proxy
+          ? `YouTube challenged every player client through ${maskProxy(proxy)}. ` +
+              `That exit IP is flagged — a PO token will not clear it. Rotate to a ` +
+              `different proxy endpoint, or supply YTDLP_COOKIES_B64 from a signed-in account.`
+          : `YouTube challenged every player client and no YTDLP_PROXY is set, so ` +
+              `requests are leaving from the datacenter IP directly. Configure a ` +
+              `residential proxy, or supply YTDLP_COOKIES_B64 from a signed-in account.`,
+      );
+
       return (
         'YouTube blocked the download from our cloud server (bot check). ' +
         'Upload the MP4 file directly on the Upload page, try again later, ' +
