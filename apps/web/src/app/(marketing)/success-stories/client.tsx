@@ -423,8 +423,8 @@ export function CtaSection() {
       {/* Multi-layer background glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-0 h-64 w-96 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute left-1/4 bottom-0 h-48 w-64 rounded-full bg-violet-500/8 blur-3xl" />
-        <div className="absolute right-1/4 bottom-0 h-48 w-64 rounded-full bg-blue-500/8 blur-3xl" />
+        <div className="absolute left-1/4 bottom-0 h-48 w-64 rounded-full bg-violet-500/[0.08] blur-3xl" />
+        <div className="absolute right-1/4 bottom-0 h-48 w-64 rounded-full bg-blue-500/[0.08] blur-3xl" />
       </div>
       {/* Top rainbow border */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />

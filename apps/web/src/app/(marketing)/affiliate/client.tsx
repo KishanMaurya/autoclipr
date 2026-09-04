@@ -90,7 +90,7 @@ export function EarningsCalculator() {
       className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0a0a16] p-8"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-      <div className="pointer-events-none absolute left-1/2 top-0 h-48 w-64 -translate-x-1/2 rounded-full bg-emerald-500/6 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-0 h-48 w-64 -translate-x-1/2 rounded-full bg-emerald-500/[0.06] blur-3xl" />
 
       <div className="relative">
         <h3 className="mb-1 text-lg font-bold text-white">Earnings calculator</h3>

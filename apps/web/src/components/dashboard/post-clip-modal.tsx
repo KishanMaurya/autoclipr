@@ -154,7 +154,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
     >
       <div className="glass w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="border-b border-white/8 px-5 py-4">
+        <div className="border-b border-white/[0.08] px-5 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">Publish clip</h2>
             <button
@@ -180,7 +180,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                     if (e.key === "Enter" || e.key === "Escape") setEditingTitle(false);
                   }}
                   maxLength={150}
-                  className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/8 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-emerald-500/60 focus:outline-none"
+                  className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/[0.08] px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-emerald-500/60 focus:outline-none"
                   placeholder="Enter clip title…"
                 />
               </div>
@@ -238,7 +238,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                           "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
                           checked && !disabled
                             ? "border-emerald-500/50 bg-emerald-500/10"
-                            : "border-white/8 bg-white/4 hover:border-white/15 hover:bg-white/8",
+                            : "border-white/[0.08] bg-white/[0.04] hover:border-white/15 hover:bg-white/[0.08]",
                           disabled && "cursor-not-allowed opacity-50",
                         )}
                       >
@@ -275,7 +275,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
                             Banned
                           </span>
                         ) : isTikTok ? (
-                          <span className="rounded-full bg-white/8 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Soon
                           </span>
                         ) : needsAuth ? (
@@ -323,7 +323,7 @@ export function PostClipModal({ clip, open, onClose, onPosted }: PostClipModalPr
 
         {/* Footer */}
         {!loading && platforms.length > 0 && (
-          <div className="flex gap-2 border-t border-white/8 px-5 py-4">
+          <div className="flex gap-2 border-t border-white/[0.08] px-5 py-4">
             <Button type="button" variant="outline" className="flex-1" size="sm" onClick={onClose}>
               Cancel
             </Button>

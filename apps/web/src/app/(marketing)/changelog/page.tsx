@@ -23,7 +23,7 @@ export default function ChangelogPage() {
       {/* Hero */}
       <section className="relative overflow-hidden px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-violet-500/6 blur-[100px]" />
+          <div className="absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-violet-500/[0.06] blur-[100px]" />
           <div className="absolute right-1/4 top-1/3 h-48 w-48 rounded-full bg-emerald-500/5 blur-[60px]" />
           <div
             className="absolute inset-0 opacity-[0.012]"

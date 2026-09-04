@@ -30,9 +30,9 @@ export default function SuccessStoriesPage() {
       <section className="relative overflow-hidden px-4 pb-20 pt-16 text-center sm:px-6 sm:pt-24">
         {/* Layered bg glows */}
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-[-10%] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/8 blur-[120px]" />
-          <div className="absolute left-[20%] top-[30%] h-64 w-64 rounded-full bg-violet-500/6 blur-[80px]" />
-          <div className="absolute right-[15%] top-[20%] h-48 w-48 rounded-full bg-blue-500/6 blur-[80px]" />
+          <div className="absolute left-1/2 top-[-10%] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[120px]" />
+          <div className="absolute left-[20%] top-[30%] h-64 w-64 rounded-full bg-violet-500/[0.06] blur-[80px]" />
+          <div className="absolute right-[15%] top-[20%] h-48 w-48 rounded-full bg-blue-500/[0.06] blur-[80px]" />
           {/* Faint grid */}
           <div
             className="absolute inset-0 opacity-[0.015]"

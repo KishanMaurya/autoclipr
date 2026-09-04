@@ -250,7 +250,7 @@ function LinkedInMockup() {
             </div>
           </div>
           {/* reactions */}
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/8">
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.08]">
             <div className="flex items-center gap-1">
               <div className="flex -space-x-1">
                 <span className="text-[10px]">👍</span><span className="text-[10px]">❤️</span><span className="text-[10px]">🔥</span>
@@ -395,7 +395,7 @@ function PlatformCard({ card }: { card: typeof CARDS[number] }) {
             </span>
           )}
           {card.badgeComingSoon && (
-            <span className="rounded-full border border-white/15 bg-white/8 px-2 py-0.5 text-[10px] font-medium text-white/50">
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-white/50">
               Coming soon
             </span>
           )}
@@ -426,7 +426,7 @@ export function PublishDirectly() {
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/3 top-1/4 h-[500px] w-[500px] rounded-full bg-red-500/5 blur-3xl" />
         <div className="absolute right-1/4 bottom-1/4 h-[400px] w-[400px] rounded-full bg-pink-500/5 blur-3xl" />
-        <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/4 blur-3xl" />
+        <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.04] blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-6xl">

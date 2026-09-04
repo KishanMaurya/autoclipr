@@ -136,7 +136,7 @@ export function TopCreatorsList() {
       {/* Hero */}
       <div className="border-b border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-3 py-1">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
             <span className="text-xs font-semibold text-emerald-400">Live Stats · Refreshed daily</span>
           </div>

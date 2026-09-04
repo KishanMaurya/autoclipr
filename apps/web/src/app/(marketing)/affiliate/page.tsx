@@ -69,7 +69,7 @@ export default async function AffiliatePage() {
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden px-4 pb-20 pt-16 text-center sm:px-6 sm:pt-24">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/7 blur-[120px]" />
+          <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/[0.07] blur-[120px]" />
           <div className="absolute left-1/4 top-1/2 h-64 w-64 rounded-full bg-violet-500/5 blur-[80px]" />
           <div
             className="absolute inset-0 opacity-[0.012]"
@@ -288,7 +288,7 @@ export default async function AffiliatePage() {
 
             <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0a0a16] p-7">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-              <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-56 -translate-x-1/2 rounded-full bg-emerald-500/6 blur-3xl" />
+              <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-56 -translate-x-1/2 rounded-full bg-emerald-500/[0.06] blur-3xl" />
               <div className="relative">
                 <h3 className="mb-6 text-lg font-bold text-white">Apply to become an affiliate</h3>
                 <AffiliateSignupForm />

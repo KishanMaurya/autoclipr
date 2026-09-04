@@ -204,7 +204,7 @@ export function ClipCard({
 
         {/* Viral score row with explanation */}
         {viralScore != null && (
-          <div className="flex items-center justify-between rounded-lg bg-orange-500/8 px-3 py-1.5 ring-1 ring-orange-500/20">
+          <div className="flex items-center justify-between rounded-lg bg-orange-500/[0.08] px-3 py-1.5 ring-1 ring-orange-500/20">
             <div className="flex items-center gap-1.5">
               <Flame className="h-3.5 w-3.5 text-orange-400" />
               <span className="text-xs font-semibold text-orange-300">Viral Score</span>

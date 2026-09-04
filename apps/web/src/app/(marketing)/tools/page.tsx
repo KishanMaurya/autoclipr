@@ -194,7 +194,7 @@ export default function ToolsPage() {
 
         {/* ── Header ── */}
         <div className="mb-16 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/8 px-4 py-1.5">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-4 py-1.5">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.6)]" />
             <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">100% Free · No Signup</span>
           </div>
