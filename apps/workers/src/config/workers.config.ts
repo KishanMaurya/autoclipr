@@ -36,6 +36,12 @@ export default () => ({
   /** Proxy for yt-dlp — use a residential proxy to bypass YouTube datacenter IP blocks.
    *  e.g. socks5://user:pass@host:port  or  http://user:pass@host:port */
   ytdlpProxy: process.env.YTDLP_PROXY ?? '',
+  /** Set true only when YTDLP_PROXY is a rotating gateway that hands out a
+   *  different exit IP per connection (e.g. Webshare's p.webshare.io:80).
+   *  It turns a bot check into a retry on a fresh IP instead of an immediate
+   *  fall-through. Leave false for a static endpoint, where retrying the same
+   *  flagged IP only adds delay — measured, not assumed. */
+  ytdlpProxyRotating: process.env.YTDLP_PROXY_ROTATING === 'true',
   /** When true, continue pipeline with timed placeholder transcript if OpenAI quota/billing fails */
   openaiFallbackOnQuota: process.env.OPENAI_FALLBACK_ON_QUOTA !== 'false',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',

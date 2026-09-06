@@ -41,10 +41,29 @@ const DEFAULT_EXTRACTOR_VARIANTS = [
   'youtube:player_client=mweb',
 ];
 
+/**
+ * Extra attempts to spend re-drawing an exit IP when one looks flagged and the
+ * proxy rotates. Each attempt is a new yt-dlp process, so a rotating gateway
+ * hands it a fresh IP.
+ *
+ * A budget for the whole download rather than per client. Per client it
+ * multiplies: five clients times four attempts is twenty round trips a user
+ * waits through to learn the pool is burned. Shared, the worst case is the
+ * client list plus three — and the information gained is the same, because
+ * once several distinct IPs have all been challenged the next one almost
+ * certainly will be too.
+ */
+const FLAGGED_IP_RETRY_BUDGET = 3;
+
+/** Gap between those retries, letting the gateway hand out a different IP. */
+const FLAGGED_IP_RETRY_DELAY_MS = 1_500;
+
 /** Hides proxy credentials so they never reach logs or user-facing errors. */
 function maskProxy(proxy: string): string {
   return proxy.replace(/:\/\/[^@/]+@/, '://***@');
 }
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 @Injectable()
 export class YtdlpService implements OnModuleInit {
@@ -174,7 +193,22 @@ export class YtdlpService implements OnModuleInit {
       return;
     }
 
-    this.logger.log(`yt-dlp proxy configured: ${maskProxy(proxy)}`);
+    // State the rotation mode explicitly. The retry-on-a-fresh-IP path is off
+    // unless YTDLP_PROXY_ROTATING says so, and pointing a rotating gateway at
+    // a worker that still thinks it is static is a silent no-op — the whole
+    // benefit is lost with nothing in the logs to say why.
+    if (this.config.get<boolean>('ytdlpProxyRotating')) {
+      this.logger.log(
+        `yt-dlp proxy configured: ${maskProxy(proxy)} (rotating — a bot check ` +
+          `retries up to ${FLAGGED_IP_RETRY_BUDGET}x for a fresh exit IP)`,
+      );
+    } else {
+      this.logger.log(
+        `yt-dlp proxy configured: ${maskProxy(proxy)} (static — one exit IP). ` +
+          `If this endpoint rotates IPs, set YTDLP_PROXY_ROTATING=true so a bot ` +
+          `check retries instead of failing the import.`,
+      );
+    }
   }
 
   private getExtractorVariants(): string[] {
@@ -274,23 +308,51 @@ export class YtdlpService implements OnModuleInit {
     // always asking variants[0], which by then may be the one that just failed.
     let workingVariant = variants[0];
 
-    for (let i = 0; i < variants.length; i++) {
+    // Only worth re-trying the same client when the exit IP can actually
+    // change between attempts. On a static endpoint it cannot, and retrying a
+    // flagged IP was measured to fail identically every time — so there it
+    // would buy nothing but delay.
+    let ipRetriesLeft = this.config.get<boolean>('ytdlpProxyRotating')
+      ? FLAGGED_IP_RETRY_BUDGET
+      : 0;
+
+    outer: for (let i = 0; i < variants.length; i++) {
       const extractorArgs = variants[i];
-      try {
-        await this.runDownload(url, outDir, outTemplate, format, maxDuration, extractorArgs);
-        workingVariant = extractorArgs;
-        break;
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        const retryable = this.isRetryableYoutubeError(lastError.message);
-        const hasMore = i < variants.length - 1;
-        if (!retryable || !hasMore) {
-          throw new Error(this.formatYtdlpError(lastError));
+
+      // Inner loop only re-runs while the shared IP budget is being spent on
+      // this client; every other outcome leaves it after one attempt.
+      for (;;) {
+        try {
+          await this.runDownload(url, outDir, outTemplate, format, maxDuration, extractorArgs);
+          workingVariant = extractorArgs;
+          break outer;
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          await this.cleanPartialDownload(outDir);
+
+          // A flagged IP is the one failure a different IP fixes. Everything
+          // else here is the client's own limitation — a new IP would hit it
+          // again — so those fall straight through to the next client.
+          if (this.isFlaggedIpError(lastError.message) && ipRetriesLeft > 0) {
+            ipRetriesLeft--;
+            this.logger.warn(
+              `yt-dlp bot check on ${extractorArgs}; retrying for a fresh exit IP ` +
+                `(${ipRetriesLeft} of ${FLAGGED_IP_RETRY_BUDGET} re-draws left)`,
+            );
+            await delay(FLAGGED_IP_RETRY_DELAY_MS);
+            continue;
+          }
+
+          const hasMore = i < variants.length - 1;
+          if (!this.isRetryableYoutubeError(lastError.message) || !hasMore) {
+            throw new Error(this.formatYtdlpError(lastError));
+          }
+
+          this.logger.warn(
+            `yt-dlp retry (${i + 2}/${variants.length}) after: ${lastError.message.slice(0, 160)}`,
+          );
+          break;
         }
-        this.logger.warn(
-          `yt-dlp retry (${i + 2}/${variants.length}) after: ${lastError.message.slice(0, 160)}`,
-        );
-        await this.cleanPartialDownload(outDir);
       }
     }
 
@@ -368,6 +430,20 @@ export class YtdlpService implements OnModuleInit {
     return stdout.trim() || undefined;
   }
 
+  /**
+   * Does this failure point at the exit IP rather than the player client?
+   *
+   * Deliberately narrow. Only the challenge and the two rate-limit statuses
+   * are properties of *who is asking*; a missing format or a client-specific
+   * refusal follows the request to any IP, so retrying those on a fresh one
+   * just spends a user's time to reach the same error.
+   */
+  private isFlaggedIpError(message: string): boolean {
+    return /sign in to confirm|not a bot|bot check|http error 429|http error 403/i.test(
+      message,
+    );
+  }
+
   private isRetryableYoutubeError(message: string): boolean {
     // Proxy errors are never retryable — every variant will fail the same way
     if (
@@ -429,15 +505,31 @@ export class YtdlpService implements OnModuleInit {
       // only "bot check" and gave no way to tell a burned proxy apart from a
       // stale yt-dlp or a bad client order without reproducing it by hand.
       const proxy = this.config.get<string>('ytdlpProxy')?.trim();
-      this.logger.error(
-        proxy
-          ? `YouTube challenged every player client through ${maskProxy(proxy)}. ` +
-              `That exit IP is flagged — a PO token will not clear it. Rotate to a ` +
-              `different proxy endpoint, or supply YTDLP_COOKIES_B64 from a signed-in account.`
-          : `YouTube challenged every player client and no YTDLP_PROXY is set, so ` +
-              `requests are leaving from the datacenter IP directly. Configure a ` +
-              `residential proxy, or supply YTDLP_COOKIES_B64 from a signed-in account.`,
-      );
+      const rotating = this.config.get<boolean>('ytdlpProxyRotating');
+
+      if (!proxy) {
+        this.logger.error(
+          `YouTube challenged every player client and no YTDLP_PROXY is set, so ` +
+            `requests are leaving from the datacenter IP directly. Configure a ` +
+            `residential proxy, or supply YTDLP_COOKIES_B64 from a signed-in account.`,
+        );
+      } else if (rotating) {
+        // Several distinct IPs were drawn and every one was challenged, so
+        // this is no longer one unlucky address — the pool itself is burned.
+        this.logger.error(
+          `YouTube challenged every player client across ${FLAGGED_IP_RETRY_BUDGET + 1} exit IPs ` +
+            `from ${maskProxy(proxy)}. The pool itself is flagged, not one address, so ` +
+            `rotating within it will not recover — move to residential/ISP proxies, or ` +
+            `supply YTDLP_COOKIES_B64 from a signed-in account.`,
+        );
+      } else {
+        this.logger.error(
+          `YouTube challenged every player client through ${maskProxy(proxy)}. ` +
+            `That exit IP is flagged — a PO token will not clear it. Point YTDLP_PROXY at a ` +
+            `rotating endpoint (and set YTDLP_PROXY_ROTATING=true), or supply ` +
+            `YTDLP_COOKIES_B64 from a signed-in account.`,
+        );
+      }
 
       return (
         'YouTube blocked the download from our cloud server (bot check). ' +
