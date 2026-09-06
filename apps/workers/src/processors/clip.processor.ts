@@ -10,6 +10,7 @@ import { formatForLog } from '../common/log-sanitize.util';
 import { DatabaseService } from '../database/database.service';
 import { CLIP_QUEUE } from '../jobs.constants';
 import { UrlPipelineService } from '../pipeline/url-pipeline.service';
+import { diagnosisOf } from '../pipeline/pipeline-error.util';
 import { PublishService } from '../publish/publish.service';
 import type { UrlPipelinePayload } from '../pipeline/types';
 
@@ -58,6 +59,12 @@ export class ClipProcessor extends WorkerHost {
   onFailed(job: Job | undefined, err: Error) {
     const id = job?.id ?? 'unknown';
     const name = job?.name ?? 'unknown';
+    // errorMessage is written for the customer and cannot name a proxy host or
+    // an env var. The diagnosis carries what an operator needs, on the same
+    // event — reporting the symptom without it is what made a flagged exit IP
+    // indistinguishable from an undeployed worker.
+    const diagnosis = diagnosisOf(err);
+
     this.logger.error(`QUEUE failed bullId=${id} name=${name} — ${err.message}`);
     this.monitoring.logAction('failure', `BullMQ.${name}`, {
       jobId: job?.data?.jobId as string | undefined,
@@ -65,6 +72,7 @@ export class ClipProcessor extends WorkerHost {
       userId: job?.data?.userId as string | undefined,
       bullId: String(id),
       errorMessage: err.message,
+      ...(diagnosis ? { diagnosis } : {}),
       jobType: name,
       source: 'bullmq.failed',
     });
@@ -72,6 +80,7 @@ export class ClipProcessor extends WorkerHost {
       jobId: job?.data?.jobId as string | undefined,
       videoId: job?.data?.video_id as string | undefined,
       jobType: name,
+      ...(diagnosis ? { diagnosis } : {}),
       source: 'bullmq.failed',
     });
   }

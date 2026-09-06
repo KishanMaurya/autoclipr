@@ -140,3 +140,109 @@ test('a rejected proxy aborts rather than working through the client list', asyn
   assert.deepEqual(seen, ['tv_embedded']);
   assert.match(threw, /407/);
 });
+
+// ---------------------------------------------------------------------------
+// Diagnosis attached to the thrown error
+//
+// The customer-facing message is identical in every one of these cases by
+// design, so the diagnosis is the only thing that tells a flagged IP apart
+// from an undeployed worker. It rides on the error to reach the failure event.
+// ---------------------------------------------------------------------------
+
+const { diagnosisOf } = require('../dist/pipeline/pipeline-error.util.js');
+
+const SECRET = 'sup3rs3cret';
+
+async function botCheckFailure({ rotating, proxy }) {
+  const config = {
+    get: (key) =>
+      ({
+        ytdlpProxyRotating: rotating,
+        ytdlpProxy: proxy,
+        ytdlpMaxHeight: 0,
+        ytdlpMaxDurationSeconds: 0,
+        ytdlpExtractorArgs: '',
+      })[key],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error() {} };
+  svc.runDownload = async () => {
+    throw new Error(BOT);
+  };
+  svc.cleanPartialDownload = async () => {};
+  try {
+    await svc.download('https://youtu.be/x', '/tmp/autoclipr-test/out.mp4');
+  } catch (err) {
+    return err;
+  }
+  throw new Error('expected the download to fail');
+}
+
+test('static proxy: diagnosis names the single flagged IP and both env vars', async () => {
+  const err = await botCheckFailure({
+    rotating: false,
+    proxy: `http://user:${SECRET}@static.example:1080`,
+  });
+  const d = diagnosisOf(err);
+  assert.match(d, /single exit IP/);
+  assert.match(d, /YTDLP_PROXY_ROTATING=true/);
+  assert.match(d, /static\.example:1080/);
+});
+
+test('rotating proxy: diagnosis says the pool is burned, not one address', async () => {
+  const err = await botCheckFailure({
+    rotating: true,
+    proxy: `http://user:${SECRET}@rotate.example:80`,
+  });
+  const d = diagnosisOf(err);
+  assert.match(d, /pool is flagged/);
+  assert.match(d, /residential/);
+  // Says how many distinct IPs were actually drawn, so the claim is checkable.
+  assert.match(d, /all 4 exit IPs/);
+});
+
+test('no proxy: diagnosis says requests leave from the datacenter IP', async () => {
+  const err = await botCheckFailure({ rotating: false, proxy: '' });
+  assert.match(diagnosisOf(err), /No YTDLP_PROXY is set/);
+});
+
+test('the diagnosis never leaks proxy credentials', async () => {
+  for (const rotating of [true, false]) {
+    const err = await botCheckFailure({
+      rotating,
+      proxy: `http://admin:${SECRET}@host.example:1080`,
+    });
+    assert.ok(!diagnosisOf(err).includes(SECRET), `password leaked (rotating=${rotating})`);
+    assert.ok(!diagnosisOf(err).includes('admin'), `username leaked (rotating=${rotating})`);
+  }
+});
+
+test('the customer-facing message carries no diagnosis detail', async () => {
+  const err = await botCheckFailure({
+    rotating: false,
+    proxy: `http://user:${SECRET}@static.example:1080`,
+  });
+  assert.match(err.message, /YouTube blocked the download/);
+  assert.ok(!err.message.includes('static.example'));
+  assert.ok(!err.message.includes(SECRET));
+});
+
+test('failures with no operator insight to add carry no diagnosis', async () => {
+  const { threw } = await attempts({ rotating: true, outcomes: () => UNAVAILABLE });
+  assert.ok(threw);
+  const err = await (async () => {
+    const config = { get: (k) => ({ ytdlpProxy: '', ytdlpProxyRotating: false })[k] };
+    const svc = new YtdlpService(config);
+    svc.logger = { log() {}, warn() {}, error() {} };
+    svc.runDownload = async () => {
+      throw new Error(UNAVAILABLE);
+    };
+    svc.cleanPartialDownload = async () => {};
+    try {
+      await svc.download('https://youtu.be/x', '/tmp/autoclipr-test/out.mp4');
+    } catch (e) {
+      return e;
+    }
+  })();
+  assert.equal(diagnosisOf(err), undefined);
+});

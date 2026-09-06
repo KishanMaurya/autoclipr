@@ -5,6 +5,7 @@ import * as path from 'path';
 import { runCommand } from './exec.util';
 import { resolveBinary } from './resolve-binary.util';
 import { resolveYtdlpCookiesFile } from './ytdlp-cookies.util';
+import { withDiagnosis } from './pipeline-error.util';
 
 /**
  * Player clients to try, in order, when no override is configured.
@@ -345,7 +346,7 @@ export class YtdlpService implements OnModuleInit {
 
           const hasMore = i < variants.length - 1;
           if (!this.isRetryableYoutubeError(lastError.message) || !hasMore) {
-            throw new Error(this.formatYtdlpError(lastError));
+            throw this.toReportableError(lastError);
           }
 
           this.logger.warn(
@@ -473,6 +474,69 @@ export class YtdlpService implements OnModuleInit {
     );
   }
 
+  /**
+   * Operator-facing cause and remedy for a failure, or undefined when the
+   * user-facing message already says everything there is to say.
+   *
+   * Returned rather than logged. Logged, it landed in an entry of its own
+   * while every alert and dashboard quoted the failure event instead — so the
+   * cause was present in the logs and still never reached the person reading
+   * about the symptom.
+   */
+  private diagnose(normalized: string): string | undefined {
+    if (!/sign in to confirm|not a bot|bot check/i.test(normalized)) return undefined;
+
+    // Every player client was tried and all were challenged, so this is not a
+    // client-selection problem — the exit IP itself is flagged.
+    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+    const rotating = this.config.get<boolean>('ytdlpProxyRotating');
+
+    if (!proxy) {
+      return (
+        'No YTDLP_PROXY is set, so requests leave from the datacenter IP directly and ' +
+        'YouTube challenges every player client. Configure a residential proxy, or ' +
+        'supply YTDLP_COOKIES_B64 from a signed-in throwaway account.'
+      );
+    }
+
+    if (rotating) {
+      // Several distinct IPs were drawn and every one was challenged, so this
+      // is no longer one unlucky address — the pool itself is burned.
+      return (
+        `Challenged on all ${FLAGGED_IP_RETRY_BUDGET + 1} exit IPs drawn from ${maskProxy(proxy)}. ` +
+        'The pool is flagged, not one address, so rotating within it cannot recover. ' +
+        'Move to residential/ISP proxies, or supply YTDLP_COOKIES_B64 from a signed-in ' +
+        'throwaway account.'
+      );
+    }
+
+    return (
+      `Challenged on the single exit IP ${maskProxy(proxy)}, which is flagged — a PO token ` +
+      'will not clear it. Point YTDLP_PROXY at a rotating endpoint AND set ' +
+      'YTDLP_PROXY_ROTATING=true (both are required), or supply YTDLP_COOKIES_B64 from a ' +
+      'signed-in throwaway account.'
+    );
+  }
+
+  /**
+   * The error to surface: customer-safe message, operator diagnosis attached.
+   *
+   * Both readers are served by one object, so the cause cannot drift away from
+   * the symptom into a different log entry.
+   */
+  private toReportableError(err: unknown): Error {
+    const raw = err instanceof Error ? err.message : String(err);
+    const normalized = raw.replace(/^(yt-dlp failed:\s*)+/i, '').trim();
+    const error = new Error(this.formatYtdlpError(err));
+
+    const diagnosis = this.diagnose(normalized);
+    if (!diagnosis) return error;
+
+    // Still logged, for anyone tailing the worker rather than reading events.
+    this.logger.error(`yt-dlp diagnosis: ${diagnosis}`);
+    return withDiagnosis(error, diagnosis);
+  }
+
   private formatYtdlpError(err: unknown): string {
     const raw = err instanceof Error ? err.message : String(err);
     const normalized = raw.replace(/^(yt-dlp failed:\s*)+/i, '').trim();
@@ -498,39 +562,6 @@ export class YtdlpService implements OnModuleInit {
         : 'No proxy configured. YouTube is blocking downloads from this server\'s IP. Set YTDLP_PROXY in Railway environment variables (e.g. http://user:pass@host:port).';
     }
     if (/sign in to confirm|not a bot|bot check/i.test(normalized)) {
-      // Every player client has now been tried and all of them were
-      // challenged, so this is not a client-selection problem — the exit IP
-      // itself is flagged. Naming that IP is the whole point of the line: the
-      // user-facing copy is deliberately vague, which left the logs saying
-      // only "bot check" and gave no way to tell a burned proxy apart from a
-      // stale yt-dlp or a bad client order without reproducing it by hand.
-      const proxy = this.config.get<string>('ytdlpProxy')?.trim();
-      const rotating = this.config.get<boolean>('ytdlpProxyRotating');
-
-      if (!proxy) {
-        this.logger.error(
-          `YouTube challenged every player client and no YTDLP_PROXY is set, so ` +
-            `requests are leaving from the datacenter IP directly. Configure a ` +
-            `residential proxy, or supply YTDLP_COOKIES_B64 from a signed-in account.`,
-        );
-      } else if (rotating) {
-        // Several distinct IPs were drawn and every one was challenged, so
-        // this is no longer one unlucky address — the pool itself is burned.
-        this.logger.error(
-          `YouTube challenged every player client across ${FLAGGED_IP_RETRY_BUDGET + 1} exit IPs ` +
-            `from ${maskProxy(proxy)}. The pool itself is flagged, not one address, so ` +
-            `rotating within it will not recover — move to residential/ISP proxies, or ` +
-            `supply YTDLP_COOKIES_B64 from a signed-in account.`,
-        );
-      } else {
-        this.logger.error(
-          `YouTube challenged every player client through ${maskProxy(proxy)}. ` +
-            `That exit IP is flagged — a PO token will not clear it. Point YTDLP_PROXY at a ` +
-            `rotating endpoint (and set YTDLP_PROXY_ROTATING=true), or supply ` +
-            `YTDLP_COOKIES_B64 from a signed-in account.`,
-        );
-      }
-
       return (
         'YouTube blocked the download from our cloud server (bot check). ' +
         'Upload the MP4 file directly on the Upload page, try again later, ' +
