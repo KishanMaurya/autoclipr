@@ -25,12 +25,12 @@ const PROXY_407 = 'ERROR: unable to connect to proxy: 407 Proxy Authentication R
  * `outcomes(client, nthAttemptAtThatClient)` returns an error string to fail
  * that attempt, or null to let it succeed.
  */
-async function attempts({ rotating, outcomes }) {
+async function attempts({ rotating, outcomes, proxy }) {
   const config = {
     get: (key) =>
       ({
         ytdlpProxyRotating: rotating,
-        ytdlpProxy: 'http://user:pass@proxy.example:1080',
+        ytdlpProxy: proxy ?? 'http://user:pass@proxy.example:1080',
         ytdlpMaxHeight: 0,
         ytdlpMaxDurationSeconds: 0,
         ytdlpExtractorArgs: '',
@@ -41,9 +41,11 @@ async function attempts({ rotating, outcomes }) {
   svc.logger = { log() {}, warn() {}, error() {} };
 
   const seen = [];
-  svc.runDownload = async (_url, _dir, _tpl, _fmt, _dur, extractorArgs) => {
+  const proxiesUsed = [];
+  svc.runDownload = async (_url, _dir, _tpl, _fmt, _dur, extractorArgs, usedProxy) => {
     const client = extractorArgs.split('=')[1];
     seen.push(client);
+    proxiesUsed.push(usedProxy);
     const failure = outcomes(client, seen.filter((c) => c === client).length);
     if (failure) throw new Error(failure);
   };
@@ -57,7 +59,7 @@ async function attempts({ rotating, outcomes }) {
   } catch (err) {
     threw = err.message;
   }
-  return { seen, threw };
+  return { seen, threw, proxiesUsed };
 }
 
 test('a working first client costs exactly one attempt', async () => {
@@ -74,11 +76,13 @@ test('static proxy: a bot check does not re-draw, it moves on', async () => {
   assert.ok(threw);
 });
 
-test('rotating proxy: the IP budget is shared, not per client', async () => {
-  // Three re-draws for the whole download, then one attempt per remaining
-  // client. Per-client instead would be 5 x 4 = 20 round trips.
+test('rotating gateway: the proxy sequence is shared, not per client', async () => {
+  // Six draws for the whole download, then one attempt per remaining client.
+  // Per-client instead would be 5 x 6 = 30 round trips.
   const { seen, threw } = await attempts({ rotating: true, outcomes: () => BOT });
   assert.deepEqual(seen, [
+    'tv_embedded',
+    'tv_embedded',
     'tv_embedded',
     'tv_embedded',
     'tv_embedded',
@@ -88,11 +92,10 @@ test('rotating proxy: the IP budget is shared, not per client', async () => {
     'ios',
     'mweb',
   ]);
-  assert.equal(seen.length, 8);
   assert.ok(threw);
 });
 
-test('rotating proxy: a later IP succeeding ends the download there', async () => {
+test('rotating gateway: a later draw succeeding ends the download there', async () => {
   const { seen, threw } = await attempts({
     rotating: true,
     outcomes: (client, n) => (client === 'tv_embedded' && n < 3 ? BOT : null),
@@ -110,21 +113,19 @@ test('rate limiting also counts as a flagged IP', async () => {
   assert.deepEqual(seen, ['tv_embedded', 'tv_embedded']);
 });
 
-test('a client limitation moves on without spending the IP budget', async () => {
-  // A missing format follows the request to any IP, so re-drawing would just
-  // reach the same error. The budget must still be intact afterwards.
+test('a client limitation moves on without spending the proxy sequence', async () => {
+  // A missing format follows the request to any IP, so advancing the proxy
+  // would just reach the same error. The sequence must still be intact.
   const { seen, threw } = await attempts({
     rotating: true,
-    outcomes: (client) =>
-      client === 'tv_embedded' ? NO_FORMAT : client === 'android_testsuite' ? BOT : null,
+    outcomes: (client, n) =>
+      client === 'tv_embedded' ? NO_FORMAT
+      : client === 'android_testsuite' && n < 6 ? BOT
+      : null,
   });
   assert.deepEqual(seen, [
     'tv_embedded',
-    'android_testsuite', // bot check here still had all three re-draws
-    'android_testsuite',
-    'android_testsuite',
-    'android_testsuite',
-    'android',
+    ...Array(6).fill('android_testsuite'), // full sequence still available here
   ]);
   assert.equal(threw, null);
 });
@@ -178,32 +179,79 @@ async function botCheckFailure({ rotating, proxy }) {
   throw new Error('expected the download to fail');
 }
 
-test('static proxy: diagnosis names the single flagged IP and both env vars', async () => {
+test('single proxy: diagnosis says there was no fallback, and how to get one', async () => {
   const err = await botCheckFailure({
     rotating: false,
     proxy: `http://user:${SECRET}@static.example:1080`,
   });
   const d = diagnosisOf(err);
-  assert.match(d, /single exit IP/);
-  assert.match(d, /YTDLP_PROXY_ROTATING=true/);
+  assert.match(d, /only configured exit/);
+  assert.match(d, /comma-separated/);
   assert.match(d, /static\.example:1080/);
 });
 
-test('rotating proxy: diagnosis says the pool is burned, not one address', async () => {
+test('rotating gateway: diagnosis steers to a hand-picked list', async () => {
   const err = await botCheckFailure({
     rotating: true,
     proxy: `http://user:${SECRET}@rotate.example:80`,
   });
   const d = diagnosisOf(err);
-  assert.match(d, /pool is flagged/);
-  assert.match(d, /residential/);
-  // Says how many distinct IPs were actually drawn, so the claim is checkable.
-  assert.match(d, /all 4 exit IPs/);
+  assert.match(d, /all 6 draws/);
+  assert.match(d, /comma-separated/);
 });
 
 test('no proxy: diagnosis says requests leave from the datacenter IP', async () => {
   const err = await botCheckFailure({ rotating: false, proxy: '' });
   assert.match(diagnosisOf(err), /No YTDLP_PROXY is set/);
+});
+
+test('a proxy list is walked one address at a time', async () => {
+  const list = [
+    'http://u:p@a.example:1',
+    'http://u:p@b.example:2',
+    'http://u:p@c.example:3',
+  ].join(',');
+  const { seen, proxiesUsed, threw } = await attempts({
+    rotating: false,
+    proxy: list,
+    // Only the third address is usable, whichever order they are shuffled into.
+    outcomes: () => BOT,
+  });
+  // One attempt per address, then on through the client list.
+  assert.equal(proxiesUsed.slice(0, 3).filter(Boolean).length, 3);
+  assert.equal(new Set(proxiesUsed.slice(0, 3)).size, 3, 'each attempt used a distinct proxy');
+  assert.deepEqual(seen.slice(0, 3), ['tv_embedded', 'tv_embedded', 'tv_embedded']);
+  assert.ok(threw);
+});
+
+test('a working address ends the download and is reused for the title', async () => {
+  const list = ['http://u:p@a.example:1', 'http://u:p@b.example:2'].join(',');
+  let titleProxy;
+  const config = {
+    get: (k) => ({ ytdlpProxy: list, ytdlpProxyRotating: false, ytdlpMaxHeight: 0,
+      ytdlpMaxDurationSeconds: 0, ytdlpExtractorArgs: '' })[k],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error() {} };
+  const used = [];
+  svc.runDownload = async (_u, _d, _t, _f, _m, _e, proxy) => {
+    used.push(proxy);
+    if (used.length === 1) throw new Error(BOT); // first address flagged
+  };
+  svc.cleanPartialDownload = async () => {};
+  svc.ensureOutputFile = async () => {};
+  svc.fetchTitle = async (_u, _e, proxy) => { titleProxy = proxy; return 'title'; };
+  await svc.download('https://youtu.be/x', '/tmp/autoclipr-test/out.mp4');
+  assert.equal(used.length, 2);
+  assert.equal(titleProxy, used[1], 'title lookup must reuse the address that worked');
+});
+
+test('a list diagnosis reports how many exits were actually tried', async () => {
+  const list = Array.from({ length: 3 }, (_, i) => `http://u:${SECRET}@h${i}.example:1`).join(',');
+  const err = await botCheckFailure({ rotating: false, proxy: list });
+  const d = diagnosisOf(err);
+  assert.match(d, /all 3 of the 3 configured exits/);
+  assert.ok(!d.includes(SECRET), 'password must stay masked in list diagnosis');
 });
 
 test('the diagnosis never leaks proxy credentials', async () => {

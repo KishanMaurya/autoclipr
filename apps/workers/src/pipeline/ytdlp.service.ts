@@ -43,21 +43,33 @@ const DEFAULT_EXTRACTOR_VARIANTS = [
 ];
 
 /**
- * Extra attempts to spend re-drawing an exit IP when one looks flagged and the
- * proxy rotates. Each attempt is a new yt-dlp process, so a rotating gateway
- * hands it a fresh IP.
+ * How many exit IPs a single download may try before giving up.
  *
- * A budget for the whole download rather than per client. Per client it
- * multiplies: five clients times four attempts is twenty round trips a user
- * waits through to learn the pool is burned. Shared, the worst case is the
- * client list plus three — and the information gained is the same, because
- * once several distinct IPs have all been challenged the next one almost
- * certainly will be too.
+ * YouTube flags individual addresses, not providers: on one Webshare plan, 4
+ * of 10 datacenter IPs served 1080p while the other 6 were challenged, and the
+ * working ones stayed working across repeated checks. A single proxy is
+ * therefore a coin flip, and each additional address compounds against it.
+ *
+ * Six is where the curve flattens. At the measured ~40% per-address success
+ * rate, six draws clears 95%; the attempts beyond that buy fractions of a
+ * percent while every one of them is a round trip a user waits through.
+ *
+ * Shared across the whole download rather than per player client. Per client
+ * it multiplies — five clients times six addresses is thirty round trips to
+ * learn the same thing.
  */
-const FLAGGED_IP_RETRY_BUDGET = 3;
+const MAX_PROXY_ATTEMPTS = 6;
 
-/** Gap between those retries, letting the gateway hand out a different IP. */
+/** Gap between attempts, so a rotating gateway hands out a different IP. */
 const FLAGGED_IP_RETRY_DELAY_MS = 1_500;
+
+/** Split YTDLP_PROXY into its entries. One address is just a list of one. */
+function parseProxyList(raw: string | undefined): string[] {
+  return (raw ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
 
 /** Hides proxy credentials so they never reach logs or user-facing errors. */
 function maskProxy(proxy: string): string {
@@ -170,74 +182,96 @@ export class YtdlpService implements OnModuleInit {
    * went unnoticed: nothing logged the proxy state until a job already failed.
    */
   private validateProxyConfig(): void {
-    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+    const proxies = parseProxyList(this.config.get<string>('ytdlpProxy'));
 
-    if (!proxy) {
+    if (proxies.length === 0) {
       this.logger.warn(
         'No YTDLP_PROXY configured — YouTube commonly blocks downloads from cloud IPs',
       );
       return;
     }
 
+    for (const proxy of proxies) {
+      if (!this.validateOneProxy(proxy)) return;
+    }
+
+    if (proxies.length > 1) {
+      // The configuration that actually survives: YouTube flags addresses, not
+      // providers, so a list converts a per-address coin flip into a
+      // near-certainty by trying a different one each time.
+      this.logger.log(
+        `yt-dlp proxies configured: ${proxies.length} exits, up to ` +
+          `${Math.min(proxies.length, MAX_PROXY_ATTEMPTS)} tried per download ` +
+          `(${proxies.map(maskProxy).join(', ')})`,
+      );
+      return;
+    }
+
+    const only = proxies[0];
+    const host = new URL(only).hostname;
+
+    if (this.config.get<boolean>('ytdlpProxyRotating')) {
+      // A rotating gateway is a hostname resolving to many exits, so a bare IP
+      // literal cannot be one and the flag is describing something the
+      // endpoint is not. Unchecked, the worker spends every attempt on the
+      // same flagged address and then reports having tried several distinct
+      // IPs — a diagnosis that sends the next person after the wrong problem.
+      if (isIpLiteral(host)) {
+        this.logger.warn(
+          `YTDLP_PROXY_ROTATING=true but YTDLP_PROXY is the bare IP ${host}, which ` +
+            `cannot rotate — every attempt reuses that one exit. Either list several ` +
+            `proxies in YTDLP_PROXY (comma-separated), point it at a rotating hostname, ` +
+            `or set YTDLP_PROXY_ROTATING=false.`,
+        );
+      }
+      this.logger.log(
+        `yt-dlp proxy configured: ${maskProxy(only)} (rotating — up to ` +
+          `${MAX_PROXY_ATTEMPTS} draws per download)`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `yt-dlp proxy configured: ${maskProxy(only)} (single exit IP, no fallback). ` +
+        `A bot check on this address fails the import outright — list several ` +
+        `proxies in YTDLP_PROXY, comma-separated, so a flagged one is stepped over.`,
+    );
+  }
+
+  /** Validate one proxy URL. Returns false when it is unusable. */
+  private validateOneProxy(proxy: string): boolean {
     let parsed: URL;
     try {
       parsed = new URL(proxy);
     } catch {
       this.logger.error(
-        'YTDLP_PROXY is not a valid URL. Expected http://user:pass@host:port — downloads will fail.',
+        `YTDLP_PROXY entry "${maskProxy(proxy)}" is not a valid URL. Expected ` +
+          `http://user:pass@host:port — downloads will fail. Note that quotes around ` +
+          `the value become part of it.`,
       );
-      return;
+      return false;
     }
 
     if (!parsed.username || !parsed.password) {
       this.logger.warn(
-        `YTDLP_PROXY (${maskProxy(proxy)}) has no credentials. If the proxy requires auth, downloads will fail with HTTP 407.`,
+        `YTDLP_PROXY entry (${maskProxy(proxy)}) has no credentials. If the proxy ` +
+          `requires auth, downloads will fail with HTTP 407.`,
       );
-      return;
+      return false;
     }
 
-    // A raw "@" or ":" in the password splits the URL in the wrong place, so
-    // the parsed host/credentials are silently wrong and the proxy answers 407.
+    // A raw "@" in the password splits the URL in the wrong place, so the
+    // parsed host/credentials are silently wrong and the proxy answers 407.
     const rawUserInfo = proxy.slice(proxy.indexOf('://') + 3, proxy.lastIndexOf('@'));
     if (rawUserInfo.includes('@')) {
       this.logger.error(
-        'YTDLP_PROXY credentials contain an unencoded "@". Percent-encode it as %40, otherwise the proxy will reject auth with HTTP 407.',
+        'YTDLP_PROXY credentials contain an unencoded "@". Percent-encode it as %40, ' +
+          'otherwise the proxy will reject auth with HTTP 407.',
       );
-      return;
+      return false;
     }
 
-    // State the rotation mode explicitly. The retry-on-a-fresh-IP path is off
-    // unless YTDLP_PROXY_ROTATING says so, and pointing a rotating gateway at
-    // a worker that still thinks it is static is a silent no-op — the whole
-    // benefit is lost with nothing in the logs to say why.
-    if (this.config.get<boolean>('ytdlpProxyRotating')) {
-      // A rotating gateway is a hostname that resolves to many exits. A bare
-      // IP literal is one machine and cannot be one, so the flag is describing
-      // something the endpoint is not. Left unchecked this is worse than
-      // useless: the worker spends its whole re-draw budget on the same
-      // flagged address, then reports having tried several distinct IPs — a
-      // diagnosis that reads as "the pool is burned" when only one IP was ever
-      // used, sending the next person after the wrong problem.
-      if (isIpLiteral(parsed.hostname)) {
-        this.logger.warn(
-          `YTDLP_PROXY_ROTATING=true but YTDLP_PROXY points at the bare IP ` +
-            `${parsed.hostname}, which cannot rotate — every retry will reuse that one ` +
-            `exit IP and the bot-check diagnosis will overstate how many were tried. ` +
-            `Either point YTDLP_PROXY at a rotating hostname or set ` +
-            `YTDLP_PROXY_ROTATING=false.`,
-        );
-      }
-      this.logger.log(
-        `yt-dlp proxy configured: ${maskProxy(proxy)} (rotating — a bot check ` +
-          `retries up to ${FLAGGED_IP_RETRY_BUDGET}x for a fresh exit IP)`,
-      );
-    } else {
-      this.logger.log(
-        `yt-dlp proxy configured: ${maskProxy(proxy)} (static — one exit IP). ` +
-          `If this endpoint rotates IPs, set YTDLP_PROXY_ROTATING=true so a bot ` +
-          `check retries instead of failing the import.`,
-      );
-    }
+    return true;
   }
 
   private getExtractorVariants(): string[] {
@@ -261,10 +295,46 @@ export class YtdlpService implements OnModuleInit {
     return DEFAULT_EXTRACTOR_VARIANTS;
   }
 
+  /**
+   * The proxies to try, in order, for one download.
+   *
+   * Three configurations collapse into one sequence, so the retry loop needs
+   * to know nothing about which is in use:
+   *   - a list       -> each address in turn (this is the effective one)
+   *   - one rotating -> the same URL repeatedly; the gateway varies the exit
+   *   - one static   -> a single attempt, since re-running it cannot differ
+   *   - none         -> a single attempt with no --proxy at all
+   *
+   * Shuffled for a list so concurrent jobs do not all queue behind the same
+   * first address, and so a flagged head does not tax every single import.
+   */
+  private proxyAttemptOrder(): (string | undefined)[] {
+    const proxies = parseProxyList(this.config.get<string>('ytdlpProxy'));
+
+    if (proxies.length === 0) return [undefined];
+
+    if (proxies.length === 1) {
+      const only = proxies[0];
+      // A rotating gateway is worth asking more than once; a fixed address is
+      // not — it was measured to return the identical challenge every time.
+      return this.config.get<boolean>('ytdlpProxyRotating')
+        ? Array<string>(MAX_PROXY_ATTEMPTS).fill(only)
+        : [only];
+    }
+
+    const shuffled = [...proxies];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, MAX_PROXY_ATTEMPTS);
+  }
+
   private buildBaseArgs(
     outTemplate: string,
     format: string,
     extractorArgs: string,
+    proxy: string | undefined,
   ): string[] {
     const args = [
       ...this.jsRuntimeArgs,
@@ -300,7 +370,6 @@ export class YtdlpService implements OnModuleInit {
       args.push('--cookies', this.cookiesFile);
     }
 
-    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
     if (proxy) {
       args.push('--proxy', proxy);
     }
@@ -337,36 +406,42 @@ export class YtdlpService implements OnModuleInit {
     // always asking variants[0], which by then may be the one that just failed.
     let workingVariant = variants[0];
 
-    // Only worth re-trying the same client when the exit IP can actually
-    // change between attempts. On a static endpoint it cannot, and retrying a
-    // flagged IP was measured to fail identically every time — so there it
-    // would buy nothing but delay.
-    let ipRetriesLeft = this.config.get<boolean>('ytdlpProxyRotating')
-      ? FLAGGED_IP_RETRY_BUDGET
-      : 0;
+    // Exit IPs to work through. Shared across the whole download: a flagged
+    // address is flagged for every player client, so spending the sequence
+    // again per client would only repeat the same challenges.
+    const proxyOrder = this.proxyAttemptOrder();
+    let proxyIndex = 0;
+    // The proxy that worked, so the title lookup does not go back to a
+    // flagged one and quietly lose the title.
+    let workingProxy = proxyOrder[0];
 
     outer: for (let i = 0; i < variants.length; i++) {
       const extractorArgs = variants[i];
 
-      // Inner loop only re-runs while the shared IP budget is being spent on
-      // this client; every other outcome leaves it after one attempt.
+      // Inner loop only re-runs while advancing through the proxy sequence;
+      // every other outcome leaves it after one attempt.
       for (;;) {
+        const proxy = proxyOrder[proxyIndex];
         try {
-          await this.runDownload(url, outDir, outTemplate, format, maxDuration, extractorArgs);
+          await this.runDownload(
+            url, outDir, outTemplate, format, maxDuration, extractorArgs, proxy,
+          );
           workingVariant = extractorArgs;
+          workingProxy = proxy;
           break outer;
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
           await this.cleanPartialDownload(outDir);
 
           // A flagged IP is the one failure a different IP fixes. Everything
-          // else here is the client's own limitation — a new IP would hit it
-          // again — so those fall straight through to the next client.
-          if (this.isFlaggedIpError(lastError.message) && ipRetriesLeft > 0) {
-            ipRetriesLeft--;
+          // else here is the client's own limitation — it would recur on any
+          // address — so those fall straight through to the next client.
+          if (this.isFlaggedIpError(lastError.message) && proxyIndex < proxyOrder.length - 1) {
+            proxyIndex++;
             this.logger.warn(
-              `yt-dlp bot check on ${extractorArgs}; retrying for a fresh exit IP ` +
-                `(${ipRetriesLeft} of ${FLAGGED_IP_RETRY_BUDGET} re-draws left)`,
+              `yt-dlp bot check on ${extractorArgs} via ` +
+                `${proxy ? maskProxy(proxy) : 'no proxy'}; trying exit ` +
+                `${proxyIndex + 1} of ${proxyOrder.length}`,
             );
             await delay(FLAGGED_IP_RETRY_DELAY_MS);
             continue;
@@ -389,7 +464,7 @@ export class YtdlpService implements OnModuleInit {
 
     let title: string | undefined;
     try {
-      title = await this.fetchTitle(url, workingVariant);
+      title = await this.fetchTitle(url, workingVariant, workingProxy);
     } catch {
       // optional metadata
     }
@@ -404,8 +479,9 @@ export class YtdlpService implements OnModuleInit {
     format: string,
     maxDuration: number,
     extractorArgs: string,
+    proxy: string | undefined,
   ): Promise<void> {
-    const args = this.buildBaseArgs(outTemplate, format, extractorArgs);
+    const args = this.buildBaseArgs(outTemplate, format, extractorArgs, proxy);
     if (maxDuration > 0) {
       args.push('--match-filter', `duration<=${maxDuration}`);
     }
@@ -437,7 +513,11 @@ export class YtdlpService implements OnModuleInit {
     );
   }
 
-  private async fetchTitle(url: string, extractorArgs: string): Promise<string | undefined> {
+  private async fetchTitle(
+    url: string,
+    extractorArgs: string,
+    proxy: string | undefined,
+  ): Promise<string | undefined> {
     const args = [
       ...this.jsRuntimeArgs,
       '--print',
@@ -449,7 +529,6 @@ export class YtdlpService implements OnModuleInit {
     if (this.cookiesFile) {
       args.push('--cookies', this.cookiesFile);
     }
-    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
     if (proxy) {
       args.push('--proxy', proxy);
     }
@@ -516,33 +595,45 @@ export class YtdlpService implements OnModuleInit {
 
     // Every player client was tried and all were challenged, so this is not a
     // client-selection problem — the exit IP itself is flagged.
-    const proxy = this.config.get<string>('ytdlpProxy')?.trim();
+    const proxies = parseProxyList(this.config.get<string>('ytdlpProxy'));
     const rotating = this.config.get<boolean>('ytdlpProxyRotating');
 
-    if (!proxy) {
+    if (proxies.length === 0) {
       return (
         'No YTDLP_PROXY is set, so requests leave from the datacenter IP directly and ' +
-        'YouTube challenges every player client. Configure a residential proxy, or ' +
-        'supply YTDLP_COOKIES_B64 from a signed-in throwaway account.'
+        'YouTube challenges every player client. List several proxies in YTDLP_PROXY ' +
+        '(comma-separated), or supply YTDLP_COOKIES_B64 from a signed-in throwaway account.'
       );
     }
 
-    if (rotating) {
-      // Several distinct IPs were drawn and every one was challenged, so this
-      // is no longer one unlucky address — the pool itself is burned.
+    if (proxies.length > 1) {
+      // Distinct addresses were genuinely tried and all were challenged. On a
+      // pool where roughly 4 in 10 work, this run was either unlucky or the
+      // working addresses have since been flagged.
+      const tried = Math.min(proxies.length, MAX_PROXY_ATTEMPTS);
       return (
-        `Challenged on all ${FLAGGED_IP_RETRY_BUDGET + 1} exit IPs drawn from ${maskProxy(proxy)}. ` +
-        'The pool is flagged, not one address, so rotating within it cannot recover. ' +
-        'Move to residential/ISP proxies, or supply YTDLP_COOKIES_B64 from a signed-in ' +
-        'throwaway account.'
+        `Challenged on all ${tried} of the ${proxies.length} configured exits. Verify ` +
+        'which still work — curl each through https://ipv4.webshare.io/ then try one ' +
+        'with yt-dlp — and drop the flagged ones, or supply YTDLP_COOKIES_B64 from a ' +
+        'signed-in throwaway account.'
+      );
+    }
+
+    const only = maskProxy(proxies[0]);
+
+    if (rotating) {
+      return (
+        `Challenged on all ${MAX_PROXY_ATTEMPTS} draws from ${only}. A rotating gateway ` +
+        'draws from the provider\'s whole pool, which is mostly flagged — measured at ' +
+        'roughly 1 in 6 usable, against 4 in 10 for hand-picked addresses. List the ' +
+        'specific proxies that work in YTDLP_PROXY, comma-separated, instead.'
       );
     }
 
     return (
-      `Challenged on the single exit IP ${maskProxy(proxy)}, which is flagged — a PO token ` +
-      'will not clear it. Point YTDLP_PROXY at a rotating endpoint AND set ' +
-      'YTDLP_PROXY_ROTATING=true (both are required), or supply YTDLP_COOKIES_B64 from a ' +
-      'signed-in throwaway account.'
+      `Challenged on ${only}, the only configured exit, so there was nothing to fall ` +
+      'back to. List several proxies in YTDLP_PROXY, comma-separated — YouTube flags ' +
+      'individual addresses, so a second one usually succeeds where the first failed.'
     );
   }
 

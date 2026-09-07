@@ -34,7 +34,12 @@ export default () => ({
   /** Base64-encoded Netscape cookies file (Railway-friendly alternative to a file path). */
   ytdlpCookiesB64: process.env.YTDLP_COOKIES_B64 ?? '',
   /** Proxy for yt-dlp — use a residential proxy to bypass YouTube datacenter IP blocks.
-   *  e.g. socks5://user:pass@host:port  or  http://user:pass@host:port */
+   *  e.g. socks5://user:pass@host:port  or  http://user:pass@host:port
+   *
+   *  Accepts a comma-separated list. YouTube flags individual exit IPs rather
+   *  than whole providers — measured on one Webshare plan, 4 of 10 datacenter
+   *  IPs served 1080p while the other 6 were challenged — so a single address
+   *  is a coin flip that a list turns into a near-certainty. */
   ytdlpProxy: process.env.YTDLP_PROXY ?? '',
   /** Set true only when YTDLP_PROXY is a rotating gateway that hands out a
    *  different exit IP per connection (e.g. Webshare's p.webshare.io:80).
