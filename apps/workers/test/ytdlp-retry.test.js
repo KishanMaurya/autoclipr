@@ -294,3 +294,107 @@ test('failures with no operator insight to add carry no diagnosis', async () => 
   })();
   assert.equal(diagnosisOf(err), undefined);
 });
+
+// ---------------------------------------------------------------------------
+// A bad entry in a proxy list
+//
+// Assembling a long list by find-and-replace leaves placeholders behind. The
+// list is shuffled per download, so one bad line fails a random share of
+// imports and reads as intermittent rather than as a config error.
+// ---------------------------------------------------------------------------
+
+test('a list steps over an entry that refuses credentials', async () => {
+  const list = [
+    'http://u:p@a.example:1',
+    'http://u:p@b.example:2',
+    'http://u:p@c.example:3',
+  ].join(',');
+  const used = [];
+  const config = {
+    get: (k) => ({ ytdlpProxy: list, ytdlpProxyRotating: false, ytdlpMaxHeight: 0,
+      ytdlpMaxDurationSeconds: 0, ytdlpExtractorArgs: '' })[k],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error() {} };
+  svc.runDownload = async (_u, _d, _t, _f, _m, _e, proxy) => {
+    used.push(proxy);
+    if (used.length === 1) throw new Error(PROXY_407); // first entry is malformed
+  };
+  svc.cleanPartialDownload = async () => {};
+  svc.ensureOutputFile = async () => {};
+  svc.fetchTitle = async () => 'title';
+
+  await svc.download('https://youtu.be/x', '/tmp/autoclipr-test/out.mp4');
+  assert.equal(used.length, 2, 'must fall through to the next entry, not abort');
+  assert.notEqual(used[0], used[1]);
+});
+
+test('a single proxy still aborts on 407 rather than retrying itself', async () => {
+  const { seen, threw } = await attempts({
+    rotating: false,
+    proxy: 'http://u:p@only.example:1',
+    outcomes: () => PROXY_407,
+  });
+  assert.deepEqual(seen, ['tv_embedded']);
+  assert.match(threw, /407/);
+});
+
+test('a rotating gateway does not re-draw on 407 — same credentials every draw', async () => {
+  const { seen, threw } = await attempts({
+    rotating: true,
+    proxy: 'http://u:p@gateway.example:80',
+    outcomes: () => PROXY_407,
+  });
+  assert.deepEqual(seen, ['tv_embedded']);
+  assert.match(threw, /407/);
+});
+
+test('407 across a whole list is diagnosed as the value, not one address', async () => {
+  const list = ['http://u:p@a.example:1', 'http://u:p@b.example:2'].join(',');
+  const config = {
+    get: (k) => ({ ytdlpProxy: list, ytdlpProxyRotating: false, ytdlpMaxHeight: 0,
+      ytdlpMaxDurationSeconds: 0, ytdlpExtractorArgs: '' })[k],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error() {} };
+  svc.runDownload = async () => { throw new Error(PROXY_407); };
+  svc.cleanPartialDownload = async () => {};
+  let err;
+  try {
+    await svc.download('https://youtu.be/x', '/tmp/autoclipr-test/out.mp4');
+  } catch (e) { err = e; }
+  assert.match(diagnosisOf(err), /2 configured entries/);
+});
+
+test('an unreplaced placeholder is named at boot, per entry', () => {
+  // The exact failure seen in production: PASSWORD left in some entries.
+  const list = [
+    'http://zdsdevdf:realpw@good.example:1',
+    'http://zdsdevdf:PASSWORD@bad.example:2',
+    'http://zdsdevdf:PASSWORD@worse.example:3',
+  ].join(',');
+  const errors = [];
+  const config = {
+    get: (k) => ({ ytdlpProxy: list, ytdlpProxyRotating: false, ytdlpPath: 'yt-dlp' })[k],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error: (m) => errors.push(m) };
+  svc.validateProxyConfig();
+
+  assert.ok(errors.some((e) => /bad\.example:2.*placeholder/.test(e)), 'names the bad entry');
+  assert.ok(errors.some((e) => /worse\.example:3.*placeholder/.test(e)), 'names both bad entries');
+  assert.ok(errors.some((e) => /2 of 3 YTDLP_PROXY entries are unusable/.test(e)), 'counts them');
+  assert.ok(!errors.some((e) => /good\.example/.test(e)), 'does not flag the valid entry');
+});
+
+test('a real credential is never mistaken for a placeholder', () => {
+  const errors = [];
+  const config = {
+    get: (k) => ({ ytdlpProxy: 'http://zdsdevdf:87am3qg9kxk4@h.example:1',
+      ytdlpProxyRotating: false, ytdlpPath: 'yt-dlp' })[k],
+  };
+  const svc = new YtdlpService(config);
+  svc.logger = { log() {}, warn() {}, error: (m) => errors.push(m) };
+  svc.validateProxyConfig();
+  assert.deepEqual(errors, []);
+});

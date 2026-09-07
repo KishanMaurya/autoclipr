@@ -63,6 +63,10 @@ const MAX_PROXY_ATTEMPTS = 6;
 /** Gap between attempts, so a rotating gateway hands out a different IP. */
 const FLAGGED_IP_RETRY_DELAY_MS = 1_500;
 
+/** Values that are template text rather than a credential. */
+const PLACEHOLDER_CREDENTIAL =
+  /^(password|pass|your[_-]?password|user|username|your[_-]?username|changeme|xxx+|<[^>]*>)$/i;
+
 /** Split YTDLP_PROXY into its entries. One address is just a list of one. */
 function parseProxyList(raw: string | undefined): string[] {
   return (raw ?? '')
@@ -191,8 +195,17 @@ export class YtdlpService implements OnModuleInit {
       return;
     }
 
-    for (const proxy of proxies) {
-      if (!this.validateOneProxy(proxy)) return;
+    // Validate every entry rather than stopping at the first bad one. The
+    // list is shuffled per download, so a single malformed line fails a random
+    // share of imports and reads as intermittent — naming all of them at boot
+    // is the difference between a one-line fix and chasing a ghost.
+    const bad = proxies.filter((proxy) => !this.validateOneProxy(proxy));
+    if (bad.length > 0) {
+      this.logger.error(
+        `${bad.length} of ${proxies.length} YTDLP_PROXY entries are unusable (listed above). ` +
+          `Downloads that draw one of them will fail; fix or remove those entries.`,
+      );
+      if (bad.length === proxies.length) return;
     }
 
     if (proxies.length > 1) {
@@ -256,6 +269,19 @@ export class YtdlpService implements OnModuleInit {
       this.logger.warn(
         `YTDLP_PROXY entry (${maskProxy(proxy)}) has no credentials. If the proxy ` +
           `requires auth, downloads will fail with HTTP 407.`,
+      );
+      return false;
+    }
+
+    // A placeholder that was never substituted. Assembling a long list by
+    // find-and-replace makes this easy to do and impossible to see: the value
+    // parses, connects, and is refused with a 407 that says nothing about
+    // which entry caused it.
+    if (PLACEHOLDER_CREDENTIAL.test(parsed.password) || PLACEHOLDER_CREDENTIAL.test(parsed.username)) {
+      this.logger.error(
+        `YTDLP_PROXY entry ${parsed.hostname}:${parsed.port} still contains a placeholder ` +
+          `instead of a real credential — every download that draws it will fail with ` +
+          `HTTP 407.`,
       );
       return false;
     }
@@ -411,6 +437,10 @@ export class YtdlpService implements OnModuleInit {
     // again per client would only repeat the same challenges.
     const proxyOrder = this.proxyAttemptOrder();
     let proxyIndex = 0;
+    // Whether the sequence holds genuinely different addresses. A rotating
+    // gateway repeats one URL, so a credential rejection there is the same
+    // rejection every time; across a list it is one bad entry among many.
+    const hasDistinctProxies = new Set(proxyOrder).size > 1;
     // The proxy that worked, so the title lookup does not go back to a
     // flagged one and quietly lose the title.
     let workingProxy = proxyOrder[0];
@@ -433,15 +463,22 @@ export class YtdlpService implements OnModuleInit {
           lastError = err instanceof Error ? err : new Error(String(err));
           await this.cleanPartialDownload(outDir);
 
-          // A flagged IP is the one failure a different IP fixes. Everything
-          // else here is the client's own limitation — it would recur on any
-          // address — so those fall straight through to the next client.
-          if (this.isFlaggedIpError(lastError.message) && proxyIndex < proxyOrder.length - 1) {
+          // Two failures are properties of the address rather than the video:
+          // a bot check, and — across a list of distinct addresses — a proxy
+          // that will not take the credentials or answer at all. The second
+          // matters because one malformed entry among many would otherwise
+          // abort the whole import: the list is shuffled, so a single bad
+          // line poisons a random share of downloads and looks intermittent.
+          const addressFault =
+            this.isFlaggedIpError(lastError.message) ||
+            (hasDistinctProxies && this.isProxyEntryError(lastError.message));
+
+          if (addressFault && proxyIndex < proxyOrder.length - 1) {
             proxyIndex++;
             this.logger.warn(
-              `yt-dlp bot check on ${extractorArgs} via ` +
-                `${proxy ? maskProxy(proxy) : 'no proxy'}; trying exit ` +
-                `${proxyIndex + 1} of ${proxyOrder.length}`,
+              `yt-dlp ${this.isFlaggedIpError(lastError.message) ? 'bot check' : 'proxy fault'} ` +
+                `on ${extractorArgs} via ${proxy ? maskProxy(proxy) : 'no proxy'}; ` +
+                `trying exit ${proxyIndex + 1} of ${proxyOrder.length}`,
             );
             await delay(FLAGGED_IP_RETRY_DELAY_MS);
             continue;
@@ -552,6 +589,19 @@ export class YtdlpService implements OnModuleInit {
     );
   }
 
+  /**
+   * Did the proxy itself fail, rather than YouTube?
+   *
+   * Refused credentials or an unreachable endpoint. Fatal for a single proxy,
+   * but with a list it is a property of that one entry — a typo, an expired
+   * line, an unreplaced placeholder — and the next address may be fine.
+   */
+  private isProxyEntryError(message: string): boolean {
+    return /407 proxy authentication required|proxy authentication required|unable to connect to proxy|cannot connect.*proxy|unsupported proxy type/i.test(
+      message,
+    );
+  }
+
   private isRetryableYoutubeError(message: string): boolean {
     // Proxy errors are never retryable — every variant will fail the same way
     if (
@@ -591,6 +641,24 @@ export class YtdlpService implements OnModuleInit {
    * about the symptom.
    */
   private diagnose(normalized: string): string | undefined {
+    // Credentials refused. With a list this survived every address tried, so
+    // it is the value itself rather than one unlucky line — and the commonest
+    // cause is a placeholder left unreplaced when the list was assembled.
+    if (this.isProxyEntryError(normalized)) {
+      const entries = parseProxyList(this.config.get<string>('ytdlpProxy'));
+      if (entries.length <= 1) return undefined;
+
+      const suspect = entries.filter((e) => !/^\w+:\/\/[^:@/]+:[^:@/]+@/.test(e));
+      return (
+        `Every proxy tried refused the credentials, across ${entries.length} configured ` +
+        `entries. That points at the YTDLP_PROXY value rather than one bad address` +
+        (suspect.length
+          ? `: ${suspect.length} entr${suspect.length === 1 ? 'y has' : 'ies have'} no ` +
+            `usable user:pass — check for an unreplaced placeholder or a stray quote.`
+          : `. Verify one entry by hand: curl --proxy '<entry>' https://ipv4.webshare.io/`)
+      );
+    }
+
     if (!/sign in to confirm|not a bot|bot check/i.test(normalized)) return undefined;
 
     // Every player client was tried and all were challenged, so this is not a
