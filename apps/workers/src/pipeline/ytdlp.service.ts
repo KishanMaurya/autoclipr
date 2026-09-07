@@ -66,6 +66,18 @@ function maskProxy(proxy: string): string {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Is this host a literal address rather than a name?
+ *
+ * URL keeps IPv6 hosts in brackets, so the bracket test is exact; IPv4 is a
+ * four-octet check. Anything else is a hostname, which may resolve to many
+ * addresses and so could legitimately rotate.
+ */
+function isIpLiteral(hostname: string): boolean {
+  if (hostname.startsWith('[')) return true;
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+}
+
 @Injectable()
 export class YtdlpService implements OnModuleInit {
   private readonly logger = new Logger(YtdlpService.name);
@@ -199,6 +211,22 @@ export class YtdlpService implements OnModuleInit {
     // a worker that still thinks it is static is a silent no-op — the whole
     // benefit is lost with nothing in the logs to say why.
     if (this.config.get<boolean>('ytdlpProxyRotating')) {
+      // A rotating gateway is a hostname that resolves to many exits. A bare
+      // IP literal is one machine and cannot be one, so the flag is describing
+      // something the endpoint is not. Left unchecked this is worse than
+      // useless: the worker spends its whole re-draw budget on the same
+      // flagged address, then reports having tried several distinct IPs — a
+      // diagnosis that reads as "the pool is burned" when only one IP was ever
+      // used, sending the next person after the wrong problem.
+      if (isIpLiteral(parsed.hostname)) {
+        this.logger.warn(
+          `YTDLP_PROXY_ROTATING=true but YTDLP_PROXY points at the bare IP ` +
+            `${parsed.hostname}, which cannot rotate — every retry will reuse that one ` +
+            `exit IP and the bot-check diagnosis will overstate how many were tried. ` +
+            `Either point YTDLP_PROXY at a rotating hostname or set ` +
+            `YTDLP_PROXY_ROTATING=false.`,
+        );
+      }
       this.logger.log(
         `yt-dlp proxy configured: ${maskProxy(proxy)} (rotating — a bot check ` +
           `retries up to ${FLAGGED_IP_RETRY_BUDGET}x for a fresh exit IP)`,
